@@ -63,8 +63,9 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration.music());
 
-    // Handle audio interruptions
+    // Handle audio interruptions (e.g., another app takes audio focus)
     _interruptionSubscription = session.interruptionEventStream.listen((event) {
+      _logger.log('🔊 Audio interruption: begin=${event.begin}, type=${event.type}');
       if (event.begin) {
         switch (event.type) {
           case AudioInterruptionType.duck:
@@ -72,7 +73,9 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
             break;
           case AudioInterruptionType.pause:
           case AudioInterruptionType.unknown:
-            pause();
+            // Pause both just_audio and Sendspin/remote player
+            _player.pause();
+            onPause?.call();
             break;
         }
       } else {
@@ -81,7 +84,9 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
             _player.setVolume(1.0);
             break;
           case AudioInterruptionType.pause:
-            play();
+            // Resume both just_audio and Sendspin/remote player
+            _player.play();
+            onPlay?.call();
             break;
           case AudioInterruptionType.unknown:
             break;
@@ -115,7 +120,6 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
         MediaControl.skipToPrevious,
         if (playing) MediaControl.pause else MediaControl.play,
         MediaControl.skipToNext,
-        _switchPlayerControl, // Switch player button
       ],
       // System-level actions (for headphones, car stereos, etc.)
       systemActions: const {
@@ -238,8 +242,13 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     required bool playing,
     Duration position = Duration.zero,
     Duration? duration,
-  }) {
+  }) async {
     _isRemoteMode = true;
+    // Activate audio session to request focus and receive interruption events
+    if (playing) {
+      final session = await AudioSession.instance;
+      await session.setActive(true);
+    }
     _currentMediaItem = item;
     mediaItem.add(item);
 
@@ -248,7 +257,6 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
         MediaControl.skipToPrevious,
         if (playing) MediaControl.pause else MediaControl.play,
         MediaControl.skipToNext,
-        _switchPlayerControl,
       ],
       systemActions: const {
         MediaAction.play,
@@ -269,7 +277,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   }
 
   /// Clear remote playback state and hide notification
-  void clearRemotePlaybackState() {
+  void clearRemotePlaybackState() async {
     _isRemoteMode = false;
     _currentMediaItem = null;
 
@@ -278,6 +286,10 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       processingState: AudioProcessingState.idle,
       playing: false,
     ));
+
+    // Release audio focus
+    final session = await AudioSession.instance;
+    await session.setActive(false);
   }
 
   /// Switch to local playback mode (when builtin player is selected)

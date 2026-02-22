@@ -117,6 +117,7 @@ class MusicAssistantProvider with ChangeNotifier {
   TrackMetadata? _pendingTrackMetadata;
   TrackMetadata? _currentNotificationMetadata;
   Completer<void>? _registrationInProgress;
+  Completer<void>? _reconnectInProgress;
 
   // Local player service
   late final LocalPlayerService _localPlayer;
@@ -1946,6 +1947,12 @@ class MusicAssistantProvider with ChangeNotifier {
   }
 
   Future<void> checkAndReconnect() async {
+    // Deduplicate: if a reconnect is already in progress, join it
+    if (_reconnectInProgress != null) {
+      _logger.log('🔄 checkAndReconnect called — already in progress, joining existing attempt');
+      return _reconnectInProgress!.future;
+    }
+
     _logger.log('🔄 checkAndReconnect called - state: $_connectionState');
 
     if (_serverUrl == null) {
@@ -1953,60 +1960,70 @@ class MusicAssistantProvider with ChangeNotifier {
       return;
     }
 
-    // IMMEDIATELY load cached players for instant UI display
-    // This makes mini player and device button appear instantly on app resume
-    if (_availablePlayers.isEmpty && _cacheService.hasCachedPlayers) {
-      _availablePlayers = _cacheService.getCachedPlayers()!;
+    _reconnectInProgress = Completer<void>();
 
-      // Sort cached players immediately so list appears in correct order
-      final smartSort = await SettingsService.getSmartSortPlayers();
-      final builtinPlayerId = await SettingsService.getBuiltinPlayerId();
-      _sortPlayersSync(_availablePlayers, smartSort, builtinPlayerId);
+    try {
+      // IMMEDIATELY load cached players for instant UI display
+      // This makes mini player and device button appear instantly on app resume
+      if (_availablePlayers.isEmpty && _cacheService.hasCachedPlayers) {
+        _availablePlayers = _cacheService.getCachedPlayers()!;
 
-      _selectedPlayer = _cacheService.getCachedSelectedPlayer();
-      // Also try to restore from settings if cache doesn't have selected player
-      if (_selectedPlayer == null && _availablePlayers.isNotEmpty) {
-        final lastSelectedPlayerId = await SettingsService.getLastSelectedPlayerId();
-        if (lastSelectedPlayerId != null) {
-          try {
-            _selectedPlayer = _availablePlayers.firstWhere(
-              (p) => p.playerId == lastSelectedPlayerId,
-            );
-          } catch (e) {
+        // Sort cached players immediately so list appears in correct order
+        final smartSort = await SettingsService.getSmartSortPlayers();
+        final builtinPlayerId = await SettingsService.getBuiltinPlayerId();
+        _sortPlayersSync(_availablePlayers, smartSort, builtinPlayerId);
+
+        _selectedPlayer = _cacheService.getCachedSelectedPlayer();
+        // Also try to restore from settings if cache doesn't have selected player
+        if (_selectedPlayer == null && _availablePlayers.isNotEmpty) {
+          final lastSelectedPlayerId = await SettingsService.getLastSelectedPlayerId();
+          if (lastSelectedPlayerId != null) {
+            try {
+              _selectedPlayer = _availablePlayers.firstWhere(
+                (p) => p.playerId == lastSelectedPlayerId,
+              );
+            } catch (e) {
+              _selectedPlayer = _availablePlayers.first;
+            }
+          } else {
             _selectedPlayer = _availablePlayers.first;
           }
-        } else {
-          _selectedPlayer = _availablePlayers.first;
         }
+        _logger.log('⚡ Loaded ${_availablePlayers.length} cached players instantly (sorted)');
+        notifyListeners(); // Update UI immediately with cached data
       }
-      _logger.log('⚡ Loaded ${_availablePlayers.length} cached players instantly (sorted)');
-      notifyListeners(); // Update UI immediately with cached data
-    }
 
-    if (_connectionState != MAConnectionState.connected &&
-        _connectionState != MAConnectionState.authenticated) {
-      _logger.log('🔄 Not connected, attempting reconnect to $_serverUrl');
-      try {
-        await connectToServer(_serverUrl!);
-        _logger.log('🔄 Reconnection successful');
-      } catch (e) {
-        _logger.log('🔄 Reconnection failed: $e');
-      }
-    } else {
-      _logger.log('🔄 Already connected, verifying connection...');
-      try {
-        await refreshPlayers();
-        await _updatePlayerState();
-        // Note: _preloadAdjacentPlayers is already called in refreshPlayers() -> _loadAndSelectPlayers()
-        _logger.log('🔄 Connection verified, players and state refreshed');
-      } catch (e) {
-        _logger.log('🔄 Connection verification failed, reconnecting: $e');
+      if (_connectionState != MAConnectionState.connected &&
+          _connectionState != MAConnectionState.authenticated) {
+        _logger.log('🔄 Not connected, attempting reconnect to $_serverUrl');
         try {
           await connectToServer(_serverUrl!);
-        } catch (reconnectError) {
-          _logger.log('🔄 Reconnection failed: $reconnectError');
+          _logger.log('🔄 Reconnection successful');
+        } catch (e) {
+          _logger.log('🔄 Reconnection failed: $e');
+        }
+      } else {
+        _logger.log('🔄 Already connected, verifying connection...');
+        try {
+          await refreshPlayers();
+          await _updatePlayerState();
+          // Note: _preloadAdjacentPlayers is already called in refreshPlayers() -> _loadAndSelectPlayers()
+          _logger.log('🔄 Connection verified, players and state refreshed');
+        } catch (e) {
+          _logger.log('🔄 Connection verification failed, reconnecting: $e');
+          try {
+            await connectToServer(_serverUrl!);
+          } catch (reconnectError) {
+            _logger.log('🔄 Reconnection failed: $reconnectError');
+          }
         }
       }
+
+      _reconnectInProgress!.complete();
+    } catch (e) {
+      _reconnectInProgress!.completeError(e);
+    } finally {
+      _reconnectInProgress = null;
     }
   }
 
