@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:just_audio/just_audio.dart';
@@ -33,6 +34,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   Function()? onPlay;
   Function()? onPause;
   Function()? onSwitchPlayer;
+  Function()? onBrowseActivity;
 
   // Track whether we're in remote control mode (controlling MA player, not playing locally)
   bool _isRemoteMode = false;
@@ -42,7 +44,15 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
 
   // Android Auto: track queue cache — maps context key to ordered track list.
   // Populated during getChildren so playFromMediaId can queue the full album/playlist.
+  static const _maxTrackCacheEntries = 50;
   final Map<String, List<ma.Track>> _autoTrackCache = {};
+
+  void _cacheTrackList(String key, List<ma.Track> tracks) {
+    _autoTrackCache[key] = tracks;
+    while (_autoTrackCache.length > _maxTrackCacheEntries) {
+      _autoTrackCache.remove(_autoTrackCache.keys.first);
+    }
+  }
 
   // Android Auto: subjects for subscribeToChildren
   final Map<String, BehaviorSubject<Map<String, dynamic>>> _autoChildrenSubjects = {};
@@ -64,8 +74,11 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     await session.configure(const AudioSessionConfiguration.music());
 
     // Handle audio interruptions (e.g., another app takes audio focus)
+    // Only act on interruptions when playing locally — remote MA players
+    // manage their own audio focus on the server side.
     _interruptionSubscription = session.interruptionEventStream.listen((event) {
-      _logger.log('🔊 Audio interruption: begin=${event.begin}, type=${event.type}');
+      _logger.log('🔊 Audio interruption: begin=${event.begin}, type=${event.type}, builtinActive=$_isBuiltinPlayerActive');
+      if (!_isBuiltinPlayerActive) return;
       if (event.begin) {
         switch (event.type) {
           case AudioInterruptionType.duck:
@@ -73,7 +86,6 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
             break;
           case AudioInterruptionType.pause:
           case AudioInterruptionType.unknown:
-            // Pause both just_audio and Sendspin/remote player
             _player.pause();
             onPause?.call();
             break;
@@ -84,7 +96,6 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
             _player.setVolume(1.0);
             break;
           case AudioInterruptionType.pause:
-            // Resume both just_audio and Sendspin/remote player
             _player.play();
             onPlay?.call();
             break;
@@ -117,9 +128,13 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     playbackState.add(playbackState.value.copyWith(
       // Configure notification action buttons
       controls: [
+        _shuffleControl(),
         MediaControl.skipToPrevious,
         if (playing) MediaControl.pause else MediaControl.play,
         MediaControl.skipToNext,
+        _favoriteControl(),
+        _radioControl,
+        _repeatControl(),
       ],
       // System-level actions (for headphones, car stereos, etc.)
       systemActions: const {
@@ -133,7 +148,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
         MediaAction.skipToPrevious,
       },
       // Which buttons to show in compact notification (max 3)
-      // Show: play/pause (1), skip-next (2), switch-player (3)
+      // Show: prev (1), play/pause (2), next (3)
       androidCompactActionIndices: const [1, 2, 3],
       processingState: {
         ProcessingState.idle: AudioProcessingState.idle,
@@ -200,6 +215,108 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     onSkipToPrevious?.call();
   }
 
+  @override
+  Future<dynamic> customAction(String name, [Map<String, dynamic>? extras]) async {
+    _logger.log('AndroidAuto: customAction called: $name');
+    final provider = _autoProvider;
+    if (provider == null) {
+      _logger.log('AndroidAuto: customAction: no provider');
+      return;
+    }
+    // Look up fresh player state (selectedPlayer may have stale cached activeQueue)
+    final selectedId = provider.selectedPlayer?.playerId;
+    if (selectedId == null) {
+      _logger.log('AndroidAuto: customAction: no selectedPlayer');
+      return;
+    }
+    final player = provider.availablePlayersUnfiltered
+        .where((p) => p.playerId == selectedId).firstOrNull ?? provider.selectedPlayer!;
+    _logger.log('AndroidAuto: customAction: player=${player.name}, activeQueue=${player.activeQueue}');
+
+    try {
+      switch (name) {
+        case 'toggleShuffle':
+          final queue = await provider.getQueue(player.playerId);
+          final newShuffle = !(queue?.shuffle ?? false);
+          _logger.log('AndroidAuto: toggleShuffle: current=${queue?.shuffle}, setting=$newShuffle');
+          await provider.toggleShuffle(player.playerId, newShuffle);
+          _shuffleOn = newShuffle;
+        case 'toggleFavorite':
+          final track = provider.currentTrack;
+          if (track == null) {
+            _logger.log('AndroidAuto: toggleFavorite: no currentTrack');
+            return;
+          }
+          _logger.log('AndroidAuto: toggleFavorite: track=${track.name}, favorite=${_isFavorite}, provider=${track.provider}');
+          if (_isFavorite) {
+            int? libraryItemId;
+            if (track.provider == 'library') {
+              libraryItemId = int.tryParse(track.itemId);
+            } else if (track.providerMappings != null) {
+              final libraryMapping = track.providerMappings!.firstWhere(
+                (m) => m.providerInstance == 'library',
+                orElse: () => track.providerMappings!.first,
+              );
+              if (libraryMapping.providerInstance == 'library') {
+                libraryItemId = int.tryParse(libraryMapping.itemId);
+              }
+            }
+            _logger.log('AndroidAuto: toggleFavorite: removing, libraryItemId=$libraryItemId');
+            if (libraryItemId != null) {
+              await provider.removeFromFavorites(
+                mediaType: 'track', libraryItemId: libraryItemId);
+            }
+          } else {
+            _logger.log('AndroidAuto: toggleFavorite: adding');
+            await provider.addToFavorites(
+              mediaType: 'track', itemId: track.itemId, provider: track.provider);
+          }
+          _isFavorite = !_isFavorite;
+        case 'startRadio':
+          final track = provider.currentTrack;
+          if (track == null) {
+            _logger.log('AndroidAuto: startRadio: no currentTrack');
+            return;
+          }
+          _logger.log('AndroidAuto: startRadio: track=${track.name}, playerId=${player.playerId}');
+          await provider.playRadio(player.playerId, track);
+          _logger.log('AndroidAuto: startRadio: done');
+        case 'cycleRepeat':
+          final queue = await provider.getQueue(player.playerId);
+          final currentMode = queue?.repeatMode ?? 'off';
+          _logger.log('AndroidAuto: cycleRepeat: current=$currentMode');
+          await provider.cycleRepeatMode(player.playerId, currentMode);
+          // Track the new mode locally for icon update
+          _repeatMode = switch (currentMode) {
+            'off' => 'all',
+            'all' => 'one',
+            _ => 'off',
+          };
+      }
+      // Re-broadcast playback state to update icons
+      _refreshPlaybackState();
+    } catch (e) {
+      _logger.log('AndroidAuto: customAction error: $e');
+    }
+  }
+
+  /// Re-broadcast current playback state to update custom action icons
+  void _refreshPlaybackState() {
+    final current = playbackState.value;
+    final playing = current.playing;
+    playbackState.add(current.copyWith(
+      controls: [
+        _shuffleControl(),
+        MediaControl.skipToPrevious,
+        if (playing) MediaControl.pause else MediaControl.play,
+        MediaControl.skipToNext,
+        _favoriteControl(),
+        _radioControl,
+        _repeatControl(),
+      ],
+    ));
+  }
+
   // --- Custom methods for Ensemble ---
 
   /// Play a URL with the given metadata
@@ -243,9 +360,21 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     Duration position = Duration.zero,
     Duration? duration,
   }) async {
+    _clearErrorState();
     _isRemoteMode = true;
-    // Activate audio session to request focus and receive interruption events
-    if (playing) {
+    // Sync favorite state only when track changes
+    final trackId = '${item.id}';
+    if (trackId != _lastTrackId) {
+      _lastTrackId = trackId;
+      _isFavorite = _autoProvider?.currentTrack?.favorite == true;
+    }
+    // Only activate audio session for the builtin player (local PCM playback).
+    // Remote MA players manage their own audio — claiming focus on the phone
+    // would pause them when another app (e.g. YouTube) plays.
+    final builtinId = await SettingsService.getBuiltinPlayerId();
+    final selectedId = _autoProvider?.selectedPlayer?.playerId;
+    _isBuiltinPlayerActive = builtinId != null && selectedId == builtinId;
+    if (playing && _isBuiltinPlayerActive) {
       final session = await AudioSession.instance;
       await session.setActive(true);
     }
@@ -254,9 +383,13 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
 
     playbackState.add(playbackState.value.copyWith(
       controls: [
+        _shuffleControl(),
         MediaControl.skipToPrevious,
         if (playing) MediaControl.pause else MediaControl.play,
         MediaControl.skipToNext,
+        _favoriteControl(),
+        _radioControl,
+        _repeatControl(),
       ],
       systemActions: const {
         MediaAction.play,
@@ -266,8 +399,8 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
         MediaAction.stop,
       },
       // Which buttons to show in compact notification (max 3)
-      // Show: play/pause (1), skip-next (2), switch-player (3)
-      androidCompactActionIndices: const [1, 2, 3],
+      // Show: prev (0), play/pause (1), next (2)
+      androidCompactActionIndices: const [0, 1, 2],
       processingState: AudioProcessingState.ready,
       playing: playing,
       updatePosition: position,
@@ -363,6 +496,11 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   static const _autoIdAlbums = 'cat|albums';
   static const _autoIdFavorites = 'cat|favorites';
 
+  // Media ID constants — Favourite subcategories
+  static const _autoIdFavArtists = 'cat|fav_artists';
+  static const _autoIdFavAlbums = 'cat|fav_albums';
+  static const _autoIdFavTracks = 'cat|fav_tracks';
+
   // Media ID constants — Audiobook subcategories
   static const _autoIdAbAuthors = 'cat|ab_authors';
   static const _autoIdAbBooks = 'cat|ab_books';
@@ -386,9 +524,56 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   static final _iconPlaylist = Uri.parse('android.resource://$_iconPkg/drawable/ic_auto_playlist');
   static final _iconFavorite = Uri.parse('android.resource://$_iconPkg/drawable/ic_auto_favorite');
 
+  // Custom now-playing action buttons for Android Auto
+  // Icons change based on current state for visual feedback
+  static final _radioControl = MediaControl.custom(
+    androidIcon: 'drawable/ic_auto_radio',
+    label: 'Start Radio',
+    name: 'startRadio',
+  );
+
+  MediaControl _shuffleControl() {
+    return MediaControl.custom(
+      androidIcon: _shuffleOn ? 'drawable/ic_auto_shuffle_on' : 'drawable/ic_auto_shuffle',
+      label: 'Shuffle',
+      name: 'toggleShuffle',
+    );
+  }
+
+  MediaControl _favoriteControl() {
+    return MediaControl.custom(
+      androidIcon: _isFavorite ? 'drawable/ic_auto_favorite' : 'drawable/ic_auto_favorite_off',
+      label: 'Favourite',
+      name: 'toggleFavorite',
+    );
+  }
+
+  MediaControl _repeatControl() {
+    return MediaControl.custom(
+      androidIcon: switch (_repeatMode) {
+        'one' => 'drawable/ic_auto_repeat_one',
+        'all' => 'drawable/ic_auto_repeat_all',
+        _ => 'drawable/ic_auto_repeat',
+      },
+      label: 'Repeat',
+      name: 'cycleRepeat',
+    );
+  }
+
+  // Local state tracking for icon updates (synced after each action)
+  bool _shuffleOn = false;
+  bool _isFavorite = false;
+  String _repeatMode = 'off';
+  String? _lastTrackId;
+
+  // Whether the currently selected player is the builtin (local PCM) player
+  bool _isBuiltinPlayerActive = false;
+
   @override
   Future<List<MediaItem>> getChildren(String parentMediaId,
       [Map<String, dynamic>? options]) async {
+    onBrowseActivity?.call();
+
     final provider = _autoProvider;
     if (provider == null) {
       _logger.log('AndroidAuto: getChildren("$parentMediaId") — provider not set yet');
@@ -402,6 +587,21 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       // getChildren. Cached data is served immediately; live API calls
       // inside builders will await their own reconnect if needed.
       provider.checkAndReconnect();
+    }
+
+    // Auto-select builtin player when AA starts browsing, so playback
+    // goes to the phone instead of a previously-selected remote speaker
+    if (parentMediaId == AudioService.browsableRootId) {
+      final playerId = await SettingsService.getBuiltinPlayerId();
+      if (playerId != null && provider.selectedPlayer?.playerId != playerId) {
+        final builtinPlayer = provider.availablePlayersUnfiltered
+            .where((p) => p.playerId == playerId)
+            .firstOrNull;
+        if (builtinPlayer != null) {
+          _logger.log('AndroidAuto: auto-selecting builtin player "${builtinPlayer.name}"');
+          provider.selectPlayer(builtinPlayer);
+        }
+      }
     }
 
     try {
@@ -435,7 +635,13 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       case _autoIdAlbums:
         return _autoBuildAlbumList(provider);
       case _autoIdFavorites:
-        return _autoBuildFavorites(provider);
+        return _autoBuildFavoriteCategories();
+      case _autoIdFavArtists:
+        return _autoBuildFavArtists(provider);
+      case _autoIdFavAlbums:
+        return _autoBuildFavAlbums(provider);
+      case _autoIdFavTracks:
+        return _autoBuildFavTracks(provider);
 
       // Audiobooks
       case _autoIdAudiobooks:
@@ -504,6 +710,14 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     return _autoChildrenSubjects[parentMediaId]!.stream;
   }
 
+  /// Notify Android Auto that children under [parentIds] may have changed.
+  void invalidateAutoChildren(List<String> parentIds) {
+    final ts = DateTime.now().millisecondsSinceEpoch;
+    for (final id in parentIds) {
+      _autoChildrenSubjects[id]?.add({'ts': ts});
+    }
+  }
+
   @override
   Future<void> playFromMediaId(String mediaId,
       [Map<String, dynamic>? extras]) async {
@@ -531,6 +745,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     }
 
     _logger.log('AndroidAuto: playFromMediaId $mediaId');
+    _clearErrorState();
 
     try {
       if (mediaId.startsWith('track|')) {
@@ -554,11 +769,13 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
         final index = trackList.indexWhere(
           (t) => t.provider == tProvider && t.itemId == tItemId,
         );
+        final startIdx = index < 0 ? 0 : index;
         await provider.playTracks(
           playerId,
           trackList,
-          startIndex: index < 0 ? 0 : index,
+          startIndex: startIdx,
         );
+        _populateQueue(provider, trackList, startIdx);
         return;
       }
 
@@ -626,8 +843,12 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       }
     } catch (e) {
       _logger.log('AndroidAuto: playFromMediaId error: $e');
+      _setErrorState('Playback failed');
     }
   }
+
+  // Search race condition guard
+  int _searchId = 0;
 
   @override
   Future<List<MediaItem>> search(String query,
@@ -635,17 +856,142 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     final provider = _autoProvider;
     if (provider == null || query.trim().isEmpty) return [];
 
+    final searchId = ++_searchId;
+
     try {
       final results = await provider.searchWithCache(query);
+
+      // Check for stale search
+      if (searchId != _searchId) {
+        _logger.log('AndroidAuto: ignoring stale search results for "$query"');
+        return [];
+      }
+
+      final artists = (results['artists'] ?? []).whereType<ma.Artist>().take(5).toList();
+      final albums = (results['albums'] ?? []).whereType<ma.Album>().take(5).toList();
       final tracks = (results['tracks'] ?? []).whereType<ma.Track>().toList();
       const ctxKey = 'search||';
-      _autoTrackCache[ctxKey] = tracks;
-      return tracks
-          .map((t) => _autoTrackItem(provider, t, ctxKey))
-          .toList();
+      _cacheTrackList(ctxKey, tracks);
+
+      final items = <MediaItem>[];
+
+      // Group: Artists
+      if (artists.isNotEmpty) {
+        for (final a in artists) {
+          items.add(MediaItem(
+            id: 'artist|${a.name}',
+            title: a.name,
+            artUri: _autoArtUri(provider, a),
+            playable: false,
+            extras: const {
+              'android.media.browse.CONTENT_STYLE_GROUP_TITLE_HINT': 'Artists',
+            },
+          ));
+        }
+      }
+
+      // Group: Albums
+      if (albums.isNotEmpty) {
+        for (final a in albums) {
+          items.add(MediaItem(
+            id: 'album|${a.provider}|${a.itemId}',
+            title: a.name,
+            artist: a.artistsString,
+            artUri: _autoArtUri(provider, a),
+            playable: false,
+            extras: const {
+              'android.media.browse.CONTENT_STYLE_GROUP_TITLE_HINT': 'Albums',
+            },
+          ));
+        }
+      }
+
+      // Group: Tracks
+      for (final t in tracks) {
+        final item = _autoTrackItem(provider, t, ctxKey);
+        items.add(MediaItem(
+          id: item.id,
+          title: item.title,
+          artist: item.artist,
+          album: item.album,
+          duration: item.duration,
+          artUri: item.artUri,
+          playable: true,
+          extras: const {
+            'android.media.browse.CONTENT_STYLE_GROUP_TITLE_HINT': 'Tracks',
+          },
+        ));
+      }
+
+      return items;
     } catch (e) {
       _logger.log('AndroidAuto: search error: $e');
       return [];
+    }
+  }
+
+  @override
+  Future<void> playFromSearch(String query,
+      [Map<String, dynamic>? extras]) async {
+    final provider = _autoProvider;
+    if (provider == null || query.trim().isEmpty) return;
+
+    final playerId = await SettingsService.getBuiltinPlayerId();
+    if (playerId == null) {
+      _logger.log('AndroidAuto: playFromSearch: no builtin player');
+      return;
+    }
+
+    _logger.log('AndroidAuto: playFromSearch "$query"');
+    _clearErrorState();
+
+    try {
+      final results = await provider.searchWithCache(query);
+      final tracks = (results['tracks'] ?? []).whereType<ma.Track>().toList();
+      if (tracks.isEmpty) {
+        _logger.log('AndroidAuto: playFromSearch: no tracks found');
+        return;
+      }
+
+      await provider.playTracks(playerId, tracks, startIndex: 0);
+      _populateQueue(provider, tracks, 0);
+    } catch (e) {
+      _logger.log('AndroidAuto: playFromSearch error: $e');
+      _setErrorState('Search playback failed');
+    }
+  }
+
+  // --- Queue & error state helpers ---
+
+  void _populateQueue(MusicAssistantProvider provider, List<ma.Track> tracks, int currentIndex) {
+    final items = tracks.map((t) => MediaItem(
+      id: 'q|${t.provider}|${t.itemId}',
+      title: t.name,
+      artist: t.artistsString,
+      album: t.album?.name,
+      duration: t.duration,
+      artUri: _autoArtUri(provider, t),
+    )).toList();
+    queue.add(items);
+    playbackState.add(playbackState.value.copyWith(queueIndex: currentIndex));
+  }
+
+  void updateQueueIndex(int index) {
+    playbackState.add(playbackState.value.copyWith(queueIndex: index));
+  }
+
+  void _setErrorState(String message) {
+    playbackState.add(playbackState.value.copyWith(
+      processingState: AudioProcessingState.error,
+      errorMessage: message,
+    ));
+  }
+
+  void _clearErrorState() {
+    if (playbackState.value.processingState == AudioProcessingState.error) {
+      playbackState.add(playbackState.value.copyWith(
+        processingState: AudioProcessingState.ready,
+      ));
     }
   }
 
@@ -757,6 +1103,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
           id: 'audiobook|${b.provider}|${b.itemId}',
           title: b.name, artist: b.authorsString,
           artUri: _autoArtUri(provider, b), playable: true,
+          extras: _audiobookExtras(b),
         )).toList();
 
       case 'discover-audiobooks':
@@ -765,6 +1112,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
           id: 'audiobook|${b.provider}|${b.itemId}',
           title: b.name, artist: b.authorsString,
           artUri: _autoArtUri(provider, b), playable: true,
+          extras: _audiobookExtras(b),
         )).toList();
 
       case 'discover-series':
@@ -789,7 +1137,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       case 'favorite-tracks':
         final tracks = await provider.getFavoriteTracks();
         const ctxKey = 'favs||';
-        _autoTrackCache[ctxKey] = tracks;
+        _cacheTrackList(ctxKey, tracks);
         return tracks.map((t) => _autoTrackItem(provider, t, ctxKey)).toList();
 
       case 'favorite-playlists':
@@ -849,12 +1197,41 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
 
   // --- Music builders ---
 
-  Future<List<MediaItem>> _autoBuildFavorites(
+  List<MediaItem> _autoBuildFavoriteCategories() {
+    return [
+      MediaItem(id: _autoIdFavArtists, title: 'Favourite Artists',
+          playable: false, artUri: _iconArtist),
+      MediaItem(id: _autoIdFavAlbums, title: 'Favourite Albums',
+          playable: false, artUri: _iconAlbum, extras: _gridHints),
+      MediaItem(id: _autoIdFavTracks, title: 'Favourite Tracks',
+          playable: false, artUri: _iconFavorite),
+    ];
+  }
+
+  Future<List<MediaItem>> _autoBuildFavArtists(
+      MusicAssistantProvider provider) async {
+    final artists = await provider.getFavoriteArtists();
+    return artists.map((a) => MediaItem(
+      id: 'artist|${a.name}', title: a.name,
+      artUri: _autoArtUri(provider, a), playable: false,
+    )).toList();
+  }
+
+  Future<List<MediaItem>> _autoBuildFavAlbums(
+      MusicAssistantProvider provider) async {
+    final albums = await provider.getFavoriteAlbums();
+    return albums.map((a) => MediaItem(
+      id: 'album|${a.provider}|${a.itemId}', title: a.name, artist: a.artistsString,
+      artUri: _autoArtUri(provider, a), playable: false,
+    )).toList();
+  }
+
+  Future<List<MediaItem>> _autoBuildFavTracks(
       MusicAssistantProvider provider) async {
     final tracks = await provider.getFavoriteTracks();
-    _logger.log('AndroidAuto: Favorites returned ${tracks.length} tracks');
+    _logger.log('AndroidAuto: Fav tracks returned ${tracks.length} tracks');
     const ctxKey = 'favs||';
-    _autoTrackCache[ctxKey] = tracks;
+    _cacheTrackList(ctxKey, tracks);
     return tracks.map((t) => _autoTrackItem(provider, t, ctxKey)).toList();
   }
 
@@ -875,7 +1252,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     final tracks =
         await provider.getPlaylistTracksWithCache(plProvider, plItemId);
     final ctxKey = 'plist|$plProvider|$plItemId';
-    _autoTrackCache[ctxKey] = tracks;
+    _cacheTrackList(ctxKey, tracks);
     return tracks.map((t) => _autoTrackItem(provider, t, ctxKey)).toList();
   }
 
@@ -925,7 +1302,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
         await provider.getAlbumTracksWithCache(alProvider, alItemId);
     _logger.log('AndroidAuto: Album $alProvider/$alItemId tracks: ${tracks.length}');
     final ctxKey = 'album|$alProvider|$alItemId';
-    _autoTrackCache[ctxKey] = tracks;
+    _cacheTrackList(ctxKey, tracks);
     return tracks.map((t) => _autoTrackItem(provider, t, ctxKey)).toList();
   }
 
@@ -962,6 +1339,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       artist: b.authorsString,
       artUri: _autoArtUri(provider, b),
       playable: true,
+      extras: _audiobookExtras(b),
     )).toList();
   }
 
@@ -982,6 +1360,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       artist: b.authorsString,
       artUri: _autoArtUri(provider, b),
       playable: true,
+      extras: _audiobookExtras(b),
     )).toList();
   }
 
@@ -1022,6 +1401,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       artist: b.authorsString,
       artUri: _autoArtUri(provider, b),
       playable: true,
+      extras: _audiobookExtras(b),
     )).toList();
   }
 
@@ -1073,8 +1453,17 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
 
   // --- Helpers ---
 
+  Map<String, dynamic>? _audiobookExtras(ma.Audiobook book) {
+    if (book.progress <= 0 && book.fullyPlayed != true) return null;
+    return {
+      'android.media.extra.PLAYBACK_STATUS': book.fullyPlayed == true ? 2 : 1,
+      'android.media.extra.PLAYBACK_STATUS_COMPLETION_PERCENTAGE': book.progress,
+    };
+  }
+
   MediaItem _autoTrackItem(
       MusicAssistantProvider provider, ma.Track t, String ctxKey) {
+    final firstArtist = t.artists?.isNotEmpty == true ? t.artists!.first.name : null;
     return MediaItem(
       id: 'track|${t.provider}|${t.itemId}|$ctxKey',
       title: t.name,
@@ -1083,12 +1472,23 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       duration: t.duration,
       artUri: _autoArtUri(provider, t),
       playable: true,
+      extras: firstArtist != null ? {
+        'android.media.metadata.SUBTITLE_LINK_MEDIA_ID': 'artist|$firstArtist',
+      } : null,
     );
   }
 
+  static const _artworkAuthority = 'com.collotsspot.ensemble.artwork';
+
   Uri? _autoArtUri(MusicAssistantProvider provider, ma.MediaItem item) {
     final url = provider.getImageUrl(item, size: 256);
-    return url != null ? Uri.tryParse(url) : null;
+    if (url == null) return null;
+    return _contentUriForArtwork(url);
+  }
+
+  static Uri? _contentUriForArtwork(String httpUrl) {
+    final encoded = base64Url.encode(utf8.encode(httpUrl));
+    return Uri.parse('content://$_artworkAuthority/$encoded');
   }
 
   // ---------------------------------------------------------------------------
@@ -1099,6 +1499,11 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     await _becomingNoisySubscription?.cancel();
     await _playbackEventSubscription?.cancel();
     await _currentIndexSubscription?.cancel();
+    _autoTrackCache.clear();
+    for (final s in _autoChildrenSubjects.values) {
+      await s.close();
+    }
+    _autoChildrenSubjects.clear();
     await _player.dispose();
   }
 }

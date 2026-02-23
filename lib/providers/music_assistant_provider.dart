@@ -99,6 +99,14 @@ class MusicAssistantProvider with ChangeNotifier {
   Timer? _idleServiceTimer;
   static const _idleServiceTimeout = Duration(minutes: 30);
 
+  // Artwork content:// URI helper for Android Auto compatibility
+  static const _artworkAuthority = 'com.collotsspot.ensemble.artwork';
+  static Uri? _contentArtUri(String? httpUrl) {
+    if (httpUrl == null) return null;
+    final encoded = base64Url.encode(utf8.encode(httpUrl));
+    return Uri.parse('content://$_artworkAuthority/$encoded');
+  }
+
   // Local player state
   bool _isLocalPlayerPowered = true;
   int _localPlayerVolume = 100; // Tracked MA volume for builtin player (0-100)
@@ -2056,6 +2064,9 @@ class MusicAssistantProvider with ChangeNotifier {
       _logger.log('🎵 Notification: Switch player pressed');
       selectNextPlayer();
     };
+    audioHandler.onBrowseActivity = () {
+      _cancelIdleServiceTimer();
+    };
 
     // Player registration is now handled in _initializeAfterConnection()
     // which runs after authentication completes (when auth is required)
@@ -2532,7 +2543,7 @@ class MusicAssistantProvider with ChangeNotifier {
       title: title ?? 'Playing via Sendspin',
       artist: artist ?? 'Music Assistant',
       album: album,
-      artUri: artworkUrl != null ? Uri.parse(artworkUrl) : null,
+      artUri: _contentArtUri(artworkUrl),
       duration: durationSecs != null ? Duration(seconds: durationSecs) : null,
     );
 
@@ -2573,7 +2584,7 @@ class MusicAssistantProvider with ChangeNotifier {
       title: metadata?.title ?? 'Music Assistant',
       artist: metadata?.artist ?? 'Paused',
       album: metadata?.album,
-      artUri: metadata?.artworkUrl != null ? Uri.parse(metadata!.artworkUrl!) : null,
+      artUri: _contentArtUri(metadata?.artworkUrl),
       duration: metadata?.duration,
     );
 
@@ -2788,6 +2799,7 @@ class MusicAssistantProvider with ChangeNotifier {
       final mediaType = event['media_type'] as String?;
       _cacheService.invalidateSearchCache();
       _scheduleLibraryRefresh(mediaType ?? 'artist');
+      audioHandler.invalidateAutoChildren(const ['cat|favorites', 'cat|home', 'cat|fav_tracks', 'cat|fav_albums', 'cat|fav_artists']);
     } catch (e) {
       _logger.log('Error handling media item added event: $e');
     }
@@ -2800,6 +2812,7 @@ class MusicAssistantProvider with ChangeNotifier {
       final mediaType = event['media_type'] as String?;
       _cacheService.invalidateSearchCache();
       _scheduleLibraryRefresh(mediaType ?? 'artist');
+      audioHandler.invalidateAutoChildren(const ['cat|favorites', 'cat|home', 'cat|fav_tracks', 'cat|fav_albums', 'cat|fav_artists']);
     } catch (e) {
       _logger.log('Error handling media item deleted event: $e');
     }
@@ -4403,7 +4416,7 @@ class MusicAssistantProvider with ChangeNotifier {
           artist: artistWithPlayer,
           album: track.album?.name ?? '',
           duration: track.duration,
-          artUri: artworkUrl != null ? Uri.tryParse(artworkUrl) : null,
+          artUri: _contentArtUri(artworkUrl),
         );
         // Position comes from actual player in updateLocalModeNotification
         audioHandler.updateLocalModeNotification(
@@ -4443,7 +4456,7 @@ class MusicAssistantProvider with ChangeNotifier {
           artist: artistWithPlayer,
           album: track.album?.name ?? '',
           duration: track.duration,
-          artUri: artworkUrl != null ? Uri.tryParse(artworkUrl) : null,
+          artUri: _contentArtUri(artworkUrl),
         );
         // Use position tracker for consistent position
         final position = _positionTracker.currentPosition;
@@ -4625,7 +4638,7 @@ class MusicAssistantProvider with ChangeNotifier {
       artist: artistWithPlayer,
       album: track.album?.name ?? '',
       duration: track.duration,
-      artUri: artworkUrl != null ? Uri.tryParse(artworkUrl) : null,
+      artUri: _contentArtUri(artworkUrl),
     );
 
     _cancelIdleServiceTimer();
@@ -5049,6 +5062,11 @@ class MusicAssistantProvider with ChangeNotifier {
       }
 
       if (queue != null && queue.currentItem != null) {
+        // Update Android Auto queue index
+        if (queue.currentIndex != null) {
+          audioHandler.updateQueueIndex(queue.currentIndex!);
+        }
+
         final queueTrack = queue.currentItem!.track;
         final trackChanged = _currentTrack == null ||
             _currentTrack!.uri != queueTrack.uri ||
@@ -5153,7 +5171,7 @@ class MusicAssistantProvider with ChangeNotifier {
             artist: artistWithPlayer,
             album: track.album?.name ?? '',
             duration: track.duration,
-            artUri: artworkUrl != null ? Uri.tryParse(artworkUrl) : null,
+            artUri: _contentArtUri(artworkUrl),
           );
           // Position comes from actual player in updateLocalModeNotification
           audioHandler.updateLocalModeNotification(
@@ -5173,7 +5191,7 @@ class MusicAssistantProvider with ChangeNotifier {
             artist: artistWithPlayer,
             album: track.album?.name ?? '',
             duration: track.duration,
-            artUri: artworkUrl != null ? Uri.tryParse(artworkUrl) : null,
+            artUri: _contentArtUri(artworkUrl),
           );
           // Use position tracker for consistent position (single source of truth)
           final position = _positionTracker.currentPosition;
@@ -5241,7 +5259,7 @@ class MusicAssistantProvider with ChangeNotifier {
             title: track.name,
             artist: track.artistsString,
             album: track.album?.name,
-            artUri: _api != null ? Uri.tryParse(_api!.getImageUrl(track, size: 512) ?? '') : null,
+            artUri: _contentArtUri(_api?.getImageUrl(track, size: 512)),
             duration: track.duration,
           );
           audioHandler.updateLocalModeNotification(
@@ -5276,15 +5294,10 @@ class MusicAssistantProvider with ChangeNotifier {
       // For pause: Don't refresh - we already did optimistic UI update
       // The player_updated event from MA will handle final state sync
     } else {
-      // If player is idle with no active queue but has a last-known track, re-queue it
-      final isIdle = _selectedPlayer!.state == 'idle';
-      final lastKnown = _cacheService.getLastKnownTrack(_selectedPlayer!.playerId);
-      if (isIdle && lastKnown != null) {
-        _logger.log('🔄 Player idle with last-known track - re-queuing "${lastKnown.name}"');
-        await playTrack(_selectedPlayer!.playerId, lastKnown);
-      } else {
-        await resumePlayer(_selectedPlayer!.playerId);
-      }
+      // Always try resume first — even if player reports "idle", the server
+      // queue may still be intact (e.g., Sendspin sends "stopped" on pause).
+      // Only fall back to re-queuing if resume fails.
+      await resumePlayer(_selectedPlayer!.playerId);
       // For resume: Refresh in background to get updated track info
       unawaited(refreshPlayers());
     }
