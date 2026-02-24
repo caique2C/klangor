@@ -690,6 +690,40 @@ class MusicAssistantProvider with ChangeNotifier {
     }
   }
 
+  /// Get the display artist string for a track, using podcast/radio/audiobook context when applicable
+  String _trackDisplayArtist(Track track) {
+    if (isPlayingAudiobook) {
+      return _currentAudiobook!.authorsString;
+    }
+    if (isPlayingPodcast) {
+      return currentPodcastName ?? 'Podcasts';
+    }
+    if (isPlayingRadio) {
+      return currentRadioStationName ?? track.artistsString;
+    }
+    // Fallback: check if track URI looks like an audiobook chapter
+    final uri = track.uri ?? '';
+    if (uri.contains('audiobook') || uri.contains('/chapter/')) {
+      // Try to find audiobook from cached data
+      final book = _findAudiobookForTrack(track);
+      if (book != null) {
+        _currentAudiobook = book;
+        _logger.log('📚 Auto-restored audiobook context: ${book.name}');
+        return book.authorsString;
+      }
+    }
+    return track.artistsString;
+  }
+
+  /// Try to find the audiobook that owns this track/chapter from cached data
+  Audiobook? _findAudiobookForTrack(Track track) {
+    final uri = track.uri ?? '';
+    for (final book in SyncService.instance.cachedAudiobooks) {
+      if (uri.contains(book.itemId)) return book;
+    }
+    return null;
+  }
+
   String get lastSearchQuery => _lastSearchQuery;
   Map<String, List<MediaItem>> get lastSearchResults => _lastSearchResults;
 
@@ -2566,9 +2600,8 @@ class MusicAssistantProvider with ChangeNotifier {
     if (_currentTrack != null) {
       final track = _currentTrack!;
       final trackArtworkUrl = _api?.getImageUrl(track, size: 512);
-      final artistWithPlayer = track.artistsString.isNotEmpty
-          ? '${track.artistsString} • ${_selectedPlayer?.name ?? ''}'
-          : _selectedPlayer?.name ?? '';
+      final displayArtist = _trackDisplayArtist(track);
+      final artistWithPlayer = '${displayArtist} • ${_selectedPlayer?.name ?? ''}';
       final mediaItem = audio_service.MediaItem(
         id: track.uri ?? track.itemId,
         title: track.name,
@@ -2581,7 +2614,7 @@ class MusicAssistantProvider with ChangeNotifier {
         item: mediaItem,
         playing: true,
         duration: track.duration,
-        position: Duration.zero,
+        position: _positionTracker.currentPosition,
       );
     } else {
       // No track data yet — use stream metadata as fallback
@@ -2597,7 +2630,7 @@ class MusicAssistantProvider with ChangeNotifier {
         item: mediaItem,
         playing: true,
         duration: mediaItem.duration,
-        position: Duration.zero,
+        position: _positionTracker.currentPosition,
       );
     }
 
@@ -2610,8 +2643,8 @@ class MusicAssistantProvider with ChangeNotifier {
   /// Handle Sendspin stream end - server stopped sending PCM audio data
   /// This is called when audio streaming ends (pause, stop, track end, etc.)
   void _handleSendspinStreamEnd() async {
-    // Capture current position before stopping
-    final lastPosition = _pcmAudioPlayer?.elapsedTime ?? Duration.zero;
+    // Use position tracker (server-synced) instead of PCM elapsed time which resets to 0 each stream
+    final lastPosition = _positionTracker.currentPosition;
     _logger.log('🎵 Sendspin: Stream ended at position ${lastPosition.inSeconds}s');
 
     // Stop notification position timer
@@ -2627,9 +2660,8 @@ class MusicAssistantProvider with ChangeNotifier {
     if (_currentTrack != null) {
       final track = _currentTrack!;
       final artworkUrl = _api?.getImageUrl(track, size: 512);
-      final artistWithPlayer = track.artistsString.isNotEmpty
-          ? '${track.artistsString} • ${_selectedPlayer?.name ?? ''}'
-          : _selectedPlayer?.name ?? '';
+      final displayArtist = _trackDisplayArtist(track);
+      final artistWithPlayer = '${displayArtist} • ${_selectedPlayer?.name ?? ''}';
       final mediaItem = audio_service.MediaItem(
         id: track.uri ?? track.itemId,
         title: track.name,
@@ -4394,18 +4426,29 @@ class MusicAssistantProvider with ChangeNotifier {
         }
 
         // Priority 2: Local player (default fallback)
+        // Try available first, then accept unavailable (Sendspin may still be registering)
         if (playerToSelect == null && builtinPlayerId != null) {
-          try {
-            playerToSelect = _availablePlayers.firstWhere(
-              (p) => p.playerId == builtinPlayerId && p.available,
-            );
+          playerToSelect = _availablePlayers.cast<Player?>().firstWhere(
+            (p) => p!.playerId == builtinPlayerId && p.available,
+            orElse: () => null,
+          );
+          if (playerToSelect != null) {
             _logger.log('📱 Selected local player: ${playerToSelect.name}');
-          } catch (e) {
-            _logger.log('⚠️ Local player not available');
+          } else {
+            // Player exists but not yet available (Sendspin registration in progress)
+            playerToSelect = _availablePlayers.cast<Player?>().firstWhere(
+              (p) => p!.playerId == builtinPlayerId,
+              orElse: () => null,
+            );
+            if (playerToSelect != null) {
+              _logger.log('📱 Selected local player (pending availability): ${playerToSelect.name}');
+            } else {
+              _logger.log('⚠️ Local player not in player list');
+            }
           }
         }
 
-        // Priority 3: First available player
+        // Priority 3: First available player (only if no local player configured)
         if (playerToSelect == null) {
           playerToSelect = _availablePlayers.firstWhere(
             (p) => p.available,
@@ -4472,9 +4515,8 @@ class MusicAssistantProvider with ChangeNotifier {
       if (_currentTrack != null && (player.state == 'playing' || player.state == 'paused')) {
         final track = _currentTrack!;
         final artworkUrl = _api?.getImageUrl(track, size: 512);
-        final artistWithPlayer = track.artistsString.isNotEmpty
-            ? '${track.artistsString} • ${player.name}'
-            : player.name;
+        final displayArtist = _trackDisplayArtist(track);
+        final artistWithPlayer = '${displayArtist} • ${player.name}';
         final mediaItem = audio_service.MediaItem(
           id: track.uri ?? track.itemId,
           title: track.name,
@@ -4505,9 +4547,8 @@ class MusicAssistantProvider with ChangeNotifier {
         // instead of clearing, to avoid artwork flash when AA toggles play/pause
         final track = _currentTrack!;
         final artworkUrl = _api?.getImageUrl(track, size: 512);
-        final artistWithPlayer = track.artistsString.isNotEmpty
-            ? '${track.artistsString} • ${player.name}'
-            : player.name;
+        final displayArtist = _trackDisplayArtist(track);
+        final artistWithPlayer = '${displayArtist} • ${player.name}';
         final mediaItem = audio_service.MediaItem(
           id: track.uri ?? track.itemId,
           title: track.name,
@@ -4534,9 +4575,8 @@ class MusicAssistantProvider with ChangeNotifier {
         final track = _currentTrack!;
         final artworkUrl = _api?.getImageUrl(track, size: 512);
         // Include player name in artist line: "Artist • Player Name"
-        final artistWithPlayer = track.artistsString.isNotEmpty
-            ? '${track.artistsString} • ${player.name}'
-            : player.name;
+        final displayArtist = _trackDisplayArtist(track);
+        final artistWithPlayer = '${displayArtist} • ${player.name}';
         final mediaItem = audio_service.MediaItem(
           id: track.uri ?? track.itemId,
           title: track.name,
@@ -4716,9 +4756,8 @@ class MusicAssistantProvider with ChangeNotifier {
     }
 
     final artworkUrl = _api?.getImageUrl(track, size: 512);
-    final artistWithPlayer = track.artistsString.isNotEmpty
-        ? '${track.artistsString} • ${_selectedPlayer!.name}'
-        : _selectedPlayer!.name;
+    final displayArtist = _trackDisplayArtist(track);
+    final artistWithPlayer = '${displayArtist} • ${_selectedPlayer!.name}';
     final mediaItem = audio_service.MediaItem(
       id: track.uri ?? track.itemId,
       title: track.name,
@@ -5261,9 +5300,8 @@ class MusicAssistantProvider with ChangeNotifier {
 
         if (isBuiltinPlayer) {
           // Local playback - use local mode notification (keeps pause working)
-          final artistWithPlayer = track.artistsString.isNotEmpty
-              ? '${track.artistsString} • ${_selectedPlayer!.name}'
-              : _selectedPlayer!.name;
+          final displayArtist = _trackDisplayArtist(track);
+          final artistWithPlayer = '$displayArtist • ${_selectedPlayer!.name}';
           final mediaItem = audio_service.MediaItem(
             id: track.uri ?? track.itemId,
             title: track.name,
@@ -5281,9 +5319,8 @@ class MusicAssistantProvider with ChangeNotifier {
         } else {
           // Remote MA player - show notification via remote mode
           // Include player name in artist line: "Artist • Player Name"
-          final artistWithPlayer = track.artistsString.isNotEmpty
-              ? '${track.artistsString} • ${_selectedPlayer!.name}'
-              : _selectedPlayer!.name;
+          final displayArtist = _trackDisplayArtist(track);
+          final artistWithPlayer = '$displayArtist • ${_selectedPlayer!.name}';
           final mediaItem = audio_service.MediaItem(
             id: track.uri ?? track.itemId,
             title: track.name,
@@ -5356,7 +5393,7 @@ class MusicAssistantProvider with ChangeNotifier {
           final mediaItem = audio_service.MediaItem(
             id: track.uri ?? track.itemId,
             title: track.name,
-            artist: track.artistsString,
+            artist: _trackDisplayArtist(track),
             album: track.album?.name,
             artUri: _contentArtUri(_api?.getImageUrl(track, size: 512)),
             duration: track.duration,
@@ -5396,7 +5433,20 @@ class MusicAssistantProvider with ChangeNotifier {
       // Always try resume first — even if player reports "idle", the server
       // queue may still be intact (e.g., Sendspin sends "stopped" on pause).
       // Only fall back to re-queuing if resume fails.
-      await resumePlayer(_selectedPlayer!.playerId);
+      final playerId = _selectedPlayer!.playerId;
+      await resumePlayer(playerId);
+
+      // Sendspin PCM streaming has ~5s buffering delay on resume.
+      // For audiobooks, seek back to compensate so the user doesn't miss narration.
+      final builtinPlayerId = await SettingsService.getBuiltinPlayerId();
+      if (builtinPlayerId != null && playerId == builtinPlayerId && _sendspinConnected && isPlayingAudiobook) {
+        final pos = _positionTracker.currentPosition.inSeconds;
+        if (pos > 10) {
+          _logger.log('📚 Seeking back 10s to compensate for Sendspin buffering');
+          unawaited(seek(playerId, pos - 10));
+        }
+      }
+
       // For resume: Refresh in background to get updated track info
       unawaited(refreshPlayers());
     }

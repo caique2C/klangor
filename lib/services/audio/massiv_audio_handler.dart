@@ -287,6 +287,8 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
           _logger.log('AndroidAuto: startRadio: track=${track.name}, playerId=${player.playerId}');
           await provider.playRadio(player.playerId, track);
           _logger.log('AndroidAuto: startRadio: done');
+          // Fetch updated queue after radio starts and populate AA queue
+          _refreshQueueAfterDelay(provider, player.playerId);
         case 'cycleRepeat':
           final queue = await provider.getQueue(player.playerId);
           final currentMode = queue?.repeatMode ?? 'off';
@@ -865,7 +867,8 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       }
 
       if (mediaId.startsWith('podcast_ep|')) {
-        // Format: podcast_ep|{provider}|{itemId}
+        // Format: podcast_ep|{epProvider}|{epId}|{podProvider}|{podId}
+        // Legacy: podcast_ep|{provider}|{itemId}
         final parts = mediaId.split('|');
         if (parts.length < 3) return;
         if (provider.api == null) await provider.checkAndReconnect();
@@ -873,6 +876,17 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
           _logger.log('AndroidAuto: no API, cannot play podcast');
           return;
         }
+
+        // Set podcast name context so notification/AA shows it as artist
+        if (parts.length >= 5) {
+          final podcast = SyncService.instance.cachedPodcasts
+              .where((p) => p.provider == parts[3] && p.itemId == parts[4])
+              .firstOrNull;
+          if (podcast != null) {
+            provider.setCurrentPodcastName(podcast.name);
+          }
+        }
+
         // Use provider-specific URI (e.g. spotify--xxx://podcast_episode/id)
         // instead of library:// which fails for non-library items
         final uri = '${parts[1]}://podcast_episode/${parts[2]}';
@@ -885,6 +899,9 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
         );
         _logger.log('AndroidAuto: playing podcast episode URI: $uri');
         await provider.api!.playPodcastEpisode(playerId, episode);
+
+        // Refresh queue after a delay (server needs time to build queue)
+        _refreshQueueAfterDelay(provider, playerId);
         return;
       }
     } catch (e) {
@@ -1010,14 +1027,21 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   // --- Queue & error state helpers ---
 
   void _populateQueue(MusicAssistantProvider provider, List<ma.Track> tracks, int currentIndex) {
-    final items = tracks.map((t) => MediaItem(
-      id: t.uri ?? t.itemId,
-      title: t.name,
-      artist: t.artistsString,
-      album: t.album?.name,
-      duration: t.duration,
-      artUri: _autoArtUri(provider, t),
-    )).toList();
+    final contextArtist = provider.currentPodcastName
+        ?? provider.currentAudiobook?.authorsString;
+    final items = tracks.map((t) {
+      final artist = (t.artists == null || t.artists!.isEmpty)
+          ? contextArtist
+          : t.artistsString;
+      return MediaItem(
+        id: t.uri ?? t.itemId,
+        title: t.name,
+        artist: artist,
+        album: t.album?.name,
+        duration: t.duration,
+        artUri: _autoArtUri(provider, t),
+      );
+    }).toList();
     queue.add(items);
     playbackState.add(playbackState.value.copyWith(queueIndex: currentIndex));
   }
@@ -1025,6 +1049,22 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   void updateQueueIndex(int index) {
     if (playbackState.value.queueIndex == index) return;
     playbackState.add(playbackState.value.copyWith(queueIndex: index));
+  }
+
+  /// Fetch the server queue after a delay (e.g. after starting radio/podcast) and update AA queue.
+  void _refreshQueueAfterDelay(MusicAssistantProvider provider, String playerId) {
+    Future.delayed(const Duration(seconds: 2), () async {
+      try {
+        final q = await provider.getQueue(playerId);
+        if (q?.items == null || q!.items.isEmpty) return;
+        final tracks = q.items.map((qi) => qi.track).toList();
+        final currentIndex = q.currentIndex ?? 0;
+        _logger.log('AndroidAuto: refreshed queue: ${tracks.length} tracks');
+        _populateQueue(provider, tracks, currentIndex);
+      } catch (e) {
+        _logger.log('AndroidAuto: failed to refresh queue: $e');
+      }
+    });
   }
 
   void _setErrorState(String message) {
@@ -1471,9 +1511,15 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       podItemId,
       provider: podProvider,
     );
+    // Look up podcast name to show as artist for each episode
+    final podcast = SyncService.instance.cachedPodcasts
+        .where((p) => p.itemId == podItemId && p.provider == podProvider)
+        .firstOrNull;
+    // Encode podcast context in episode ID: podcast_ep|epProvider|epId|podProvider|podId
     return episodes.map((e) => MediaItem(
-      id: 'podcast_ep|${e.provider}|${e.itemId}',
+      id: 'podcast_ep|${e.provider}|${e.itemId}|$podProvider|$podItemId',
       title: e.name,
+      artist: podcast?.name,
       duration: e.duration,
       artUri: _autoArtUri(provider, e),
       playable: true,
