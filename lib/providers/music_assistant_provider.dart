@@ -894,13 +894,29 @@ class MusicAssistantProvider with ChangeNotifier {
         // Restore selected player from settings
         final lastSelectedPlayerId = await SettingsService.getLastSelectedPlayerId();
         if (lastSelectedPlayerId != null) {
-          try {
-            _selectedPlayer = players.firstWhere((p) => p.playerId == lastSelectedPlayerId);
-            _cacheService.setCachedSelectedPlayer(_selectedPlayer);
+          _selectedPlayer = players.cast<Player?>().firstWhere(
+            (p) => p!.playerId == lastSelectedPlayerId,
+            orElse: () => null,
+          );
+          if (_selectedPlayer != null) {
             _logger.log('📦 Restored selected player from database: ${_selectedPlayer?.name}');
-          } catch (_) {
-            // Player not in cached list
           }
+        }
+        // Fallback to local/builtin player
+        if (_selectedPlayer == null) {
+          final builtinId = await SettingsService.getBuiltinPlayerId();
+          if (builtinId != null) {
+            _selectedPlayer = players.cast<Player?>().firstWhere(
+              (p) => p!.playerId == builtinId,
+              orElse: () => null,
+            );
+            if (_selectedPlayer != null) {
+              _logger.log('📦 Defaulted to local player: ${_selectedPlayer?.name}');
+            }
+          }
+        }
+        if (_selectedPlayer != null) {
+          _cacheService.setCachedSelectedPlayer(_selectedPlayer);
         }
 
         _logger.log('📦 Loaded ${players.length} players from database (instant)');
@@ -1986,16 +2002,23 @@ class MusicAssistantProvider with ChangeNotifier {
         if (_selectedPlayer == null && _availablePlayers.isNotEmpty) {
           final lastSelectedPlayerId = await SettingsService.getLastSelectedPlayerId();
           if (lastSelectedPlayerId != null) {
-            try {
-              _selectedPlayer = _availablePlayers.firstWhere(
-                (p) => p.playerId == lastSelectedPlayerId,
-              );
-            } catch (e) {
-              _selectedPlayer = _availablePlayers.first;
-            }
-          } else {
-            _selectedPlayer = _availablePlayers.first;
+            _selectedPlayer = _availablePlayers.cast<Player?>().firstWhere(
+              (p) => p!.playerId == lastSelectedPlayerId,
+              orElse: () => null,
+            );
           }
+          // Fallback to local/builtin player
+          if (_selectedPlayer == null) {
+            final builtinId = await SettingsService.getBuiltinPlayerId();
+            if (builtinId != null) {
+              _selectedPlayer = _availablePlayers.cast<Player?>().firstWhere(
+                (p) => p!.playerId == builtinId,
+                orElse: () => null,
+              );
+            }
+          }
+          // Last resort: first available
+          _selectedPlayer ??= _availablePlayers.first;
         }
         _logger.log('⚡ Loaded ${_availablePlayers.length} cached players instantly (sorted)');
         notifyListeners(); // Update UI immediately with cached data
@@ -2536,25 +2559,47 @@ class MusicAssistantProvider with ChangeNotifier {
 
     // Keep the foreground service active to prevent Android from throttling
     // the PCM audio playback when the app goes to background.
-    // We use setRemotePlaybackState to maintain the notification without
-    // actually playing audio through just_audio.
-    final mediaItem = audio_service.MediaItem(
-      id: 'sendspin_pcm_stream',
-      title: title ?? 'Playing via Sendspin',
-      artist: artist ?? 'Music Assistant',
-      album: album,
-      artUri: _contentArtUri(artworkUrl),
-      duration: durationSecs != null ? Duration(seconds: durationSecs) : null,
-    );
-
-    // Initialize notification with position 0
+    // Use updateLocalModeNotification (NOT setRemotePlaybackState) to avoid
+    // conflicting mediaItem.add() calls — _updatePlayerState() also calls
+    // updateLocalModeNotification with the real track data.
     _cancelIdleServiceTimer();
-    audioHandler.setRemotePlaybackState(
-      item: mediaItem,
-      playing: true,
-      position: Duration.zero,
-      duration: mediaItem.duration,
-    );
+    if (_currentTrack != null) {
+      final track = _currentTrack!;
+      final trackArtworkUrl = _api?.getImageUrl(track, size: 512);
+      final artistWithPlayer = track.artistsString.isNotEmpty
+          ? '${track.artistsString} • ${_selectedPlayer?.name ?? ''}'
+          : _selectedPlayer?.name ?? '';
+      final mediaItem = audio_service.MediaItem(
+        id: track.uri ?? track.itemId,
+        title: track.name,
+        artist: artistWithPlayer,
+        album: track.album?.name ?? '',
+        duration: track.duration,
+        artUri: _contentArtUri(trackArtworkUrl),
+      );
+      audioHandler.updateLocalModeNotification(
+        item: mediaItem,
+        playing: true,
+        duration: track.duration,
+        position: Duration.zero,
+      );
+    } else {
+      // No track data yet — use stream metadata as fallback
+      final mediaItem = audio_service.MediaItem(
+        id: 'sendspin_pcm_stream',
+        title: title ?? 'Playing via Sendspin',
+        artist: artist ?? 'Music Assistant',
+        album: album,
+        artUri: _contentArtUri(artworkUrl),
+        duration: durationSecs != null ? Duration(seconds: durationSecs) : null,
+      );
+      audioHandler.updateLocalModeNotification(
+        item: mediaItem,
+        playing: true,
+        duration: mediaItem.duration,
+        position: Duration.zero,
+      );
+    }
 
     // Start notification position timer for Sendspin PCM
     _manageNotificationPositionTimer();
@@ -2575,27 +2620,47 @@ class MusicAssistantProvider with ChangeNotifier {
     // Pause PCM playback (preserves position) instead of stop (resets position)
     await _pcmAudioPlayer?.pause();
 
-    // Update foreground service to show paused/stopped state with last position
-    // Don't completely clear it - keep showing the notification
-    // in case user wants to resume
-    final metadata = _currentNotificationMetadata;
-    final mediaItem = audio_service.MediaItem(
-      id: 'sendspin_pcm_stream',
-      title: metadata?.title ?? 'Music Assistant',
-      artist: metadata?.artist ?? 'Paused',
-      album: metadata?.album,
-      artUri: _contentArtUri(metadata?.artworkUrl),
-      duration: metadata?.duration,
-    );
-
-    // Show paused state with preserved position
+    // Update foreground service to show paused state with last position.
+    // Use updateLocalModeNotification (NOT setRemotePlaybackState) to avoid
+    // conflicting mediaItem.add() calls with _updatePlayerState().
     _cancelIdleServiceTimer();
-    audioHandler.setRemotePlaybackState(
-      item: mediaItem,
-      playing: false,
-      position: lastPosition,
-      duration: mediaItem.duration,
-    );
+    if (_currentTrack != null) {
+      final track = _currentTrack!;
+      final artworkUrl = _api?.getImageUrl(track, size: 512);
+      final artistWithPlayer = track.artistsString.isNotEmpty
+          ? '${track.artistsString} • ${_selectedPlayer?.name ?? ''}'
+          : _selectedPlayer?.name ?? '';
+      final mediaItem = audio_service.MediaItem(
+        id: track.uri ?? track.itemId,
+        title: track.name,
+        artist: artistWithPlayer,
+        album: track.album?.name ?? '',
+        duration: track.duration,
+        artUri: _contentArtUri(artworkUrl),
+      );
+      audioHandler.updateLocalModeNotification(
+        item: mediaItem,
+        playing: false,
+        duration: track.duration,
+        position: lastPosition,
+      );
+    } else {
+      final metadata = _currentNotificationMetadata;
+      final mediaItem = audio_service.MediaItem(
+        id: 'sendspin_pcm_stream',
+        title: metadata?.title ?? 'Music Assistant',
+        artist: metadata?.artist ?? 'Paused',
+        album: metadata?.album,
+        artUri: _contentArtUri(metadata?.artworkUrl),
+        duration: metadata?.duration,
+      );
+      audioHandler.updateLocalModeNotification(
+        item: mediaItem,
+        playing: false,
+        duration: mediaItem.duration,
+        position: lastPosition,
+      );
+    }
   }
 
   void _startReportingLocalPlayerState() {
@@ -4435,8 +4500,30 @@ class MusicAssistantProvider with ChangeNotifier {
           item: mediaItem,
           playing: player.state == 'playing',
         );
+      } else if (_currentTrack != null) {
+        // Builtin player is idle but we have track data — show paused notification
+        // instead of clearing, to avoid artwork flash when AA toggles play/pause
+        final track = _currentTrack!;
+        final artworkUrl = _api?.getImageUrl(track, size: 512);
+        final artistWithPlayer = track.artistsString.isNotEmpty
+            ? '${track.artistsString} • ${player.name}'
+            : player.name;
+        final mediaItem = audio_service.MediaItem(
+          id: track.uri ?? track.itemId,
+          title: track.name,
+          artist: artistWithPlayer,
+          album: track.album?.name ?? '',
+          duration: track.duration,
+          artUri: _contentArtUri(artworkUrl),
+        );
+        audioHandler.updateLocalModeNotification(
+          item: mediaItem,
+          playing: false,
+          duration: track.duration,
+        );
+        _startIdleServiceTimer();
       } else {
-        // Builtin player is idle - clear notification (fixes issue #42)
+        // Builtin player is idle with no track - clear notification
         audioHandler.clearRemotePlaybackState();
         _startIdleServiceTimer();
       }
@@ -4642,12 +4729,25 @@ class MusicAssistantProvider with ChangeNotifier {
     );
 
     _cancelIdleServiceTimer();
-    audioHandler.setRemotePlaybackState(
-      item: mediaItem,
-      playing: isPlaying,
-      position: position,
-      duration: track.duration,
-    );
+
+    // Use updateLocalModeNotification for builtin players to avoid
+    // conflicting mediaItem.add() calls with _updatePlayerState()
+    final isBuiltinPlayer = _sendspinConnected && _pcmAudioPlayer != null;
+    if (isBuiltinPlayer) {
+      audioHandler.updateLocalModeNotification(
+        item: mediaItem,
+        playing: isPlaying,
+        duration: track.duration,
+        position: position,
+      );
+    } else {
+      audioHandler.setRemotePlaybackState(
+        item: mediaItem,
+        playing: isPlaying,
+        position: position,
+        duration: track.duration,
+      );
+    }
   }
 
   Future<void> _preloadAdjacentPlayers({bool preloadAll = false}) async {
@@ -5062,7 +5162,6 @@ class MusicAssistantProvider with ChangeNotifier {
       }
 
       if (queue != null && queue.currentItem != null) {
-        // Update Android Auto queue index
         if (queue.currentIndex != null) {
           audioHandler.updateQueueIndex(queue.currentIndex!);
         }

@@ -57,11 +57,11 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   // Android Auto: subjects for subscribeToChildren
   final Map<String, BehaviorSubject<Map<String, dynamic>>> _autoChildrenSubjects = {};
 
-  // Custom control for switching players (uses stop action with custom icon)
-  static const _switchPlayerControl = MediaControl(
+  // Custom control for switching players
+  static final _switchPlayerControl = MediaControl.custom(
     androidIcon: 'drawable/ic_switch_player',
     label: 'Switch Player',
-    action: MediaAction.stop,
+    name: 'switchPlayer',
   );
 
   MassivAudioHandler({required this.authManager}) {
@@ -113,9 +113,11 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     // Broadcast playback state changes
     _playbackEventSubscription = _player.playbackEventStream.listen(_broadcastState);
 
-    // Broadcast current media item changes
+    // Broadcast current media item changes (only for local just_audio playback)
     _currentIndexSubscription = _player.currentIndexStream.listen((_) {
+      if (_isRemoteMode) return; // Don't resend metadata in remote/Sendspin mode
       if (_currentMediaItem != null) {
+        _logger.log('🎵 currentIndexStream: re-adding mediaItem');
         mediaItem.add(_currentMediaItem);
       }
     });
@@ -123,18 +125,21 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
 
   /// Broadcast the current playback state to the system
   void _broadcastState(PlaybackEvent event) {
+    // In remote mode, playback state is managed by setRemotePlaybackState.
+    // When _currentMediaItem is set, notification is managed by the provider
+    // via updateLocalModeNotification/setRemotePlaybackState — don't let the
+    // idle just_audio player overwrite it (it would send processingState=idle
+    // which deactivates the media session and causes artwork to flash).
+    if (_isRemoteMode || _currentMediaItem != null) return;
+
     final playing = _player.playing;
 
     playbackState.add(playbackState.value.copyWith(
-      // Configure notification action buttons
+      // Only transport controls for notification — custom actions are AA-only
       controls: [
-        _shuffleControl(),
         MediaControl.skipToPrevious,
         if (playing) MediaControl.pause else MediaControl.play,
         MediaControl.skipToNext,
-        _favoriteControl(),
-        _radioControl,
-        _repeatControl(),
       ],
       // System-level actions (for headphones, car stereos, etc.)
       systemActions: const {
@@ -143,13 +148,12 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
         MediaAction.seekBackward,
         MediaAction.play,
         MediaAction.pause,
-        MediaAction.stop,
         MediaAction.skipToNext,
         MediaAction.skipToPrevious,
       },
       // Which buttons to show in compact notification (max 3)
-      // Show: prev (1), play/pause (2), next (3)
-      androidCompactActionIndices: const [1, 2, 3],
+      // Show: prev (0), play/pause (1), next (2)
+      androidCompactActionIndices: const [0, 1, 2],
       processingState: {
         ProcessingState.idle: AudioProcessingState.idle,
         ProcessingState.loading: AudioProcessingState.loading,
@@ -168,8 +172,10 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
 
   @override
   Future<void> play() async {
-    if (_isRemoteMode) {
-      onPlay?.call();
+    // Always prefer callbacks — they handle both remote players and
+    // Sendspin PCM (which uses local mode but delegates playback to MA server)
+    if (onPlay != null) {
+      onPlay!.call();
     } else {
       await _player.play();
     }
@@ -177,8 +183,8 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
 
   @override
   Future<void> pause() async {
-    if (_isRemoteMode) {
-      onPause?.call();
+    if (onPause != null) {
+      onPause!.call();
     } else {
       await _player.pause();
     }
@@ -292,6 +298,10 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
             'all' => 'one',
             _ => 'off',
           };
+        case 'switchPlayer':
+          _logger.log('AndroidAuto: switchPlayer');
+          onSwitchPlayer?.call();
+          return;
       }
       // Re-broadcast playback state to update icons
       _refreshPlaybackState();
@@ -300,20 +310,11 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     }
   }
 
-  /// Re-broadcast current playback state to update custom action icons
+  /// Re-broadcast current playback state to update custom action icons (AA)
   void _refreshPlaybackState() {
     final current = playbackState.value;
-    final playing = current.playing;
     playbackState.add(current.copyWith(
-      controls: [
-        _shuffleControl(),
-        MediaControl.skipToPrevious,
-        if (playing) MediaControl.pause else MediaControl.play,
-        MediaControl.skipToNext,
-        _favoriteControl(),
-        _radioControl,
-        _repeatControl(),
-      ],
+      controls: _controls,
     ));
   }
 
@@ -378,28 +379,25 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       final session = await AudioSession.instance;
       await session.setActive(true);
     }
-    _currentMediaItem = item;
-    mediaItem.add(item);
+    // Only update mediaItem when the track actually changes to avoid
+    // Android Auto reloading artwork on every play/pause toggle
+    final trackChanged = _currentMediaItem?.id != item.id ||
+        _currentMediaItem?.title != item.title ||
+        _currentMediaItem?.artist != item.artist;
+    if (trackChanged) {
+      _logger.log('🎵 setRemotePlaybackState: track changed, calling mediaItem.add (${item.title})');
+      _currentMediaItem = item;
+      mediaItem.add(item);
+    }
 
     playbackState.add(playbackState.value.copyWith(
-      controls: [
-        _shuffleControl(),
-        MediaControl.skipToPrevious,
-        if (playing) MediaControl.pause else MediaControl.play,
-        MediaControl.skipToNext,
-        _favoriteControl(),
-        _radioControl,
-        _repeatControl(),
-      ],
+      controls: _controls,
       systemActions: const {
         MediaAction.play,
         MediaAction.pause,
         MediaAction.skipToNext,
         MediaAction.skipToPrevious,
-        MediaAction.stop,
       },
-      // Which buttons to show in compact notification (max 3)
-      // Show: prev (0), play/pause (1), next (2)
       androidCompactActionIndices: const [0, 1, 2],
       processingState: AudioProcessingState.ready,
       playing: playing,
@@ -437,17 +435,48 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     required MediaItem item,
     required bool playing,
     Duration? duration,
-  }) {
+    Duration? position,
+  }) async {
     // Keep local mode - DON'T set _isRemoteMode = true
+
+    // This method is only called for the builtin (local PCM) player
+    _isBuiltinPlayerActive = true;
+
+    // Claim audio focus only when transitioning to playing (not on every position update).
+    // This avoids stealing focus back from other apps like Symphonium.
+    if (playing && !playbackState.value.playing) {
+      final session = await AudioSession.instance;
+      await session.setActive(true);
+    }
+
     // Only update mediaItem if it changed - avoid unnecessary notification refreshes
-    // that cause blinking. The playbackState is managed by _broadcastState which
-    // responds to actual player events.
+    // that cause blinking.
     if (_currentMediaItem?.id != item.id ||
         _currentMediaItem?.title != item.title ||
         _currentMediaItem?.artist != item.artist) {
+      _logger.log('🎵 updateLocalModeNotification: track changed, calling mediaItem.add (${item.title})');
       _currentMediaItem = item;
       mediaItem.add(item);
     }
+
+    // Also update playback state (playing/paused, position) for the notification
+    // and foreground service activation. Use position from the PCM player or
+    // provider's position tracker — caller passes what they have.
+    playbackState.add(playbackState.value.copyWith(
+      controls: _controls,
+      systemActions: const {
+        MediaAction.play,
+        MediaAction.pause,
+        MediaAction.skipToNext,
+        MediaAction.skipToPrevious,
+      },
+      androidCompactActionIndices: const [0, 1, 2],
+      processingState: AudioProcessingState.ready,
+      playing: playing,
+      updatePosition: position ?? playbackState.value.updatePosition,
+      bufferedPosition: duration ?? Duration.zero,
+      speed: 1.0,
+    ));
   }
 
   bool get isRemoteMode => _isRemoteMode;
@@ -559,6 +588,23 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       name: 'cycleRepeat',
     );
   }
+
+  /// Controls list for playback state.
+  /// Transport controls first (shown in notification), then AA custom actions.
+  /// androidCompactActionIndices [0,1,2] = prev/play/next for compact notification.
+  /// AA shows transport + custom actions (shuffle, favourite, radio, repeat).
+  /// Uses MediaControl.pause as a placeholder — the system shows play or pause
+  /// based on the `playing` boolean, not this list.
+  List<MediaControl> get _controls => [
+    MediaControl.skipToPrevious,
+    MediaControl.pause,
+    MediaControl.skipToNext,
+    _shuffleControl(),
+    _switchPlayerControl,
+    _favoriteControl(),
+    _radioControl,
+    _repeatControl(),
+  ];
 
   // Local state tracking for icon updates (synced after each action)
   bool _shuffleOn = false;
@@ -965,7 +1011,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
 
   void _populateQueue(MusicAssistantProvider provider, List<ma.Track> tracks, int currentIndex) {
     final items = tracks.map((t) => MediaItem(
-      id: 'q|${t.provider}|${t.itemId}',
+      id: t.uri ?? t.itemId,
       title: t.name,
       artist: t.artistsString,
       album: t.album?.name,
@@ -977,6 +1023,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   }
 
   void updateQueueIndex(int index) {
+    if (playbackState.value.queueIndex == index) return;
     playbackState.add(playbackState.value.copyWith(queueIndex: index));
   }
 
