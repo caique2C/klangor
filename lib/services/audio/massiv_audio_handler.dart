@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
+import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:rxdart/rxdart.dart';
 import '../debug_logger.dart';
@@ -58,6 +59,12 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   // Android Auto: subjects for subscribeToChildren
   final Map<String, BehaviorSubject<Map<String, dynamic>>> _autoChildrenSubjects = {};
 
+  // Android Auto connection state — used to hide switch player button from controls
+  bool _isAndroidAutoConnected = false;
+
+  // Suppress auto-resume after audio route changes (e.g. BT/AA disconnect)
+  bool _suppressResume = false;
+
   // Custom control for switching players
   static final _switchPlayerControl = MediaControl.custom(
     androidIcon: 'drawable/ic_switch_player',
@@ -97,6 +104,11 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
             _player.setVolume(1.0);
             break;
           case AudioInterruptionType.pause:
+            if (_suppressResume) {
+              _logger.log('🔊 Audio interruption ended but resume suppressed (audio route changed)');
+              _suppressResume = false;
+              break;
+            }
             _player.play();
             onPlay?.call();
             break;
@@ -106,8 +118,10 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       }
     });
 
-    // Handle becoming noisy (headphones unplugged)
+    // Handle becoming noisy (headphones unplugged, BT/AA disconnected)
     _becomingNoisySubscription = session.becomingNoisyEventStream.listen((_) {
+      _logger.log('🔊 Audio becoming noisy (route changed), suppressing resume');
+      _suppressResume = true;
       pause();
     });
 
@@ -120,6 +134,22 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       if (_currentMediaItem != null) {
         _logger.log('🎵 currentIndexStream: re-adding mediaItem');
         mediaItem.add(_currentMediaItem);
+      }
+    });
+
+    // Listen for Android Auto connection events from native side
+    const aaChannel = MethodChannel('com.collotsspot.ensemble/android_auto');
+    aaChannel.setMethodCallHandler((call) async {
+      switch (call.method) {
+        case 'onAndroidAutoConnected':
+          _logger.log('AndroidAuto: car mode connected (broadcast)');
+          _isAndroidAutoConnected = true;
+          _refreshPlaybackState();
+        case 'onAndroidAutoDisconnected':
+          _logger.log('AndroidAuto: car mode disconnected (broadcast)');
+          _isAndroidAutoConnected = false;
+          _suppressResume = true;
+          _refreshPlaybackState();
       }
     });
   }
@@ -173,6 +203,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
 
   @override
   Future<void> play() async {
+    _suppressResume = false;
     // Always prefer callbacks — they handle both remote players and
     // Sendspin PCM (which uses local mode but delegates playback to MA server)
     if (onPlay != null) {
@@ -555,7 +586,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   static final _iconAlbum = Uri.parse('android.resource://$_iconPkg/drawable/ic_auto_album');
   static final _iconPlaylist = Uri.parse('android.resource://$_iconPkg/drawable/ic_auto_playlist');
   static final _iconFavorite = Uri.parse('android.resource://$_iconPkg/drawable/ic_auto_favorite');
-  static final _iconSmartShuffle = Uri.parse('android.resource://$_iconPkg/drawable/ic_auto_smart_shuffle');
+  static final _iconStartRadio = Uri.parse('android.resource://$_iconPkg/drawable/ic_auto_radio');
 
   // Custom now-playing action buttons for Android Auto
   // Icons change based on current state for visual feedback
@@ -604,7 +635,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     MediaControl.pause,
     MediaControl.skipToNext,
     _shuffleControl(),
-    _switchPlayerControl,
+    if (!_isAndroidAutoConnected) _switchPlayerControl,
     _favoriteControl(),
     _radioControl,
     _repeatControl(),
@@ -642,6 +673,11 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     // Auto-select builtin player when AA starts browsing, so playback
     // goes to the phone instead of a previously-selected remote speaker
     if (parentMediaId == AudioService.browsableRootId) {
+      if (!_isAndroidAutoConnected) {
+        _logger.log('AndroidAuto: detected AA connection via getChildren');
+        _isAndroidAutoConnected = true;
+        _refreshPlaybackState();
+      }
       final playerId = await SettingsService.getBuiltinPlayerId();
       if (playerId != null && provider.selectedPlayer?.playerId != playerId) {
         final builtinPlayer = provider.availablePlayersUnfiltered
@@ -802,7 +838,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
         final ctxKey = mediaId.substring('smartshuffle|'.length);
         final trackList = _autoTrackCache[ctxKey];
         if (trackList == null || trackList.isEmpty) {
-          _logger.log('AndroidAuto: Smart Shuffle: no cached tracks for $ctxKey');
+          _logger.log('AndroidAuto: Start Radio: no cached tracks for $ctxKey');
           return;
         }
         final seed = trackList[Random().nextInt(trackList.length)];
@@ -810,7 +846,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
           await provider.api?.playRadio(playerId, seed);
           _refreshQueueAfterDelay(provider, playerId);
         } catch (e) {
-          _logger.log('AndroidAuto: Smart Shuffle radio failed, playing shuffled: $e');
+          _logger.log('AndroidAuto: Start Radio failed, playing shuffled: $e');
           final shuffled = List<ma.Track>.from(trackList)..shuffle(Random());
           await provider.playTracks(playerId, shuffled, startIndex: 0);
           await provider.toggleShuffle(playerId, true);
@@ -1343,7 +1379,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     const ctxKey = 'favs||';
     _cacheTrackList(ctxKey, tracks);
     final items = tracks.map((t) => _autoTrackItem(provider, t, ctxKey)).toList();
-    if (items.isNotEmpty) items.insert(0, _autoSmartShuffleItem(ctxKey));
+    if (items.isNotEmpty) items.insert(0, _autoStartRadioItem(ctxKey));
     return items;
   }
 
@@ -1366,7 +1402,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     final ctxKey = 'plist|$plProvider|$plItemId';
     _cacheTrackList(ctxKey, tracks);
     final items = tracks.map((t) => _autoTrackItem(provider, t, ctxKey)).toList();
-    if (items.isNotEmpty) items.insert(0, _autoSmartShuffleItem(ctxKey));
+    if (items.isNotEmpty) items.insert(0, _autoStartRadioItem(ctxKey));
     return items;
   }
 
@@ -1418,7 +1454,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     final ctxKey = 'album|$alProvider|$alItemId';
     _cacheTrackList(ctxKey, tracks);
     final items = tracks.map((t) => _autoTrackItem(provider, t, ctxKey)).toList();
-    if (items.isNotEmpty) items.insert(0, _autoSmartShuffleItem(ctxKey));
+    if (items.isNotEmpty) items.insert(0, _autoStartRadioItem(ctxKey));
     return items;
   }
 
@@ -1583,11 +1619,11 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     };
   }
 
-  MediaItem _autoSmartShuffleItem(String ctxKey) {
+  MediaItem _autoStartRadioItem(String ctxKey) {
     return MediaItem(
       id: 'smartshuffle|$ctxKey',
-      title: 'Smart Shuffle',
-      artUri: _iconSmartShuffle,
+      title: 'Start Radio',
+      artUri: _iconStartRadio,
       playable: true,
     );
   }

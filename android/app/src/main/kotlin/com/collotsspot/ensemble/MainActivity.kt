@@ -1,11 +1,16 @@
 package com.collotsspot.ensemble
 
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.database.ContentObserver
 import android.media.AudioManager
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.app.UiModeManager
 import android.util.Log
 import android.view.KeyEvent
 import com.ryanheise.audioservice.AudioServiceActivity
@@ -17,7 +22,10 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity: AudioServiceActivity() {
     private val TAG = "EnsembleVolume"
     private val CHANNEL = "com.collotsspot.ensemble/volume_buttons"
+    private val AA_CHANNEL = "com.collotsspot.ensemble/android_auto"
     private var methodChannel: MethodChannel? = null
+    private var aaChannel: MethodChannel? = null
+    private var carModeReceiver: BroadcastReceiver? = null
     private var isListening = false
 
     // Volume observer for lockscreen volume changes
@@ -73,6 +81,32 @@ class MainActivity: AudioServiceActivity() {
                     result.notImplemented()
                 }
             }
+        }
+
+        // Android Auto / car mode detection
+        aaChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, AA_CHANNEL)
+        carModeReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                when (intent.action) {
+                    UiModeManager.ACTION_ENTER_CAR_MODE -> {
+                        Log.d(TAG, "Car mode ENTERED")
+                        aaChannel?.invokeMethod("onAndroidAutoConnected", null)
+                    }
+                    UiModeManager.ACTION_EXIT_CAR_MODE -> {
+                        Log.d(TAG, "Car mode EXITED")
+                        aaChannel?.invokeMethod("onAndroidAutoDisconnected", null)
+                    }
+                }
+            }
+        }
+        val carModeFilter = IntentFilter().apply {
+            addAction(UiModeManager.ACTION_ENTER_CAR_MODE)
+            addAction(UiModeManager.ACTION_EXIT_CAR_MODE)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            applicationContext.registerReceiver(carModeReceiver, carModeFilter, Context.RECEIVER_EXPORTED)
+        } else {
+            applicationContext.registerReceiver(carModeReceiver, carModeFilter)
         }
     }
 
@@ -224,6 +258,9 @@ class MainActivity: AudioServiceActivity() {
 
     override fun onDestroy() {
         stopVolumeObserver()
+        carModeReceiver?.let {
+            try { applicationContext.unregisterReceiver(it) } catch (_: Exception) {}
+        }
         super.onDestroy()
     }
 }
