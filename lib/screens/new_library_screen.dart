@@ -4914,7 +4914,7 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
 
           try {
             // Start radio from this track
-            await maProvider.api?.playRadio(player.playerId, track);
+            await maProvider.playRadio(player.playerId, track);
           } catch (e) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(

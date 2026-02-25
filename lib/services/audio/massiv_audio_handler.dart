@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:just_audio/just_audio.dart';
@@ -554,6 +555,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   static final _iconAlbum = Uri.parse('android.resource://$_iconPkg/drawable/ic_auto_album');
   static final _iconPlaylist = Uri.parse('android.resource://$_iconPkg/drawable/ic_auto_playlist');
   static final _iconFavorite = Uri.parse('android.resource://$_iconPkg/drawable/ic_auto_favorite');
+  static final _iconSmartShuffle = Uri.parse('android.resource://$_iconPkg/drawable/ic_auto_smart_shuffle');
 
   // Custom now-playing action buttons for Android Auto
   // Icons change based on current state for visual feedback
@@ -796,6 +798,27 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     _clearErrorState();
 
     try {
+      if (mediaId.startsWith('smartshuffle|')) {
+        final ctxKey = mediaId.substring('smartshuffle|'.length);
+        final trackList = _autoTrackCache[ctxKey];
+        if (trackList == null || trackList.isEmpty) {
+          _logger.log('AndroidAuto: Smart Shuffle: no cached tracks for $ctxKey');
+          return;
+        }
+        final seed = trackList[Random().nextInt(trackList.length)];
+        try {
+          await provider.api?.playRadio(playerId, seed);
+          _refreshQueueAfterDelay(provider, playerId);
+        } catch (e) {
+          _logger.log('AndroidAuto: Smart Shuffle radio failed, playing shuffled: $e');
+          final shuffled = List<ma.Track>.from(trackList)..shuffle(Random());
+          await provider.playTracks(playerId, shuffled, startIndex: 0);
+          await provider.toggleShuffle(playerId, true);
+          _populateQueue(provider, shuffled, 0);
+        }
+        return;
+      }
+
       if (mediaId.startsWith('track|')) {
         // Format: track|{tProvider}|{tItemId}|{ctxType}|{ctxProvider}|{ctxId}
         final parts = mediaId.split('|');
@@ -1319,7 +1342,9 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     _logger.log('AndroidAuto: Fav tracks returned ${tracks.length} tracks');
     const ctxKey = 'favs||';
     _cacheTrackList(ctxKey, tracks);
-    return tracks.map((t) => _autoTrackItem(provider, t, ctxKey)).toList();
+    final items = tracks.map((t) => _autoTrackItem(provider, t, ctxKey)).toList();
+    if (items.isNotEmpty) items.insert(0, _autoSmartShuffleItem(ctxKey));
+    return items;
   }
 
   List<MediaItem> _autoBuildPlaylistList(MusicAssistantProvider provider) {
@@ -1340,7 +1365,9 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
         await provider.getPlaylistTracksWithCache(plProvider, plItemId);
     final ctxKey = 'plist|$plProvider|$plItemId';
     _cacheTrackList(ctxKey, tracks);
-    return tracks.map((t) => _autoTrackItem(provider, t, ctxKey)).toList();
+    final items = tracks.map((t) => _autoTrackItem(provider, t, ctxKey)).toList();
+    if (items.isNotEmpty) items.insert(0, _autoSmartShuffleItem(ctxKey));
+    return items;
   }
 
   List<MediaItem> _autoBuildArtistList(MusicAssistantProvider provider) {
@@ -1390,7 +1417,9 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     _logger.log('AndroidAuto: Album $alProvider/$alItemId tracks: ${tracks.length}');
     final ctxKey = 'album|$alProvider|$alItemId';
     _cacheTrackList(ctxKey, tracks);
-    return tracks.map((t) => _autoTrackItem(provider, t, ctxKey)).toList();
+    final items = tracks.map((t) => _autoTrackItem(provider, t, ctxKey)).toList();
+    if (items.isNotEmpty) items.insert(0, _autoSmartShuffleItem(ctxKey));
+    return items;
   }
 
   // --- Audiobook builders ---
@@ -1552,6 +1581,15 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       'android.media.extra.PLAYBACK_STATUS': book.fullyPlayed == true ? 2 : 1,
       'android.media.extra.PLAYBACK_STATUS_COMPLETION_PERCENTAGE': book.progress,
     };
+  }
+
+  MediaItem _autoSmartShuffleItem(String ctxKey) {
+    return MediaItem(
+      id: 'smartshuffle|$ctxKey',
+      title: 'Smart Shuffle',
+      artUri: _iconSmartShuffle,
+      playable: true,
+    );
   }
 
   MediaItem _autoTrackItem(

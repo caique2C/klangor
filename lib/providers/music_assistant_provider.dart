@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:audio_service/audio_service.dart' as audio_service;
@@ -2051,8 +2052,13 @@ class MusicAssistantProvider with ChangeNotifier {
               );
             }
           }
-          // Last resort: first available
-          _selectedPlayer ??= _availablePlayers.first;
+          // Last resort: first available (only if no builtin player configured)
+          if (_selectedPlayer == null) {
+            final builtinConfigured = await SettingsService.getBuiltinPlayerId();
+            if (builtinConfigured == null) {
+              _selectedPlayer = _availablePlayers.first;
+            }
+          }
         }
         _logger.log('⚡ Loaded ${_availablePlayers.length} cached players instantly (sorted)');
         notifyListeners(); // Update UI immediately with cached data
@@ -4443,13 +4449,14 @@ class MusicAssistantProvider with ChangeNotifier {
             if (playerToSelect != null) {
               _logger.log('📱 Selected local player (pending availability): ${playerToSelect.name}');
             } else {
-              _logger.log('⚠️ Local player not in player list');
+              _logger.log('⚠️ Local player not in player list yet — waiting for Sendspin registration');
             }
           }
         }
 
         // Priority 3: First available player (only if no local player configured)
-        if (playerToSelect == null) {
+        // Don't fall back to another player if builtin player is configured but not yet registered
+        if (playerToSelect == null && builtinPlayerId == null) {
           playerToSelect = _availablePlayers.firstWhere(
             (p) => p.available,
             orElse: () => _availablePlayers.first,
@@ -4457,7 +4464,13 @@ class MusicAssistantProvider with ChangeNotifier {
           _logger.log('🔄 Fallback to first available player: ${playerToSelect.name}');
         }
 
-        selectPlayer(playerToSelect);
+        if (playerToSelect != null) {
+          selectPlayer(playerToSelect);
+        } else {
+          // Builtin player not yet registered — keep current selection if any,
+          // otherwise leave unselected until Sendspin registration completes
+          _logger.log('⏳ No player selected — awaiting builtin player registration');
+        }
       }
 
       // Preload track data and images in background for swipe gestures
@@ -5974,11 +5987,16 @@ class MusicAssistantProvider with ChangeNotifier {
     try {
       await _api?.playRadio(playerId, track);
     } catch (e) {
-      final errorInfo = ErrorHandler.handleError(e, context: 'Play radio');
-      _error = errorInfo.userMessage;
-      ErrorHandler.logError('Play radio', e);
-      notifyListeners();
-      rethrow;
+      _logger.log('Radio failed, falling back to single track: $e');
+      try {
+        await playTrack(playerId, track);
+      } catch (fallbackError) {
+        final errorInfo = ErrorHandler.handleError(fallbackError, context: 'Play radio fallback');
+        _error = errorInfo.userMessage;
+        ErrorHandler.logError('Play radio fallback', fallbackError);
+        notifyListeners();
+        rethrow;
+      }
     }
   }
 
@@ -5986,11 +6004,21 @@ class MusicAssistantProvider with ChangeNotifier {
     try {
       await _api?.playArtistRadio(playerId, artist);
     } catch (e) {
-      final errorInfo = ErrorHandler.handleError(e, context: 'Play artist radio');
-      _error = errorInfo.userMessage;
-      ErrorHandler.logError('Play artist radio', e);
-      notifyListeners();
-      rethrow;
+      _logger.log('Artist radio failed, falling back to shuffled tracks: $e');
+      try {
+        final results = await searchWithCache(artist.name);
+        final tracks = (results['tracks'] ?? []).whereType<Track>().toList();
+        if (tracks.isEmpty) rethrow;
+        tracks.shuffle(Random());
+        await _api?.playTracks(playerId, tracks, startIndex: 0);
+        await _api?.toggleShuffle(playerId, true);
+      } catch (fallbackError) {
+        final errorInfo = ErrorHandler.handleError(fallbackError, context: 'Play artist radio fallback');
+        _error = errorInfo.userMessage;
+        ErrorHandler.logError('Play artist radio fallback', fallbackError);
+        notifyListeners();
+        rethrow;
+      }
     }
   }
 
