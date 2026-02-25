@@ -2130,6 +2130,13 @@ class MusicAssistantProvider with ChangeNotifier {
     audioHandler.onBrowseActivity = () {
       _cancelIdleServiceTimer();
     };
+    audioHandler.onAADisconnected = () {
+      _logger.log('🎵 AA disconnected: force-pausing player');
+      final player = _selectedPlayer;
+      if (player != null) {
+        pausePlayer(player.playerId);
+      }
+    };
 
     // Player registration is now handled in _initializeAfterConnection()
     // which runs after authentication completes (when auth is required)
@@ -2557,6 +2564,11 @@ class MusicAssistantProvider with ChangeNotifier {
   /// 2. Start the foreground service to prevent background throttling
   /// 3. Reset position for new track and start position timer
   void _handleSendspinStreamStart(Map<String, dynamic>? trackInfo) async {
+    final aaDisc = audioHandler.aaDisconnectedAt;
+    if (aaDisc != null && DateTime.now().difference(aaDisc).inSeconds < 2) {
+      _logger.log('🎵 Sendspin: Ignoring stream/start (AA disconnected ${DateTime.now().difference(aaDisc).inMilliseconds}ms ago)');
+      return;
+    }
     _logger.log('🎵 Sendspin: Stream starting');
 
     // Ensure PCM player is initialized and ready

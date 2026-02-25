@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.database.ContentObserver
+import android.hardware.display.DisplayManager
 import android.media.AudioManager
 import android.os.Build
 import android.os.Handler
@@ -12,6 +13,7 @@ import android.os.Looper
 import android.provider.Settings
 import android.app.UiModeManager
 import android.util.Log
+import android.view.Display
 import android.view.KeyEvent
 import com.ryanheise.audioservice.AudioServiceActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -37,6 +39,10 @@ class MainActivity: AudioServiceActivity() {
     private var lastKnownVolume: Int = -1
     // Guard flag to ignore volume changes triggered by our own setStreamVolume calls
     private var ignoringVolumeChange = false
+
+    // Android Auto projection tracking via display listener
+    private var isAATracked = false
+    private var displayListener: DisplayManager.DisplayListener? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -85,11 +91,25 @@ class MainActivity: AudioServiceActivity() {
 
         // Android Auto / car mode detection
         aaChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, AA_CHANNEL)
+
+        // Receive AA connection signal from Dart side
+        aaChannel?.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "notifyAAConnected" -> {
+                    Log.d(TAG, "AA tracked via Dart notifyAAConnected")
+                    isAATracked = true
+                    result.success(null)
+                }
+                else -> result.notImplemented()
+            }
+        }
+
         carModeReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
                 when (intent.action) {
                     UiModeManager.ACTION_ENTER_CAR_MODE -> {
                         Log.d(TAG, "Car mode ENTERED")
+                        isAATracked = true
                         aaChannel?.invokeMethod("onAndroidAutoConnected", null)
                     }
                     UiModeManager.ACTION_EXIT_CAR_MODE -> {
@@ -108,6 +128,25 @@ class MainActivity: AudioServiceActivity() {
         } else {
             applicationContext.registerReceiver(carModeReceiver, carModeFilter)
         }
+
+        // Detect AA disconnect via display removal (projection mode)
+        val dm = getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+        displayListener = object : DisplayManager.DisplayListener {
+            override fun onDisplayAdded(displayId: Int) {}
+            override fun onDisplayChanged(displayId: Int) {}
+            override fun onDisplayRemoved(displayId: Int) {
+                if (!isAATracked) return
+                val hasExtraDisplay = dm.displays.any {
+                    it.displayId != Display.DEFAULT_DISPLAY
+                }
+                if (!hasExtraDisplay) {
+                    Log.d(TAG, "AA projection ended (all extra displays removed)")
+                    isAATracked = false
+                    aaChannel?.invokeMethod("onAndroidAutoDisconnected", null)
+                }
+            }
+        }
+        dm.registerDisplayListener(displayListener, Handler(Looper.getMainLooper()))
     }
 
     /// Start observing system STREAM_MUSIC volume changes.
@@ -260,6 +299,10 @@ class MainActivity: AudioServiceActivity() {
         stopVolumeObserver()
         carModeReceiver?.let {
             try { applicationContext.unregisterReceiver(it) } catch (_: Exception) {}
+        }
+        displayListener?.let {
+            val dm = getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+            dm.unregisterDisplayListener(it)
         }
         super.onDestroy()
     }

@@ -37,6 +37,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   Function()? onPause;
   Function()? onSwitchPlayer;
   Function()? onBrowseActivity;
+  Function()? onAADisconnected;
 
   // Track whether we're in remote control mode (controlling MA player, not playing locally)
   bool _isRemoteMode = false;
@@ -64,6 +65,15 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
 
   // Suppress auto-resume after audio route changes (e.g. BT/AA disconnect)
   bool _suppressResume = false;
+
+  // Track whether music was actually playing before an interruption
+  bool _wasPlayingBeforeInterruption = false;
+
+  // Timestamp of last AA disconnect — used to suppress stream/start race condition
+  DateTime? aaDisconnectedAt;
+
+  // Android Auto method channel (Dart ↔ Native)
+  static const _aaChannel = MethodChannel('com.collotsspot.ensemble/android_auto');
 
   // Custom control for switching players
   static final _switchPlayerControl = MediaControl.custom(
@@ -94,8 +104,11 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
             break;
           case AudioInterruptionType.pause:
           case AudioInterruptionType.unknown:
-            _player.pause();
-            onPause?.call();
+            _wasPlayingBeforeInterruption = playbackState.value.playing;
+            if (_wasPlayingBeforeInterruption) {
+              _player.pause();
+              onPause?.call();
+            }
             break;
         }
       } else {
@@ -107,6 +120,10 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
             if (_suppressResume) {
               _logger.log('🔊 Audio interruption ended but resume suppressed (audio route changed)');
               _suppressResume = false;
+              break;
+            }
+            if (!_wasPlayingBeforeInterruption) {
+              _logger.log('🔊 Audio interruption ended but was not playing before');
               break;
             }
             _player.play();
@@ -138,17 +155,19 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     });
 
     // Listen for Android Auto connection events from native side
-    const aaChannel = MethodChannel('com.collotsspot.ensemble/android_auto');
-    aaChannel.setMethodCallHandler((call) async {
+    _aaChannel.setMethodCallHandler((call) async {
       switch (call.method) {
         case 'onAndroidAutoConnected':
           _logger.log('AndroidAuto: car mode connected (broadcast)');
           _isAndroidAutoConnected = true;
+          _aaChannel.invokeMethod('notifyAAConnected', null);
           _refreshPlaybackState();
         case 'onAndroidAutoDisconnected':
           _logger.log('AndroidAuto: car mode disconnected (broadcast)');
           _isAndroidAutoConnected = false;
           _suppressResume = true;
+          aaDisconnectedAt = DateTime.now();
+          onAADisconnected?.call();
           _refreshPlaybackState();
       }
     });
@@ -203,7 +222,6 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
 
   @override
   Future<void> play() async {
-    _suppressResume = false;
     // Always prefer callbacks — they handle both remote players and
     // Sendspin PCM (which uses local mode but delegates playback to MA server)
     if (onPlay != null) {
@@ -349,6 +367,12 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     final current = playbackState.value;
     playbackState.add(current.copyWith(
       controls: _controls,
+      systemActions: const {
+        MediaAction.play,
+        MediaAction.pause,
+        MediaAction.skipToNext,
+        MediaAction.skipToPrevious,
+      },
     ));
   }
 
@@ -676,6 +700,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       if (!_isAndroidAutoConnected) {
         _logger.log('AndroidAuto: detected AA connection via getChildren');
         _isAndroidAutoConnected = true;
+        _aaChannel.invokeMethod('notifyAAConnected', null);
         _refreshPlaybackState();
       }
       final playerId = await SettingsService.getBuiltinPlayerId();
