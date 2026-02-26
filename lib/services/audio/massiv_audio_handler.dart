@@ -694,15 +694,14 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       provider.checkAndReconnect();
     }
 
-    // Auto-select builtin player when AA starts browsing, so playback
-    // goes to the phone instead of a previously-selected remote speaker
-    if (parentMediaId == AudioService.browsableRootId) {
-      if (!_isAndroidAutoConnected) {
-        _logger.log('AndroidAuto: detected AA connection via getChildren');
-        _isAndroidAutoConnected = true;
-        _aaChannel.invokeMethod('notifyAAConnected', null);
-        _refreshPlaybackState();
-      }
+    // Detect AA connection from any getChildren call (AA may cache the root
+    // and only request subcategories, so we can't rely on the root request)
+    if (!_isAndroidAutoConnected) {
+      _logger.log('AndroidAuto: detected AA connection via getChildren("$parentMediaId")');
+      _isAndroidAutoConnected = true;
+      _aaChannel.invokeMethod('notifyAAConnected', null);
+      _refreshPlaybackState();
+      // Auto-select builtin player so playback goes to the phone
       final playerId = await SettingsService.getBuiltinPlayerId();
       if (playerId != null && provider.selectedPlayer?.playerId != playerId) {
         final builtinPlayer = provider.availablePlayersUnfiltered
@@ -836,6 +835,13 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     if (provider == null) {
       _logger.log('AndroidAuto: playFromMediaId called before provider is set');
       return;
+    }
+
+    if (!_isAndroidAutoConnected) {
+      _logger.log('AndroidAuto: detected AA connection via playFromMediaId');
+      _isAndroidAutoConnected = true;
+      _aaChannel.invokeMethod('notifyAAConnected', null);
+      _refreshPlaybackState();
     }
 
     final playerId = await SettingsService.getBuiltinPlayerId();
