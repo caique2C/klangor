@@ -3994,7 +3994,11 @@ class MusicAssistantProvider with ChangeNotifier {
         }
       }
 
-      _cacheService.setCachedArtistAlbums(cacheKey, allAlbums);
+      // Only cache if the library is loaded — empty results during cold start
+      // are likely due to SyncService not having finished yet
+      if (allAlbums.isNotEmpty || _albums.isNotEmpty) {
+        _cacheService.setCachedArtistAlbums(cacheKey, allAlbums);
+      }
       _logger.log('✅ Cached ${allAlbums.length} albums for artist "$artistName"');
       return allAlbums;
     } catch (e) {
