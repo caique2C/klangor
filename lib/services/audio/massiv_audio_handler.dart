@@ -865,6 +865,21 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     _clearErrorState();
 
     try {
+      if (mediaId.startsWith('artistradio|')) {
+        final artistName = mediaId.substring('artistradio|'.length);
+        final artist = SyncService.instance.cachedArtists
+            .where((a) => a.name == artistName)
+            .firstOrNull;
+        if (artist == null) {
+          _logger.log('AndroidAuto: Artist radio: artist "$artistName" not found');
+          return;
+        }
+        _logger.log('AndroidAuto: Starting artist radio for "$artistName"');
+        await provider.api?.playArtistRadio(playerId, artist);
+        _refreshQueueAfterDelay(provider, playerId);
+        return;
+      }
+
       if (mediaId.startsWith('smartshuffle|')) {
         final ctxKey = mediaId.substring('smartshuffle|'.length);
         final trackList = _autoTrackCache[ctxKey];
@@ -1466,13 +1481,21 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       albums = provider.getArtistAlbumsFromLibrary(artistName);
     }
     _logger.log('AndroidAuto: Artist "$artistName" albums: ${albums.length}');
-    return albums.map((a) => MediaItem(
-      id: 'album|${a.provider}|${a.itemId}',
-      title: a.name,
-      artist: a.artistsString,
-      artUri: _autoArtUri(provider, a),
-      playable: false,
-    )).toList();
+    return [
+      MediaItem(
+        id: 'artistradio|$artistName',
+        title: 'Start Radio',
+        artUri: _iconRadio,
+        playable: true,
+      ),
+      ...albums.map((a) => MediaItem(
+        id: 'album|${a.provider}|${a.itemId}',
+        title: a.name,
+        artist: a.artistsString,
+        artUri: _autoArtUri(provider, a),
+        playable: false,
+      )),
+    ];
   }
 
   Future<List<MediaItem>> _autoBuildAlbumList(MusicAssistantProvider provider) async {
