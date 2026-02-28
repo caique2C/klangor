@@ -1013,6 +1013,9 @@ class MusicAssistantProvider with ChangeNotifier {
         _logger.log('📦 Pre-loaded library for favorites: ${_albums.length} albums, ${_artists.length} artists');
         _syncLibraryStatusToService();
         notifyListeners();
+        audioHandler.invalidateAutoChildren(const [
+          'cat|artists', 'cat|albums', 'cat|playlists', 'cat|home',
+        ]);
       }
     } catch (e) {
       _logger.log('⚠️ Error loading library from cache: $e');
@@ -3966,6 +3969,17 @@ class MusicAssistantProvider with ChangeNotifier {
     if (_api == null) return _cacheService.getCachedArtistAlbums(cacheKey) ?? [];
 
     try {
+      // Ensure library is loaded for artist matching
+      if (_albums.isEmpty) {
+        final syncService = SyncService.instance;
+        if (!syncService.hasCache) {
+          await syncService.loadFromCache();
+        }
+        if (syncService.cachedAlbums.isNotEmpty) {
+          _albums = syncService.cachedAlbums;
+        }
+      }
+
       _logger.log('🔄 Fetching albums for artist "$artistName"...');
 
       // Use already-loaded library albums instead of re-fetching from API
@@ -5583,6 +5597,9 @@ class MusicAssistantProvider with ChangeNotifier {
         _syncLibraryStatusToService();
         notifyListeners();
         _prefetchAlbumImages();
+        audioHandler.invalidateAutoChildren(const [
+          'cat|artists', 'cat|albums', 'cat|playlists', 'cat|home',
+        ]);
       }
       syncService.removeListener(onSyncComplete);
     }

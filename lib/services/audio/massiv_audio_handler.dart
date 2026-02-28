@@ -1414,8 +1414,13 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     return items;
   }
 
-  List<MediaItem> _autoBuildPlaylistList(MusicAssistantProvider provider) {
-    final playlists = SyncService.instance.cachedPlaylists;
+  Future<List<MediaItem>> _autoBuildPlaylistList(MusicAssistantProvider provider) async {
+    var playlists = SyncService.instance.cachedPlaylists;
+    if (playlists.isEmpty) {
+      _logger.log('AndroidAuto: cachedPlaylists empty, loading from cache');
+      await SyncService.instance.loadFromCache();
+      playlists = SyncService.instance.cachedPlaylists;
+    }
     _logger.log('AndroidAuto: Playlists: ${playlists.length}');
     return playlists.map((p) => MediaItem(
       id: 'playlist|${p.provider}|${p.itemId}',
@@ -1437,8 +1442,13 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     return items;
   }
 
-  List<MediaItem> _autoBuildArtistList(MusicAssistantProvider provider) {
-    final artists = SyncService.instance.cachedArtists;
+  Future<List<MediaItem>> _autoBuildArtistList(MusicAssistantProvider provider) async {
+    var artists = SyncService.instance.cachedArtists;
+    if (artists.isEmpty) {
+      _logger.log('AndroidAuto: cachedArtists empty, loading from cache');
+      await SyncService.instance.loadFromCache();
+      artists = SyncService.instance.cachedArtists;
+    }
     _logger.log('AndroidAuto: Artists: ${artists.length}');
     return artists.map((a) => MediaItem(
       id: 'artist|${a.name}',
@@ -1465,8 +1475,13 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     )).toList();
   }
 
-  List<MediaItem> _autoBuildAlbumList(MusicAssistantProvider provider) {
-    final albums = SyncService.instance.cachedAlbums;
+  Future<List<MediaItem>> _autoBuildAlbumList(MusicAssistantProvider provider) async {
+    var albums = SyncService.instance.cachedAlbums;
+    if (albums.isEmpty) {
+      _logger.log('AndroidAuto: cachedAlbums empty, loading from cache');
+      await SyncService.instance.loadFromCache();
+      albums = SyncService.instance.cachedAlbums;
+    }
     _logger.log('AndroidAuto: Albums: ${albums.length}');
     return albums.map((a) => MediaItem(
       id: 'album|${a.provider}|${a.itemId}',
