@@ -259,7 +259,6 @@ class MusicAssistantAPI {
   void _handleMessage(dynamic message) {
     try {
       final data = jsonDecode(message as String) as Map<String, dynamic>;
-      _logger.debug('Received message: ${data.keys}');
 
       // Check for server info message (first message on connect)
       if (data.containsKey('server_version')) {
@@ -1989,7 +1988,6 @@ class MusicAssistantAPI {
               currentIndex = queueResult['current_index'] as int?;
               shuffleEnabled = queueResult['shuffle_enabled'] as bool?;
               repeatMode = queueResult['repeat_mode'] as String?;
-              _logger.debug('🔀 Queue metadata: shuffle_enabled=$shuffleEnabled, repeat_mode=$repeatMode');
 
               final currentItemData = queueResult['current_item'] as Map<String, dynamic>?;
               final currentItemName = currentItemData?['name'] as String?;

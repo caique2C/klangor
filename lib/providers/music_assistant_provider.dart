@@ -4756,7 +4756,6 @@ class MusicAssistantProvider with ChangeNotifier {
         return;
       }
       // Sendspin PCM player - continue to start timer
-      _logger.debug('🔔 Starting notification timer for Sendspin PCM player');
     }
 
     // Only run timer if player is playing
@@ -5955,7 +5954,6 @@ class MusicAssistantProvider with ChangeNotifier {
 
         final itemJsonList = queue.items.map((item) => jsonEncode(item.toJson())).toList();
         await DatabaseService.instance.saveQueue(playerId, itemJsonList);
-        _logger.debug('💾 Persisted ${queue.items.length} queue items to database');
       } catch (e) {
         _logger.log('⚠️ Error persisting queue to database: $e');
       }
