@@ -2120,11 +2120,16 @@ class MusicAssistantProvider with ChangeNotifier {
     };
     audioHandler.onPlay = () {
       _logger.log('🎵 Notification: Play pressed');
-      playPauseSelectedPlayer();
+      if (_selectedPlayer != null) {
+        resumePlayer(_selectedPlayer!.playerId);
+        unawaited(refreshPlayers());
+      }
     };
     audioHandler.onPause = () {
       _logger.log('🎵 Notification: Pause pressed');
-      playPauseSelectedPlayer();
+      if (_selectedPlayer != null) {
+        pausePlayer(_selectedPlayer!.playerId);
+      }
     };
     audioHandler.onSwitchPlayer = () {
       _logger.log('🎵 Notification: Switch player pressed');
@@ -2133,11 +2138,23 @@ class MusicAssistantProvider with ChangeNotifier {
     audioHandler.onBrowseActivity = () {
       _cancelIdleServiceTimer();
     };
-    audioHandler.onAADisconnected = () {
-      _logger.log('🎵 AA disconnected: force-pausing player');
-      final player = _selectedPlayer;
-      if (player != null) {
-        pausePlayer(player.playerId);
+    audioHandler.onAAConnected = () async {
+      final playerId = await SettingsService.getBuiltinPlayerId();
+      if (playerId != null && _selectedPlayer?.playerId != playerId) {
+        final builtinPlayer = _availablePlayers
+            .where((p) => p.playerId == playerId)
+            .firstOrNull;
+        if (builtinPlayer != null) {
+          _logger.log('🎵 AA connected: auto-selecting builtin player "${builtinPlayer.name}"');
+          selectPlayer(builtinPlayer);
+        }
+      }
+    };
+    audioHandler.onAADisconnected = () async {
+      final builtinPlayerId = await SettingsService.getBuiltinPlayerId();
+      if (builtinPlayerId != null) {
+        _logger.log('🎵 AA disconnected: pausing builtin player');
+        pausePlayer(builtinPlayerId);
       }
     };
 
@@ -4010,7 +4027,7 @@ class MusicAssistantProvider with ChangeNotifier {
 
       // Only cache if the library is loaded — empty results during cold start
       // are likely due to SyncService not having finished yet
-      if (allAlbums.isNotEmpty || _albums.isNotEmpty) {
+      if (allAlbums.isNotEmpty) {
         _cacheService.setCachedArtistAlbums(cacheKey, allAlbums);
       }
       _logger.log('✅ Cached ${allAlbums.length} albums for artist "$artistName"');
@@ -5199,7 +5216,7 @@ class MusicAssistantProvider with ChangeNotifier {
 
       final isPlayingOrPaused = _selectedPlayer!.state == 'playing' || _selectedPlayer!.state == 'paused';
       final isIdleWithContent = _selectedPlayer!.state == 'idle' && _selectedPlayer!.powered;
-      final shouldShowTrack = _selectedPlayer!.available && (isPlayingOrPaused || isIdleWithContent);
+      final shouldShowTrack = _selectedPlayer!.available && (isPlayingOrPaused || isIdleWithContent || isPcmPlaying);
 
       if (!shouldShowTrack) {
         if (_currentTrack != null) {

@@ -37,6 +37,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   Function()? onPause;
   Function()? onSwitchPlayer;
   Function()? onBrowseActivity;
+  Function()? onAAConnected;
   Function()? onAADisconnected;
 
   // Track whether we're in remote control mode (controlling MA player, not playing locally)
@@ -104,7 +105,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
             break;
           case AudioInterruptionType.pause:
           case AudioInterruptionType.unknown:
-            _wasPlayingBeforeInterruption = playbackState.value.playing;
+            _wasPlayingBeforeInterruption = playbackState.value.playing || _isBuiltinPlayerActive;
             if (_wasPlayingBeforeInterruption) {
               _player.pause();
               onPause?.call();
@@ -161,6 +162,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
           _logger.log('AndroidAuto: car mode connected (broadcast)');
           _isAndroidAutoConnected = true;
           _aaChannel.invokeMethod('notifyAAConnected', null);
+          onAAConnected?.call();
           _refreshPlaybackState();
         case 'onAndroidAutoDisconnected':
           _logger.log('AndroidAuto: car mode disconnected (broadcast)');
