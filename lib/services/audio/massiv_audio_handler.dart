@@ -702,6 +702,15 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       _logger.log('AndroidAuto: detected AA connection via getChildren("$parentMediaId")');
       _isAndroidAutoConnected = true;
       _aaChannel.invokeMethod('notifyAAConnected', null);
+      // Sync shuffle/repeat state from the queue so AA buttons show correctly
+      final selectedId = provider.selectedPlayer?.playerId;
+      if (selectedId != null) {
+        final queue = await provider.getQueue(selectedId);
+        if (queue != null) {
+          _shuffleOn = queue.shuffle;
+          _repeatMode = queue.repeatMode ?? 'off';
+        }
+      }
       _refreshPlaybackState();
       // Auto-select builtin player so playback goes to the phone
       final playerId = await SettingsService.getBuiltinPlayerId();
