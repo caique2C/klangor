@@ -1175,8 +1175,11 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
         if (q?.items == null || q!.items.isEmpty) return;
         final tracks = q.items.map((qi) => qi.track).toList();
         final currentIndex = q.currentIndex ?? 0;
-        _logger.log('AndroidAuto: refreshed queue: ${tracks.length} tracks');
+        _shuffleOn = q.shuffle;
+        _repeatMode = q.repeatMode ?? 'off';
+        _logger.log('AndroidAuto: refreshed queue: ${tracks.length} tracks, shuffle=$_shuffleOn, repeat=$_repeatMode');
         _populateQueue(provider, tracks, currentIndex);
+        _refreshPlaybackState();
       } catch (e) {
         _logger.log('AndroidAuto: failed to refresh queue: $e');
       }
@@ -1476,12 +1479,15 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       artists = SyncService.instance.cachedArtists;
     }
     _logger.log('AndroidAuto: Artists: ${artists.length}');
-    return artists.map((a) => MediaItem(
-      id: 'artist|${a.name}',
-      title: a.name,
-      artUri: _autoArtUri(provider, a),
-      playable: false,
-    )).toList();
+    return Future.wait(artists.map((a) async {
+      final imageUrl = await provider.getArtistImageUrlWithFallback(a, size: 256);
+      return MediaItem(
+        id: 'artist|${a.name}',
+        title: a.name,
+        artUri: imageUrl != null ? _contentUriForArtwork(imageUrl) : null,
+        playable: false,
+      );
+    }));
   }
 
   Future<List<MediaItem>> _autoBuildArtistAlbums(
