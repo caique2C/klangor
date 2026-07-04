@@ -8,6 +8,7 @@ import '../providers/music_assistant_provider.dart';
 import '../models/media_item.dart';
 import '../services/debug_logger.dart';
 import '../services/database_service.dart';
+import '../services/image_prefetch_service.dart';
 import '../widgets/global_player_overlay.dart';
 import '../widgets/common/empty_state.dart';
 import '../widgets/common/disconnected_state.dart';
@@ -1298,7 +1299,7 @@ class SearchScreenState extends State<SearchScreen> {
                 borderRadius: BorderRadius.circular(8),
                 image: imageUrl != null
                     ? DecorationImage(
-                        image: CachedNetworkImageProvider(imageUrl),
+                        image: CachedNetworkImageProvider(imageUrl, cacheManager: AlbumImageCacheManager()),
                         fit: BoxFit.cover,
                       )
                     : null,
@@ -1404,7 +1405,7 @@ class SearchScreenState extends State<SearchScreen> {
               borderRadius: BorderRadius.circular(8),
               image: imageUrl != null
                   ? DecorationImage(
-                      image: CachedNetworkImageProvider(imageUrl),
+                      image: CachedNetworkImageProvider(imageUrl, cacheManager: AlbumImageCacheManager()),
                       fit: BoxFit.cover,
                     )
                   : null,

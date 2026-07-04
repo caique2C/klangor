@@ -49,6 +49,7 @@ class MusicAssistantProvider with ChangeNotifier {
   final CacheService _cacheService = CacheService();
   final PositionTracker _positionTracker = PositionTracker();
   ImagePrefetchService? _imagePrefetchService;
+  ImagePrefetchService? _artistImagePrefetchService;
   final GroupVolumeManager _groupVolumeManager = GroupVolumeManager();
 
   MAConnectionState _connectionState = MAConnectionState.disconnected;
@@ -1978,6 +1979,8 @@ class MusicAssistantProvider with ChangeNotifier {
     _positionTracker.clear();
     _imagePrefetchService?.cancel();
     _imagePrefetchService = null;
+    _artistImagePrefetchService?.cancel();
+    _artistImagePrefetchService = null;
     // Disconnect Sendspin and PCM player if connected
     if (_sendspinConnected) {
       await _pcmAudioPlayer?.disconnect();
@@ -5618,6 +5621,7 @@ class MusicAssistantProvider with ChangeNotifier {
         _syncLibraryStatusToService();
         notifyListeners();
         _prefetchAlbumImages();
+        _prefetchArtistImages();
         audioHandler.invalidateAutoChildren(const [
           'cat|artists', 'cat|albums', 'cat|playlists', 'cat|home',
         ]);
@@ -5647,6 +5651,24 @@ class MusicAssistantProvider with ChangeNotifier {
     if (urls.isEmpty) return;
     _logger.log('🖼️ Starting image prefetch for ${urls.length} items');
     _imagePrefetchService!.prefetchImages(urls);
+  }
+
+  /// Prefetch artist images in background after sync, mirroring
+  /// [_prefetchAlbumImages] so artist avatars are already cached on disk
+  /// before the user browses into the Artists tab.
+  void _prefetchArtistImages() {
+    _artistImagePrefetchService?.cancel();
+    _artistImagePrefetchService = ImagePrefetchService();
+
+    final urls = <String>[];
+    for (final artist in _artists) {
+      final url = _api?.getImageUrl(artist, size: 256);
+      if (url != null) urls.add(url);
+    }
+
+    if (urls.isEmpty) return;
+    _logger.log('🖼️ Starting artist image prefetch for ${urls.length} items');
+    _artistImagePrefetchService!.prefetchImages(urls, cacheManager: ArtistImageCacheManager());
   }
 
   /// Load radio stations from the library

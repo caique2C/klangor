@@ -5,6 +5,7 @@ import '../l10n/app_localizations.dart';
 import '../models/media_item.dart';
 import '../providers/music_assistant_provider.dart';
 import '../services/debug_logger.dart';
+import '../services/image_prefetch_service.dart';
 import 'artist_card.dart';
 
 class ArtistRow extends StatefulWidget {
@@ -101,7 +102,7 @@ class _ArtistRowState extends State<ArtistRow> with AutomaticKeepAliveClientMixi
       if (imageUrl != null) {
         // Use CachedNetworkImageProvider to warm the cache
         precacheImage(
-          CachedNetworkImageProvider(imageUrl),
+          CachedNetworkImageProvider(imageUrl, cacheManager: ArtistImageCacheManager()),
           context,
         ).catchError((_) {
           // Silently ignore precache errors

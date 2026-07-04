@@ -11,6 +11,7 @@ import '../theme/theme_provider.dart';
 import '../services/metadata_service.dart';
 import '../services/debug_logger.dart';
 import '../services/recently_played_service.dart';
+import '../services/image_prefetch_service.dart';
 import '../services/library_status_service.dart';
 import '../widgets/global_player_overlay.dart';
 import '../widgets/provider_icon.dart';
@@ -785,6 +786,7 @@ class _AlbumDetailsScreenState extends State<AlbumDetailsScreen> with SingleTick
                       fit: BoxFit.contain,
                       memCacheWidth: 1024,
                       memCacheHeight: 1024,
+                      cacheManager: AlbumImageCacheManager(),
                     ),
                   ),
                 ),
@@ -903,9 +905,15 @@ class _AlbumDetailsScreenState extends State<AlbumDetailsScreen> with SingleTick
                                           // Match source memCacheWidth for smooth Hero
                                           memCacheWidth: 256,
                                           memCacheHeight: 256,
+                                          // Share the cache album covers are prefetched into after sync.
+                                          cacheManager: AlbumImageCacheManager(),
                                           fadeInDuration: Duration.zero,
                                           fadeOutDuration: Duration.zero,
-                                          placeholder: (_, __) => const SizedBox(),
+                                          placeholder: (_, __) => Icon(
+                                            Icons.album_rounded,
+                                            size: coverSize * 0.43,
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
                                           errorWidget: (_, __, ___) => Icon(
                                             Icons.album_rounded,
                                             size: coverSize * 0.43,

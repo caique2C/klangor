@@ -8,6 +8,7 @@ import '../screens/artist_details_screen.dart';
 import '../constants/hero_tags.dart';
 import '../constants/timings.dart';
 import '../utils/page_transitions.dart';
+import '../services/image_prefetch_service.dart';
 import '../services/library_status_service.dart';
 import '../l10n/app_localizations.dart';
 import 'media_context_menu.dart';
@@ -309,6 +310,8 @@ class _ArtistCardState extends State<ArtistCard> with LibraryStatusMixin {
                             // photos (e.g. band photos) keep their aspect ratio
                             // during decode instead of being squashed to a square.
                             memCacheWidth: cacheSize,
+                            // Share the cache artist images are prefetched into after sync.
+                            cacheManager: ArtistImageCacheManager(),
                             fadeInDuration: Duration.zero,
                             fadeOutDuration: Duration.zero,
                             placeholder: (context, url) => const SizedBox(),

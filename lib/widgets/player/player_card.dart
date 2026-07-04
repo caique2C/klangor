@@ -7,6 +7,7 @@ import '../../theme/design_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/debug_logger.dart';
 import '../../services/settings_service.dart';
+import '../../services/image_prefetch_service.dart';
 
 final _volumeLogger = DebugLogger();
 
@@ -239,6 +240,7 @@ class _PlayerCardState extends State<PlayerCard> {
                     fit: BoxFit.cover,
                     memCacheWidth: 128,
                     memCacheHeight: 128,
+                    cacheManager: AlbumImageCacheManager(),
                     fadeInDuration: Duration.zero,
                     fadeOutDuration: Duration.zero,
                     placeholder: (_, __) => _buildSpeakerIcon(),

@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/music_assistant_provider.dart';
 import '../models/media_item.dart';
 import '../widgets/common/empty_state.dart';
+import '../services/image_prefetch_service.dart';
 import '../l10n/app_localizations.dart';
 
 class LibraryTracksScreen extends StatelessWidget {
@@ -95,7 +96,7 @@ class LibraryTracksScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
             image: imageUrl != null
                 ? DecorationImage(
-                    image: CachedNetworkImageProvider(imageUrl),
+                    image: CachedNetworkImageProvider(imageUrl, cacheManager: AlbumImageCacheManager()),
                     fit: BoxFit.cover,
                   )
                 : null,

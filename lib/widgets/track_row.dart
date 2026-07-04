@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../models/media_item.dart';
 import '../providers/music_assistant_provider.dart';
 import '../services/debug_logger.dart';
+import '../services/image_prefetch_service.dart';
 import '../services/library_status_service.dart';
 import 'media_context_menu.dart';
 import 'library_status_builder.dart';
@@ -431,10 +432,18 @@ class _TrackCardState extends State<_TrackCard> with LibraryStatusMixin {
                           fit: BoxFit.cover,
                           memCacheWidth: 256,
                           memCacheHeight: 256,
+                          // Share the cache album covers are prefetched into after sync.
+                          cacheManager: AlbumImageCacheManager(),
                           // PERF: Duration.zero for smooth scrolling
                           fadeInDuration: Duration.zero,
                           fadeOutDuration: Duration.zero,
-                          placeholder: (context, url) => const SizedBox(),
+                          placeholder: (context, url) => Center(
+                            child: Icon(
+                              Icons.music_note_rounded,
+                              size: 64,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
                           errorWidget: (context, url, error) => Icon(
                             Icons.music_note_rounded,
                             size: 64,

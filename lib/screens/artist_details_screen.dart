@@ -20,6 +20,7 @@ import '../l10n/app_localizations.dart';
 import '../theme/design_tokens.dart';
 import '../services/library_status_service.dart';
 import '../widgets/library_status_builder.dart';
+import '../services/image_prefetch_service.dart';
 
 class ArtistDetailsScreen extends StatefulWidget {
   final Artist artist;
@@ -613,16 +614,27 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> with LibraryS
 
   Future<void> _loadArtistImage() async {
     final maProvider = context.read<MusicAssistantProvider>();
-
     final imageUrl = maProvider.getImageUrl(widget.artist, size: 512);
 
-    if (mounted && imageUrl != null) {
-      setState(() {
-        _artistImageUrl = imageUrl;
-      });
-      // Extract colors after we have the image
-      _extractColors(imageUrl);
+    if (imageUrl == null || imageUrl == _artistImageUrl || !mounted) return;
+
+    try {
+      // Precache before swapping so the visible image never regresses to a
+      // blank placeholder while the higher-res version loads — e.g. during
+      // a slow or flaky connection to the Music Assistant server. Keep
+      // showing whatever image is already on screen until the new one
+      // is actually ready.
+      await precacheImage(CachedNetworkImageProvider(imageUrl, cacheManager: ArtistImageCacheManager()), context);
+    } catch (_) {
+      return;
     }
+
+    if (!mounted) return;
+    setState(() {
+      _artistImageUrl = imageUrl;
+    });
+    // Extract colors after we have the image
+    _extractColors(imageUrl);
   }
 
   Future<void> _extractColors(String imageUrl) async {
@@ -935,9 +947,15 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> with LibraryS
                                 // photos (e.g. band photos) keep their aspect ratio
                                 // during decode instead of being squashed to a square.
                                 memCacheWidth: 256,
+                                // Share the cache artist images are prefetched into after sync.
+                                cacheManager: ArtistImageCacheManager(),
                                 fadeInDuration: Duration.zero,
                                 fadeOutDuration: Duration.zero,
-                                placeholder: (_, __) => const SizedBox(),
+                                placeholder: (_, __) => Icon(
+                                  Icons.person_rounded,
+                                  size: coverSize * 0.5,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
                                 errorWidget: (_, __, ___) => Icon(
                                   Icons.person_rounded,
                                   size: coverSize * 0.5,
@@ -1268,20 +1286,20 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> with LibraryS
                                 height: double.infinity,
                                 fadeInDuration: Duration.zero,
                                 fadeOutDuration: Duration.zero,
-                                errorWidget: (_, __, ___) => Center(
-                                  child: Icon(
-                                    Icons.album_rounded,
-                                    size: 64,
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
+                                // Share the cache album covers are prefetched into after sync.
+                                cacheManager: AlbumImageCacheManager(),
+                                placeholder: (_, __) => _AlbumTitlePlaceholder(
+                                  title: album.name,
+                                  colorScheme: colorScheme,
+                                ),
+                                errorWidget: (_, __, ___) => _AlbumTitlePlaceholder(
+                                  title: album.name,
+                                  colorScheme: colorScheme,
                                 ),
                               )
-                            : Center(
-                                child: Icon(
-                                  Icons.album_rounded,
-                                  size: 64,
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
+                            : _AlbumTitlePlaceholder(
+                                title: album.name,
+                                colorScheme: colorScheme,
                               ),
                       ),
                     ),
@@ -1404,14 +1422,19 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> with LibraryS
                     fit: BoxFit.cover,
                     fadeInDuration: Duration.zero,
                     fadeOutDuration: Duration.zero,
-                    errorWidget: (_, __, ___) => Icon(
-                      Icons.album_rounded,
-                      color: colorScheme.onSurfaceVariant,
+                    cacheManager: AlbumImageCacheManager(),
+                    placeholder: (_, __) => _AlbumTitlePlaceholder(
+                      title: album.name,
+                      colorScheme: colorScheme,
+                    ),
+                    errorWidget: (_, __, ___) => _AlbumTitlePlaceholder(
+                      title: album.name,
+                      colorScheme: colorScheme,
                     ),
                   )
-                : Icon(
-                    Icons.album_rounded,
-                    color: colorScheme.onSurfaceVariant,
+                : _AlbumTitlePlaceholder(
+                    title: album.name,
+                    colorScheme: colorScheme,
                   ),
           ),
         ),
@@ -1445,6 +1468,34 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> with LibraryS
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Shown in place of album art while the cover is loading (or missing/failed)
+/// so the tile never reads as blank while waiting on a slow connection.
+class _AlbumTitlePlaceholder extends StatelessWidget {
+  final String title;
+  final ColorScheme colorScheme;
+
+  const _AlbumTitlePlaceholder({required this.title, required this.colorScheme});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: colorScheme.surfaceVariant,
+      alignment: Alignment.center,
+      padding: const EdgeInsets.all(8),
+      child: Text(
+        title,
+        textAlign: TextAlign.center,
+        maxLines: 3,
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     );
   }

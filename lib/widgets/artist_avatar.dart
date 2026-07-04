@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import '../models/media_item.dart';
 import '../providers/music_assistant_provider.dart';
+import '../services/image_prefetch_service.dart';
 
 /// A CircleAvatar that shows the artist image from Music Assistant.
 class ArtistAvatar extends StatefulWidget {
@@ -60,6 +61,8 @@ class _ArtistAvatarState extends State<ArtistAvatar> {
           // band photos) keep their aspect ratio during decode instead of
           // being squashed to a square before BoxFit.cover can crop them.
           memCacheWidth: widget.imageSize,
+          // Share the cache artist images are prefetched into after sync.
+          cacheManager: ArtistImageCacheManager(),
           fadeInDuration: Duration.zero,
           fadeOutDuration: Duration.zero,
           placeholder: (context, url) => Container(

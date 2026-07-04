@@ -1,7 +1,7 @@
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'debug_logger.dart';
 
-/// Custom cache manager for album images with extended retention
+/// Custom cache manager for album (and audiobook) images with extended retention
 class AlbumImageCacheManager extends CacheManager with ImageCacheManager {
   static const key = 'albumImageCache';
 
@@ -16,7 +16,24 @@ class AlbumImageCacheManager extends CacheManager with ImageCacheManager {
         ));
 }
 
-/// Service to prefetch album images in the background after sync
+/// Custom cache manager for artist images with extended retention.
+/// Kept separate from [AlbumImageCacheManager] so artists and albums each
+/// get their own eviction budget instead of competing for the same slots.
+class ArtistImageCacheManager extends CacheManager with ImageCacheManager {
+  static const key = 'artistImageCache';
+
+  static final ArtistImageCacheManager _instance = ArtistImageCacheManager._();
+  factory ArtistImageCacheManager() => _instance;
+
+  ArtistImageCacheManager._()
+      : super(Config(
+          key,
+          stalePeriod: const Duration(days: 30),
+          maxNrOfCacheObjects: 2000,
+        ));
+}
+
+/// Service to prefetch album/artist images in the background after sync
 class ImagePrefetchService {
   static final _logger = DebugLogger();
   bool _cancelled = false;
@@ -27,11 +44,11 @@ class ImagePrefetchService {
   }
 
   /// Prefetch images in batches, skipping already-cached URLs
-  Future<void> prefetchImages(List<String> urls) async {
+  Future<void> prefetchImages(List<String> urls, {CacheManager? cacheManager}) async {
     _cancelled = false;
     if (urls.isEmpty) return;
 
-    final cacheManager = AlbumImageCacheManager();
+    final manager = cacheManager ?? AlbumImageCacheManager();
     int cached = 0;
     int skipped = 0;
     int failed = 0;
@@ -46,12 +63,12 @@ class ImagePrefetchService {
       final batch = urls.skip(i).take(batchSize);
       await Future.wait(batch.map((url) async {
         try {
-          final fileInfo = await cacheManager.getFileFromCache(url);
+          final fileInfo = await manager.getFileFromCache(url);
           if (fileInfo != null) {
             skipped++;
             return;
           }
-          await cacheManager.downloadFile(url);
+          await manager.downloadFile(url);
           cached++;
         } catch (_) {
           failed++;

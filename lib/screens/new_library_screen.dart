@@ -20,6 +20,7 @@ import '../widgets/letter_scrollbar.dart';
 import '../widgets/hires_badge.dart';
 import '../widgets/media_context_menu.dart';
 import '../services/settings_service.dart';
+import '../services/image_prefetch_service.dart';
 import '../services/debug_logger.dart';
 import '../services/sync_service.dart';
 import '../l10n/app_localizations.dart';
@@ -4352,7 +4353,12 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
                     fit: BoxFit.cover,
                     memCacheWidth: 128,
                     memCacheHeight: 128,
-                    placeholder: (_, __) => const SizedBox(),
+                    // Share the cache album covers are prefetched into after sync.
+                    cacheManager: AlbumImageCacheManager(),
+                    placeholder: (_, __) => Icon(
+                      Icons.album_rounded,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                     errorWidget: (_, __, ___) => Icon(
                       Icons.album_rounded,
                       color: colorScheme.onSurfaceVariant,
