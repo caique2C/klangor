@@ -4479,9 +4479,15 @@ class MusicAssistantProvider with ChangeNotifier {
 
         // Priority 2: Local player (default fallback)
         // Try available first, then accept unavailable (Sendspin may still be registering)
+        // Newer Music Assistant versions wrap Sendspin-registered players behind a
+        // 'universal_player' entry with id "up" + lowercase(original id) — match that too.
+        bool matchesBuiltin(Player p, String builtinId) =>
+            p.playerId == builtinId ||
+            p.playerId.toLowerCase() == 'up${builtinId.toLowerCase()}';
+
         if (playerToSelect == null && builtinPlayerId != null) {
           playerToSelect = _availablePlayers.cast<Player?>().firstWhere(
-            (p) => p!.playerId == builtinPlayerId && p.available,
+            (p) => matchesBuiltin(p!, builtinPlayerId) && p.available,
             orElse: () => null,
           );
           if (playerToSelect != null) {
@@ -4489,7 +4495,7 @@ class MusicAssistantProvider with ChangeNotifier {
           } else {
             // Player exists but not yet available (Sendspin registration in progress)
             playerToSelect = _availablePlayers.cast<Player?>().firstWhere(
-              (p) => p!.playerId == builtinPlayerId,
+              (p) => matchesBuiltin(p!, builtinPlayerId),
               orElse: () => null,
             );
             if (playerToSelect != null) {
