@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+
 import 'package:material_symbols_icons/symbols.dart';
 import '../models/media_item.dart';
 import '../providers/music_assistant_provider.dart';
@@ -632,14 +632,14 @@ class _AudiobookDetailScreenState extends State<AudiobookDetailScreen> {
                                         fadeOutDuration: Duration.zero,
                                         placeholder: (_, __) => Center(
                                           child: Icon(
-                                            MdiIcons.bookOutline,
+                                            Icons.menu_book,
                                             size: coverSize * 0.43,
                                             color: colorScheme.onSurfaceVariant,
                                           ),
                                         ),
                                         errorWidget: (_, __, ___) => Center(
                                           child: Icon(
-                                            MdiIcons.bookOutline,
+                                            Icons.menu_book,
                                             size: coverSize * 0.43,
                                             color: colorScheme.onSurfaceVariant,
                                           ),
@@ -647,7 +647,7 @@ class _AudiobookDetailScreenState extends State<AudiobookDetailScreen> {
                                       )
                                     : Center(
                                         child: Icon(
-                                          MdiIcons.bookOutline,
+                                          Icons.menu_book,
                                           size: coverSize * 0.43,
                                           color: colorScheme.onSurfaceVariant,
                                         ),

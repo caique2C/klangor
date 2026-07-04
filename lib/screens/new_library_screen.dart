@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:palette_generator/palette_generator.dart';
 import '../providers/music_assistant_provider.dart';
 import '../providers/navigation_provider.dart';
@@ -1608,13 +1607,13 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
     IconData getMediaTypeIcon(LibraryMediaType type) {
       switch (type) {
         case LibraryMediaType.music:
-          return MdiIcons.musicNote;
+          return Icons.music_note;
         case LibraryMediaType.books:
-          return MdiIcons.bookOpenPageVariant;
+          return Icons.menu_book;
         case LibraryMediaType.podcasts:
-          return MdiIcons.podcast;
+          return Icons.podcasts;
         case LibraryMediaType.radio:
-          return MdiIcons.radio;
+          return Icons.radio;
       }
     }
 
@@ -2367,7 +2366,7 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
           }
           return EmptyState.custom(
             context: context,
-            icon: MdiIcons.bookOutline,
+            icon: Icons.menu_book,
             title: l10n.noAudiobooks,
             subtitle: l10n.addAudiobooksHint,
             onRefresh: () => _loadAudiobooks(),
@@ -2635,12 +2634,12 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
                     memCacheHeight: 256,
                     placeholder: (_, __) => const SizedBox(),
                     errorWidget: (_, __, ___) => Icon(
-                      MdiIcons.bookOutline,
+                      Icons.menu_book,
                       color: colorScheme.onSurfaceVariant,
                     ),
                   )
                 : Icon(
-                    MdiIcons.bookOutline,
+                    Icons.menu_book,
                     color: colorScheme.onSurfaceVariant,
                   ),
           ),
@@ -2758,7 +2757,7 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
           }
           return EmptyState.custom(
             context: context,
-            icon: MdiIcons.bookOutline,
+            icon: Icons.menu_book,
             title: l10n.noAudiobooks,
             subtitle: l10n.addAudiobooksHint,
             onRefresh: () => _loadAudiobooks(),
@@ -2869,7 +2868,7 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
                               placeholder: (_, __) => const SizedBox(),
                               errorWidget: (_, __, ___) => Center(
                                 child: Icon(
-                                  MdiIcons.bookOutline,
+                                  Icons.menu_book,
                                   size: 48,
                                   color: colorScheme.onSurfaceVariant,
                                 ),
@@ -2877,7 +2876,7 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
                             )
                           : Center(
                               child: Icon(
-                                MdiIcons.bookOutline,
+                                Icons.menu_book,
                                 size: 48,
                                 color: colorScheme.onSurfaceVariant,
                               ),
@@ -3459,7 +3458,7 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
       }
       return EmptyState.custom(
         context: context,
-        icon: MdiIcons.podcast,
+        icon: Icons.podcasts,
         title: l10n.noPodcasts,
         subtitle: l10n.addPodcastsHint,
         onRefresh: () => maProvider.loadPodcasts(),
@@ -3541,12 +3540,12 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
                                   fadeOutDuration: Duration.zero,
                                   placeholder: (_, __) => const SizedBox(),
                                   errorWidget: (_, __, ___) => Icon(
-                                    MdiIcons.podcast,
+                                    Icons.podcasts,
                                     color: colorScheme.onSurfaceVariant,
                                   ),
                                 )
                               : Icon(
-                                  MdiIcons.podcast,
+                                  Icons.podcasts,
                                   color: colorScheme.onSurfaceVariant,
                                 ),
                         ),
@@ -3643,7 +3642,7 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
                               placeholder: (_, __) => const SizedBox(),
                               errorWidget: (_, __, ___) => Center(
                                 child: Icon(
-                                  MdiIcons.podcast,
+                                  Icons.podcasts,
                                   size: 48,
                                   color: colorScheme.onSurfaceVariant,
                                 ),
@@ -3651,7 +3650,7 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
                             )
                           : Center(
                               child: Icon(
-                                MdiIcons.podcast,
+                                Icons.podcasts,
                                 size: 48,
                                 color: colorScheme.onSurfaceVariant,
                               ),
@@ -3772,7 +3771,7 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
       }
       return EmptyState.custom(
         context: context,
-        icon: MdiIcons.radio,
+        icon: Icons.radio,
         title: l10n.noRadioStations,
         subtitle: l10n.addRadioStationsHint,
         onRefresh: () => maProvider.loadRadioStations(),
@@ -3843,20 +3842,20 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
                                 width: 48,
                                 height: 48,
                                 color: colorScheme.surfaceVariant,
-                                child: Icon(MdiIcons.radio, color: colorScheme.onSurfaceVariant),
+                                child: Icon(Icons.radio, color: colorScheme.onSurfaceVariant),
                               ),
                               errorWidget: (context, url, error) => Container(
                                 width: 48,
                                 height: 48,
                                 color: colorScheme.surfaceVariant,
-                                child: Icon(MdiIcons.radio, color: colorScheme.onSurfaceVariant),
+                                child: Icon(Icons.radio, color: colorScheme.onSurfaceVariant),
                               ),
                             )
                           : Container(
                               width: 48,
                               height: 48,
                               color: colorScheme.surfaceVariant,
-                              child: Icon(MdiIcons.radio, color: colorScheme.onSurfaceVariant),
+                              child: Icon(Icons.radio, color: colorScheme.onSurfaceVariant),
                             ),
                     ),
                     title: Text(
@@ -3942,7 +3941,7 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
                         placeholder: (context, url) => const SizedBox(),
                         errorWidget: (context, url, error) => Center(
                           child: Icon(
-                            MdiIcons.radio,
+                            Icons.radio,
                             size: 48,
                             color: colorScheme.onSurfaceVariant,
                           ),
@@ -3950,7 +3949,7 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
                       )
                     : Center(
                         child: Icon(
-                          MdiIcons.radio,
+                          Icons.radio,
                           size: 48,
                           color: colorScheme.onSurfaceVariant,
                         ),

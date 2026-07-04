@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+
 import '../models/media_item.dart';
 import '../providers/music_assistant_provider.dart';
 import '../widgets/global_player_overlay.dart';
@@ -299,7 +299,7 @@ class _PodcastEpisodeDetailScreenState extends State<PodcastEpisodeDetailScreen>
                                             fadeOutDuration: Duration.zero,
                                             errorWidget: (_, __, ___) => Center(
                                               child: Icon(
-                                                MdiIcons.podcast,
+                                                Icons.podcasts,
                                                 size: coverSize * 0.43,
                                                 color: colorScheme.onSurfaceVariant,
                                               ),
@@ -307,7 +307,7 @@ class _PodcastEpisodeDetailScreenState extends State<PodcastEpisodeDetailScreen>
                                           )
                                         : Center(
                                             child: Icon(
-                                              MdiIcons.podcast,
+                                              Icons.podcasts,
                                               size: coverSize * 0.43,
                                               color: colorScheme.onSurfaceVariant,
                                             ),

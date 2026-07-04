@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import '../services/image_prefetch_service.dart';
 import '../l10n/app_localizations.dart';
 import '../models/media_item.dart';
@@ -458,14 +457,14 @@ class _AudiobookCardState extends State<_AudiobookCard> with LibraryStatusMixin 
                               memCacheHeight: 256,
                               placeholder: (_, __) => Center(
                                 child: Icon(
-                                  MdiIcons.bookOutline,
+                                  Icons.menu_book,
                                   size: 48,
                                   color: colorScheme.onSurfaceVariant,
                                 ),
                               ),
                               errorWidget: (_, __, ___) => Center(
                                 child: Icon(
-                                  MdiIcons.bookOutline,
+                                  Icons.menu_book,
                                   size: 48,
                                   color: colorScheme.onSurfaceVariant,
                                 ),
@@ -473,7 +472,7 @@ class _AudiobookCardState extends State<_AudiobookCard> with LibraryStatusMixin 
                             )
                           : Center(
                               child: Icon(
-                                MdiIcons.bookOutline,
+                                Icons.menu_book,
                                 size: 48,
                                 color: colorScheme.onSurfaceVariant,
                               ),

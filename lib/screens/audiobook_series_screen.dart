@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:palette_generator/palette_generator.dart';
 import '../models/media_item.dart';
 import '../providers/music_assistant_provider.dart';
@@ -729,14 +728,14 @@ class _AudiobookSeriesScreenState extends State<AudiobookSeriesScreen> {
                               fadeOutDuration: Duration.zero,
                               placeholder: (_, __) => Center(
                                 child: Icon(
-                                  MdiIcons.bookOutline,
+                                  Icons.menu_book,
                                   size: 48,
                                   color: colorScheme.onSurfaceVariant,
                                 ),
                               ),
                               errorWidget: (_, __, ___) => Center(
                                 child: Icon(
-                                  MdiIcons.bookOutline,
+                                  Icons.menu_book,
                                   size: 48,
                                   color: colorScheme.onSurfaceVariant,
                                 ),
@@ -744,7 +743,7 @@ class _AudiobookSeriesScreenState extends State<AudiobookSeriesScreen> {
                             )
                           : Center(
                               child: Icon(
-                                MdiIcons.bookOutline,
+                                Icons.menu_book,
                                 size: 48,
                                 color: colorScheme.onSurfaceVariant,
                               ),
@@ -831,16 +830,16 @@ class _AudiobookSeriesScreenState extends State<AudiobookSeriesScreen> {
                           fadeInDuration: Duration.zero,
                           fadeOutDuration: Duration.zero,
                           placeholder: (_, __) => Icon(
-                            MdiIcons.bookOutline,
+                            Icons.menu_book,
                             color: colorScheme.onSurfaceVariant,
                           ),
                           errorWidget: (_, __, ___) => Icon(
-                            MdiIcons.bookOutline,
+                            Icons.menu_book,
                             color: colorScheme.onSurfaceVariant,
                           ),
                         )
                       : Icon(
-                          MdiIcons.bookOutline,
+                          Icons.menu_book,
                           color: colorScheme.onSurfaceVariant,
                         ),
                 ),

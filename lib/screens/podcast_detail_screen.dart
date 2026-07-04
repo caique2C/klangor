@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../models/media_item.dart';
 import '../providers/music_assistant_provider.dart';
@@ -715,14 +714,14 @@ class _PodcastDetailScreenState extends State<PodcastDetailScreen> {
                                             fadeOutDuration: Duration.zero,
                                             placeholder: (_, __) => Center(
                                               child: Icon(
-                                                MdiIcons.podcast,
+                                                Icons.podcasts,
                                                 size: coverSize * 0.43,
                                                 color: colorScheme.onSurfaceVariant,
                                               ),
                                             ),
                                             errorWidget: (_, __, ___) => Center(
                                               child: Icon(
-                                                MdiIcons.podcast,
+                                                Icons.podcasts,
                                                 size: coverSize * 0.43,
                                                 color: colorScheme.onSurfaceVariant,
                                               ),
@@ -730,7 +729,7 @@ class _PodcastDetailScreenState extends State<PodcastDetailScreen> {
                                           )
                                         : Center(
                                             child: Icon(
-                                              MdiIcons.podcast,
+                                              Icons.podcasts,
                                               size: coverSize * 0.43,
                                               color: colorScheme.onSurfaceVariant,
                                             ),
@@ -973,7 +972,7 @@ class _PodcastDetailScreenState extends State<PodcastDetailScreen> {
                         child: Column(
                           children: [
                             Icon(
-                              MdiIcons.microphoneOff,
+                              Icons.mic_off,
                               size: 48,
                               color: colorScheme.onSurface.withOpacity(0.3),
                             ),
@@ -1030,18 +1029,18 @@ class _PodcastDetailScreenState extends State<PodcastDetailScreen> {
                                               fadeInDuration: Duration.zero,
                                               fadeOutDuration: Duration.zero,
                                               placeholder: (_, __) => Icon(
-                                                MdiIcons.podcast,
+                                                Icons.podcasts,
                                                 size: 32,
                                                 color: colorScheme.onSurfaceVariant,
                                               ),
                                               errorWidget: (_, __, ___) => Icon(
-                                                MdiIcons.podcast,
+                                                Icons.podcasts,
                                                 size: 32,
                                                 color: colorScheme.onSurfaceVariant,
                                               ),
                                             )
                                           : Icon(
-                                              MdiIcons.podcast,
+                                              Icons.podcasts,
                                               size: 32,
                                               color: colorScheme.onSurfaceVariant,
                                             ),

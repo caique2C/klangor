@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import '../models/media_item.dart';
 import '../providers/music_assistant_provider.dart';
 import '../screens/podcast_detail_screen.dart';
@@ -306,7 +305,7 @@ class _PodcastCardState extends State<PodcastCard> with LibraryStatusMixin {
                                 placeholder: (context, url) => const SizedBox(),
                                 errorWidget: (context, url, error) => Center(
                                   child: Icon(
-                                    MdiIcons.podcast,
+                                    Icons.podcasts,
                                     size: 64,
                                     color: colorScheme.onSurfaceVariant,
                                   ),
@@ -314,7 +313,7 @@ class _PodcastCardState extends State<PodcastCard> with LibraryStatusMixin {
                               )
                             : Center(
                                 child: Icon(
-                                  MdiIcons.podcast,
+                                  Icons.podcasts,
                                   size: 64,
                                   color: colorScheme.onSurfaceVariant,
                                 ),

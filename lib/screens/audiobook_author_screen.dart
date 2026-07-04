@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+
 import '../models/media_item.dart';
 import '../providers/music_assistant_provider.dart';
 import '../widgets/global_player_overlay.dart';
@@ -337,7 +337,7 @@ class _AudiobookAuthorScreenState extends State<AudiobookAuthorScreen> {
                           children: [
                             // Icon always present underneath
                             Icon(
-                              MdiIcons.accountOutline,
+                              Icons.person_outline,
                               size: coverSize * 0.5,
                               color: colorScheme.onPrimaryContainer,
                             ),
@@ -569,14 +569,14 @@ class _AudiobookAuthorScreenState extends State<AudiobookAuthorScreen> {
                               fadeOutDuration: Duration.zero,
                               placeholder: (_, __) => Center(
                                 child: Icon(
-                                  MdiIcons.bookOutline,
+                                  Icons.menu_book,
                                   size: 48,
                                   color: colorScheme.onSurfaceVariant,
                                 ),
                               ),
                               errorWidget: (_, __, ___) => Center(
                                 child: Icon(
-                                  MdiIcons.bookOutline,
+                                  Icons.menu_book,
                                   size: 48,
                                   color: colorScheme.onSurfaceVariant,
                                 ),
@@ -584,7 +584,7 @@ class _AudiobookAuthorScreenState extends State<AudiobookAuthorScreen> {
                             )
                           : Center(
                               child: Icon(
-                                MdiIcons.bookOutline,
+                                Icons.menu_book,
                                 size: 48,
                                 color: colorScheme.onSurfaceVariant,
                               ),
@@ -691,16 +691,16 @@ class _AudiobookAuthorScreenState extends State<AudiobookAuthorScreen> {
                         fadeInDuration: Duration.zero,
                         fadeOutDuration: Duration.zero,
                         placeholder: (_, __) => Icon(
-                          MdiIcons.bookOutline,
+                          Icons.menu_book,
                           color: colorScheme.onSurfaceVariant,
                         ),
                         errorWidget: (_, __, ___) => Icon(
-                          MdiIcons.bookOutline,
+                          Icons.menu_book,
                           color: colorScheme.onSurfaceVariant,
                         ),
                       )
                     : Icon(
-                        MdiIcons.bookOutline,
+                        Icons.menu_book,
                         color: colorScheme.onSurfaceVariant,
                       ),
               ),
