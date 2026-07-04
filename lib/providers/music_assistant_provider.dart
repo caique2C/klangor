@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:audio_service/audio_service.dart' as audio_service;
@@ -99,6 +100,14 @@ class MusicAssistantProvider with ChangeNotifier {
   Timer? _idleServiceTimer;
   static const _idleServiceTimeout = Duration(minutes: 30);
 
+  // Artwork content:// URI helper for Android Auto compatibility
+  static const _artworkAuthority = 'com.collotsspot.ensemble.artwork';
+  static Uri? _contentArtUri(String? httpUrl) {
+    if (httpUrl == null) return null;
+    final encoded = base64Url.encode(utf8.encode(httpUrl));
+    return Uri.parse('content://$_artworkAuthority/$encoded');
+  }
+
   // Local player state
   bool _isLocalPlayerPowered = true;
   int _localPlayerVolume = 100; // Tracked MA volume for builtin player (0-100)
@@ -117,6 +126,7 @@ class MusicAssistantProvider with ChangeNotifier {
   TrackMetadata? _pendingTrackMetadata;
   TrackMetadata? _currentNotificationMetadata;
   Completer<void>? _registrationInProgress;
+  Completer<void>? _reconnectInProgress;
 
   // Local player service
   late final LocalPlayerService _localPlayer;
@@ -681,6 +691,40 @@ class MusicAssistantProvider with ChangeNotifier {
     }
   }
 
+  /// Get the display artist string for a track, using podcast/radio/audiobook context when applicable
+  String _trackDisplayArtist(Track track) {
+    if (isPlayingAudiobook) {
+      return _currentAudiobook!.authorsString;
+    }
+    if (isPlayingPodcast) {
+      return currentPodcastName ?? 'Podcasts';
+    }
+    if (isPlayingRadio) {
+      return currentRadioStationName ?? track.artistsString;
+    }
+    // Fallback: check if track URI looks like an audiobook chapter
+    final uri = track.uri ?? '';
+    if (uri.contains('audiobook') || uri.contains('/chapter/')) {
+      // Try to find audiobook from cached data
+      final book = _findAudiobookForTrack(track);
+      if (book != null) {
+        _currentAudiobook = book;
+        _logger.log('📚 Auto-restored audiobook context: ${book.name}');
+        return book.authorsString;
+      }
+    }
+    return track.artistsString;
+  }
+
+  /// Try to find the audiobook that owns this track/chapter from cached data
+  Audiobook? _findAudiobookForTrack(Track track) {
+    final uri = track.uri ?? '';
+    for (final book in SyncService.instance.cachedAudiobooks) {
+      if (uri.contains(book.itemId)) return book;
+    }
+    return null;
+  }
+
   String get lastSearchQuery => _lastSearchQuery;
   Map<String, List<MediaItem>> get lastSearchResults => _lastSearchResults;
 
@@ -885,13 +929,29 @@ class MusicAssistantProvider with ChangeNotifier {
         // Restore selected player from settings
         final lastSelectedPlayerId = await SettingsService.getLastSelectedPlayerId();
         if (lastSelectedPlayerId != null) {
-          try {
-            _selectedPlayer = players.firstWhere((p) => p.playerId == lastSelectedPlayerId);
-            _cacheService.setCachedSelectedPlayer(_selectedPlayer);
+          _selectedPlayer = players.cast<Player?>().firstWhere(
+            (p) => p!.playerId == lastSelectedPlayerId,
+            orElse: () => null,
+          );
+          if (_selectedPlayer != null) {
             _logger.log('📦 Restored selected player from database: ${_selectedPlayer?.name}');
-          } catch (_) {
-            // Player not in cached list
           }
+        }
+        // Fallback to local/builtin player
+        if (_selectedPlayer == null) {
+          final builtinId = await SettingsService.getBuiltinPlayerId();
+          if (builtinId != null) {
+            _selectedPlayer = players.cast<Player?>().firstWhere(
+              (p) => p!.playerId == builtinId,
+              orElse: () => null,
+            );
+            if (_selectedPlayer != null) {
+              _logger.log('📦 Defaulted to local player: ${_selectedPlayer?.name}');
+            }
+          }
+        }
+        if (_selectedPlayer != null) {
+          _cacheService.setCachedSelectedPlayer(_selectedPlayer);
         }
 
         _logger.log('📦 Loaded ${players.length} players from database (instant)');
@@ -953,6 +1013,9 @@ class MusicAssistantProvider with ChangeNotifier {
         _logger.log('📦 Pre-loaded library for favorites: ${_albums.length} albums, ${_artists.length} artists');
         _syncLibraryStatusToService();
         notifyListeners();
+        audioHandler.invalidateAutoChildren(const [
+          'cat|artists', 'cat|albums', 'cat|playlists', 'cat|home',
+        ]);
       }
     } catch (e) {
       _logger.log('⚠️ Error loading library from cache: $e');
@@ -1946,6 +2009,12 @@ class MusicAssistantProvider with ChangeNotifier {
   }
 
   Future<void> checkAndReconnect() async {
+    // Deduplicate: if a reconnect is already in progress, join it
+    if (_reconnectInProgress != null) {
+      _logger.log('🔄 checkAndReconnect called — already in progress, joining existing attempt');
+      return _reconnectInProgress!.future;
+    }
+
     _logger.log('🔄 checkAndReconnect called - state: $_connectionState');
 
     if (_serverUrl == null) {
@@ -1953,60 +2022,82 @@ class MusicAssistantProvider with ChangeNotifier {
       return;
     }
 
-    // IMMEDIATELY load cached players for instant UI display
-    // This makes mini player and device button appear instantly on app resume
-    if (_availablePlayers.isEmpty && _cacheService.hasCachedPlayers) {
-      _availablePlayers = _cacheService.getCachedPlayers()!;
+    _reconnectInProgress = Completer<void>();
 
-      // Sort cached players immediately so list appears in correct order
-      final smartSort = await SettingsService.getSmartSortPlayers();
-      final builtinPlayerId = await SettingsService.getBuiltinPlayerId();
-      _sortPlayersSync(_availablePlayers, smartSort, builtinPlayerId);
+    try {
+      // IMMEDIATELY load cached players for instant UI display
+      // This makes mini player and device button appear instantly on app resume
+      if (_availablePlayers.isEmpty && _cacheService.hasCachedPlayers) {
+        _availablePlayers = _cacheService.getCachedPlayers()!;
 
-      _selectedPlayer = _cacheService.getCachedSelectedPlayer();
-      // Also try to restore from settings if cache doesn't have selected player
-      if (_selectedPlayer == null && _availablePlayers.isNotEmpty) {
-        final lastSelectedPlayerId = await SettingsService.getLastSelectedPlayerId();
-        if (lastSelectedPlayerId != null) {
-          try {
-            _selectedPlayer = _availablePlayers.firstWhere(
-              (p) => p.playerId == lastSelectedPlayerId,
+        // Sort cached players immediately so list appears in correct order
+        final smartSort = await SettingsService.getSmartSortPlayers();
+        final builtinPlayerId = await SettingsService.getBuiltinPlayerId();
+        _sortPlayersSync(_availablePlayers, smartSort, builtinPlayerId);
+
+        _selectedPlayer = _cacheService.getCachedSelectedPlayer();
+        // Also try to restore from settings if cache doesn't have selected player
+        if (_selectedPlayer == null && _availablePlayers.isNotEmpty) {
+          final lastSelectedPlayerId = await SettingsService.getLastSelectedPlayerId();
+          if (lastSelectedPlayerId != null) {
+            _selectedPlayer = _availablePlayers.cast<Player?>().firstWhere(
+              (p) => p!.playerId == lastSelectedPlayerId,
+              orElse: () => null,
             );
-          } catch (e) {
-            _selectedPlayer = _availablePlayers.first;
           }
-        } else {
-          _selectedPlayer = _availablePlayers.first;
+          // Fallback to local/builtin player
+          if (_selectedPlayer == null) {
+            final builtinId = await SettingsService.getBuiltinPlayerId();
+            if (builtinId != null) {
+              _selectedPlayer = _availablePlayers.cast<Player?>().firstWhere(
+                (p) => p!.playerId == builtinId,
+                orElse: () => null,
+              );
+            }
+          }
+          // Last resort: first available (only if no builtin player configured)
+          if (_selectedPlayer == null) {
+            final builtinConfigured = await SettingsService.getBuiltinPlayerId();
+            if (builtinConfigured == null) {
+              _selectedPlayer = _availablePlayers.first;
+            }
+          }
         }
+        _logger.log('⚡ Loaded ${_availablePlayers.length} cached players instantly (sorted)');
+        notifyListeners(); // Update UI immediately with cached data
       }
-      _logger.log('⚡ Loaded ${_availablePlayers.length} cached players instantly (sorted)');
-      notifyListeners(); // Update UI immediately with cached data
-    }
 
-    if (_connectionState != MAConnectionState.connected &&
-        _connectionState != MAConnectionState.authenticated) {
-      _logger.log('🔄 Not connected, attempting reconnect to $_serverUrl');
-      try {
-        await connectToServer(_serverUrl!);
-        _logger.log('🔄 Reconnection successful');
-      } catch (e) {
-        _logger.log('🔄 Reconnection failed: $e');
-      }
-    } else {
-      _logger.log('🔄 Already connected, verifying connection...');
-      try {
-        await refreshPlayers();
-        await _updatePlayerState();
-        // Note: _preloadAdjacentPlayers is already called in refreshPlayers() -> _loadAndSelectPlayers()
-        _logger.log('🔄 Connection verified, players and state refreshed');
-      } catch (e) {
-        _logger.log('🔄 Connection verification failed, reconnecting: $e');
+      if (_connectionState != MAConnectionState.connected &&
+          _connectionState != MAConnectionState.authenticated) {
+        _logger.log('🔄 Not connected, attempting reconnect to $_serverUrl');
         try {
           await connectToServer(_serverUrl!);
-        } catch (reconnectError) {
-          _logger.log('🔄 Reconnection failed: $reconnectError');
+          _logger.log('🔄 Reconnection successful');
+        } catch (e) {
+          _logger.log('🔄 Reconnection failed: $e');
+        }
+      } else {
+        _logger.log('🔄 Already connected, verifying connection...');
+        try {
+          await refreshPlayers();
+          await _updatePlayerState();
+          // Note: _preloadAdjacentPlayers is already called in refreshPlayers() -> _loadAndSelectPlayers()
+          _logger.log('🔄 Connection verified, players and state refreshed');
+        } catch (e) {
+          _logger.log('🔄 Connection verification failed, reconnecting: $e');
+          try {
+            await connectToServer(_serverUrl!);
+          } catch (reconnectError) {
+            _logger.log('🔄 Reconnection failed: $reconnectError');
+          }
         }
       }
+
+      _reconnectInProgress!.complete();
+    } catch (e) {
+      _reconnectInProgress!.completeError(e);
+    } finally {
+      _reconnectInProgress = null;
     }
   }
 
@@ -2029,15 +2120,42 @@ class MusicAssistantProvider with ChangeNotifier {
     };
     audioHandler.onPlay = () {
       _logger.log('🎵 Notification: Play pressed');
-      playPauseSelectedPlayer();
+      if (_selectedPlayer != null) {
+        resumePlayer(_selectedPlayer!.playerId);
+        unawaited(refreshPlayers());
+      }
     };
     audioHandler.onPause = () {
       _logger.log('🎵 Notification: Pause pressed');
-      playPauseSelectedPlayer();
+      if (_selectedPlayer != null) {
+        pausePlayer(_selectedPlayer!.playerId);
+      }
     };
     audioHandler.onSwitchPlayer = () {
       _logger.log('🎵 Notification: Switch player pressed');
       selectNextPlayer();
+    };
+    audioHandler.onBrowseActivity = () {
+      _cancelIdleServiceTimer();
+    };
+    audioHandler.onAAConnected = () async {
+      final playerId = await SettingsService.getBuiltinPlayerId();
+      if (playerId != null && _selectedPlayer?.playerId != playerId) {
+        final builtinPlayer = _availablePlayers
+            .where((p) => p.playerId == playerId)
+            .firstOrNull;
+        if (builtinPlayer != null) {
+          _logger.log('🎵 AA connected: auto-selecting builtin player "${builtinPlayer.name}"');
+          selectPlayer(builtinPlayer);
+        }
+      }
+    };
+    audioHandler.onAADisconnected = () async {
+      final builtinPlayerId = await SettingsService.getBuiltinPlayerId();
+      if (builtinPlayerId != null) {
+        _logger.log('🎵 AA disconnected: pausing builtin player');
+        pausePlayer(builtinPlayerId);
+      }
     };
 
     // Player registration is now handled in _initializeAfterConnection()
@@ -2466,6 +2584,11 @@ class MusicAssistantProvider with ChangeNotifier {
   /// 2. Start the foreground service to prevent background throttling
   /// 3. Reset position for new track and start position timer
   void _handleSendspinStreamStart(Map<String, dynamic>? trackInfo) async {
+    final aaDisc = audioHandler.aaDisconnectedAt;
+    if (aaDisc != null && DateTime.now().difference(aaDisc).inSeconds < 2) {
+      _logger.log('🎵 Sendspin: Ignoring stream/start (AA disconnected ${DateTime.now().difference(aaDisc).inMilliseconds}ms ago)');
+      return;
+    }
     _logger.log('🎵 Sendspin: Stream starting');
 
     // Ensure PCM player is initialized and ready
@@ -2508,25 +2631,46 @@ class MusicAssistantProvider with ChangeNotifier {
 
     // Keep the foreground service active to prevent Android from throttling
     // the PCM audio playback when the app goes to background.
-    // We use setRemotePlaybackState to maintain the notification without
-    // actually playing audio through just_audio.
-    final mediaItem = audio_service.MediaItem(
-      id: 'sendspin_pcm_stream',
-      title: title ?? 'Playing via Sendspin',
-      artist: artist ?? 'Music Assistant',
-      album: album,
-      artUri: artworkUrl != null ? Uri.parse(artworkUrl) : null,
-      duration: durationSecs != null ? Duration(seconds: durationSecs) : null,
-    );
-
-    // Initialize notification with position 0
+    // Use updateLocalModeNotification (NOT setRemotePlaybackState) to avoid
+    // conflicting mediaItem.add() calls — _updatePlayerState() also calls
+    // updateLocalModeNotification with the real track data.
     _cancelIdleServiceTimer();
-    audioHandler.setRemotePlaybackState(
-      item: mediaItem,
-      playing: true,
-      position: Duration.zero,
-      duration: mediaItem.duration,
-    );
+    if (_currentTrack != null) {
+      final track = _currentTrack!;
+      final trackArtworkUrl = _api?.getImageUrl(track, size: 512);
+      final displayArtist = _trackDisplayArtist(track);
+      final artistWithPlayer = '${displayArtist} • ${_selectedPlayer?.name ?? ''}';
+      final mediaItem = audio_service.MediaItem(
+        id: track.uri ?? track.itemId,
+        title: track.name,
+        artist: artistWithPlayer,
+        album: track.album?.name ?? '',
+        duration: track.duration,
+        artUri: _contentArtUri(trackArtworkUrl),
+      );
+      audioHandler.updateLocalModeNotification(
+        item: mediaItem,
+        playing: true,
+        duration: track.duration,
+        position: _positionTracker.currentPosition,
+      );
+    } else {
+      // No track data yet — use stream metadata as fallback
+      final mediaItem = audio_service.MediaItem(
+        id: 'sendspin_pcm_stream',
+        title: title ?? 'Playing via Sendspin',
+        artist: artist ?? 'Music Assistant',
+        album: album,
+        artUri: _contentArtUri(artworkUrl),
+        duration: durationSecs != null ? Duration(seconds: durationSecs) : null,
+      );
+      audioHandler.updateLocalModeNotification(
+        item: mediaItem,
+        playing: true,
+        duration: mediaItem.duration,
+        position: _positionTracker.currentPosition,
+      );
+    }
 
     // Start notification position timer for Sendspin PCM
     _manageNotificationPositionTimer();
@@ -2537,8 +2681,8 @@ class MusicAssistantProvider with ChangeNotifier {
   /// Handle Sendspin stream end - server stopped sending PCM audio data
   /// This is called when audio streaming ends (pause, stop, track end, etc.)
   void _handleSendspinStreamEnd() async {
-    // Capture current position before stopping
-    final lastPosition = _pcmAudioPlayer?.elapsedTime ?? Duration.zero;
+    // Use position tracker (server-synced) instead of PCM elapsed time which resets to 0 each stream
+    final lastPosition = _positionTracker.currentPosition;
     _logger.log('🎵 Sendspin: Stream ended at position ${lastPosition.inSeconds}s');
 
     // Stop notification position timer
@@ -2547,27 +2691,46 @@ class MusicAssistantProvider with ChangeNotifier {
     // Pause PCM playback (preserves position) instead of stop (resets position)
     await _pcmAudioPlayer?.pause();
 
-    // Update foreground service to show paused/stopped state with last position
-    // Don't completely clear it - keep showing the notification
-    // in case user wants to resume
-    final metadata = _currentNotificationMetadata;
-    final mediaItem = audio_service.MediaItem(
-      id: 'sendspin_pcm_stream',
-      title: metadata?.title ?? 'Music Assistant',
-      artist: metadata?.artist ?? 'Paused',
-      album: metadata?.album,
-      artUri: metadata?.artworkUrl != null ? Uri.parse(metadata!.artworkUrl!) : null,
-      duration: metadata?.duration,
-    );
-
-    // Show paused state with preserved position
+    // Update foreground service to show paused state with last position.
+    // Use updateLocalModeNotification (NOT setRemotePlaybackState) to avoid
+    // conflicting mediaItem.add() calls with _updatePlayerState().
     _cancelIdleServiceTimer();
-    audioHandler.setRemotePlaybackState(
-      item: mediaItem,
-      playing: false,
-      position: lastPosition,
-      duration: mediaItem.duration,
-    );
+    if (_currentTrack != null) {
+      final track = _currentTrack!;
+      final artworkUrl = _api?.getImageUrl(track, size: 512);
+      final displayArtist = _trackDisplayArtist(track);
+      final artistWithPlayer = '${displayArtist} • ${_selectedPlayer?.name ?? ''}';
+      final mediaItem = audio_service.MediaItem(
+        id: track.uri ?? track.itemId,
+        title: track.name,
+        artist: artistWithPlayer,
+        album: track.album?.name ?? '',
+        duration: track.duration,
+        artUri: _contentArtUri(artworkUrl),
+      );
+      audioHandler.updateLocalModeNotification(
+        item: mediaItem,
+        playing: false,
+        duration: track.duration,
+        position: lastPosition,
+      );
+    } else {
+      final metadata = _currentNotificationMetadata;
+      final mediaItem = audio_service.MediaItem(
+        id: 'sendspin_pcm_stream',
+        title: metadata?.title ?? 'Music Assistant',
+        artist: metadata?.artist ?? 'Paused',
+        album: metadata?.album,
+        artUri: _contentArtUri(metadata?.artworkUrl),
+        duration: metadata?.duration,
+      );
+      audioHandler.updateLocalModeNotification(
+        item: mediaItem,
+        playing: false,
+        duration: mediaItem.duration,
+        position: lastPosition,
+      );
+    }
   }
 
   void _startReportingLocalPlayerState() {
@@ -2771,6 +2934,7 @@ class MusicAssistantProvider with ChangeNotifier {
       final mediaType = event['media_type'] as String?;
       _cacheService.invalidateSearchCache();
       _scheduleLibraryRefresh(mediaType ?? 'artist');
+      audioHandler.invalidateAutoChildren(const ['cat|favorites', 'cat|home', 'cat|fav_tracks', 'cat|fav_albums', 'cat|fav_artists']);
     } catch (e) {
       _logger.log('Error handling media item added event: $e');
     }
@@ -2783,6 +2947,7 @@ class MusicAssistantProvider with ChangeNotifier {
       final mediaType = event['media_type'] as String?;
       _cacheService.invalidateSearchCache();
       _scheduleLibraryRefresh(mediaType ?? 'artist');
+      audioHandler.invalidateAutoChildren(const ['cat|favorites', 'cat|home', 'cat|fav_tracks', 'cat|fav_albums', 'cat|fav_artists']);
     } catch (e) {
       _logger.log('Error handling media item deleted event: $e');
     }
@@ -3821,6 +3986,17 @@ class MusicAssistantProvider with ChangeNotifier {
     if (_api == null) return _cacheService.getCachedArtistAlbums(cacheKey) ?? [];
 
     try {
+      // Ensure library is loaded for artist matching
+      if (_albums.isEmpty) {
+        final syncService = SyncService.instance;
+        if (!syncService.hasCache) {
+          await syncService.loadFromCache();
+        }
+        if (syncService.cachedAlbums.isNotEmpty) {
+          _albums = syncService.cachedAlbums;
+        }
+      }
+
       _logger.log('🔄 Fetching albums for artist "$artistName"...');
 
       // Use already-loaded library albums instead of re-fetching from API
@@ -3849,7 +4025,11 @@ class MusicAssistantProvider with ChangeNotifier {
         }
       }
 
-      _cacheService.setCachedArtistAlbums(cacheKey, allAlbums);
+      // Only cache if the library is loaded — empty results during cold start
+      // are likely due to SyncService not having finished yet
+      if (allAlbums.isNotEmpty) {
+        _cacheService.setCachedArtistAlbums(cacheKey, allAlbums);
+      }
       _logger.log('✅ Cached ${allAlbums.length} albums for artist "$artistName"');
       return allAlbums;
     } catch (e) {
@@ -4299,19 +4479,31 @@ class MusicAssistantProvider with ChangeNotifier {
         }
 
         // Priority 2: Local player (default fallback)
+        // Try available first, then accept unavailable (Sendspin may still be registering)
         if (playerToSelect == null && builtinPlayerId != null) {
-          try {
-            playerToSelect = _availablePlayers.firstWhere(
-              (p) => p.playerId == builtinPlayerId && p.available,
-            );
+          playerToSelect = _availablePlayers.cast<Player?>().firstWhere(
+            (p) => p!.playerId == builtinPlayerId && p.available,
+            orElse: () => null,
+          );
+          if (playerToSelect != null) {
             _logger.log('📱 Selected local player: ${playerToSelect.name}');
-          } catch (e) {
-            _logger.log('⚠️ Local player not available');
+          } else {
+            // Player exists but not yet available (Sendspin registration in progress)
+            playerToSelect = _availablePlayers.cast<Player?>().firstWhere(
+              (p) => p!.playerId == builtinPlayerId,
+              orElse: () => null,
+            );
+            if (playerToSelect != null) {
+              _logger.log('📱 Selected local player (pending availability): ${playerToSelect.name}');
+            } else {
+              _logger.log('⚠️ Local player not in player list yet — waiting for Sendspin registration');
+            }
           }
         }
 
-        // Priority 3: First available player
-        if (playerToSelect == null) {
+        // Priority 3: First available player (only if no local player configured)
+        // Don't fall back to another player if builtin player is configured but not yet registered
+        if (playerToSelect == null && builtinPlayerId == null) {
           playerToSelect = _availablePlayers.firstWhere(
             (p) => p.available,
             orElse: () => _availablePlayers.first,
@@ -4319,7 +4511,13 @@ class MusicAssistantProvider with ChangeNotifier {
           _logger.log('🔄 Fallback to first available player: ${playerToSelect.name}');
         }
 
-        selectPlayer(playerToSelect);
+        if (playerToSelect != null) {
+          selectPlayer(playerToSelect);
+        } else {
+          // Builtin player not yet registered — keep current selection if any,
+          // otherwise leave unselected until Sendspin registration completes
+          _logger.log('⏳ No player selected — awaiting builtin player registration');
+        }
       }
 
       // Preload track data and images in background for swipe gestures
@@ -4377,16 +4575,15 @@ class MusicAssistantProvider with ChangeNotifier {
       if (_currentTrack != null && (player.state == 'playing' || player.state == 'paused')) {
         final track = _currentTrack!;
         final artworkUrl = _api?.getImageUrl(track, size: 512);
-        final artistWithPlayer = track.artistsString.isNotEmpty
-            ? '${track.artistsString} • ${player.name}'
-            : player.name;
+        final displayArtist = _trackDisplayArtist(track);
+        final artistWithPlayer = '${displayArtist} • ${player.name}';
         final mediaItem = audio_service.MediaItem(
           id: track.uri ?? track.itemId,
           title: track.name,
           artist: artistWithPlayer,
           album: track.album?.name ?? '',
           duration: track.duration,
-          artUri: artworkUrl != null ? Uri.tryParse(artworkUrl) : null,
+          artUri: _contentArtUri(artworkUrl),
         );
         // Position comes from actual player in updateLocalModeNotification
         audioHandler.updateLocalModeNotification(
@@ -4405,8 +4602,29 @@ class MusicAssistantProvider with ChangeNotifier {
           item: mediaItem,
           playing: player.state == 'playing',
         );
+      } else if (_currentTrack != null) {
+        // Builtin player is idle but we have track data — show paused notification
+        // instead of clearing, to avoid artwork flash when AA toggles play/pause
+        final track = _currentTrack!;
+        final artworkUrl = _api?.getImageUrl(track, size: 512);
+        final displayArtist = _trackDisplayArtist(track);
+        final artistWithPlayer = '${displayArtist} • ${player.name}';
+        final mediaItem = audio_service.MediaItem(
+          id: track.uri ?? track.itemId,
+          title: track.name,
+          artist: artistWithPlayer,
+          album: track.album?.name ?? '',
+          duration: track.duration,
+          artUri: _contentArtUri(artworkUrl),
+        );
+        audioHandler.updateLocalModeNotification(
+          item: mediaItem,
+          playing: false,
+          duration: track.duration,
+        );
+        _startIdleServiceTimer();
       } else {
-        // Builtin player is idle - clear notification (fixes issue #42)
+        // Builtin player is idle with no track - clear notification
         audioHandler.clearRemotePlaybackState();
         _startIdleServiceTimer();
       }
@@ -4417,16 +4635,15 @@ class MusicAssistantProvider with ChangeNotifier {
         final track = _currentTrack!;
         final artworkUrl = _api?.getImageUrl(track, size: 512);
         // Include player name in artist line: "Artist • Player Name"
-        final artistWithPlayer = track.artistsString.isNotEmpty
-            ? '${track.artistsString} • ${player.name}'
-            : player.name;
+        final displayArtist = _trackDisplayArtist(track);
+        final artistWithPlayer = '${displayArtist} • ${player.name}';
         final mediaItem = audio_service.MediaItem(
           id: track.uri ?? track.itemId,
           title: track.name,
           artist: artistWithPlayer,
           album: track.album?.name ?? '',
           duration: track.duration,
-          artUri: artworkUrl != null ? Uri.tryParse(artworkUrl) : null,
+          artUri: _contentArtUri(artworkUrl),
         );
         // Use position tracker for consistent position
         final position = _positionTracker.currentPosition;
@@ -4556,7 +4773,6 @@ class MusicAssistantProvider with ChangeNotifier {
         return;
       }
       // Sendspin PCM player - continue to start timer
-      _logger.debug('🔔 Starting notification timer for Sendspin PCM player');
     }
 
     // Only run timer if player is playing
@@ -4599,25 +4815,37 @@ class MusicAssistantProvider with ChangeNotifier {
     }
 
     final artworkUrl = _api?.getImageUrl(track, size: 512);
-    final artistWithPlayer = track.artistsString.isNotEmpty
-        ? '${track.artistsString} • ${_selectedPlayer!.name}'
-        : _selectedPlayer!.name;
+    final displayArtist = _trackDisplayArtist(track);
+    final artistWithPlayer = '${displayArtist} • ${_selectedPlayer!.name}';
     final mediaItem = audio_service.MediaItem(
       id: track.uri ?? track.itemId,
       title: track.name,
       artist: artistWithPlayer,
       album: track.album?.name ?? '',
       duration: track.duration,
-      artUri: artworkUrl != null ? Uri.tryParse(artworkUrl) : null,
+      artUri: _contentArtUri(artworkUrl),
     );
 
     _cancelIdleServiceTimer();
-    audioHandler.setRemotePlaybackState(
-      item: mediaItem,
-      playing: isPlaying,
-      position: position,
-      duration: track.duration,
-    );
+
+    // Use updateLocalModeNotification for builtin players to avoid
+    // conflicting mediaItem.add() calls with _updatePlayerState()
+    final isBuiltinPlayer = _sendspinConnected && _pcmAudioPlayer != null;
+    if (isBuiltinPlayer) {
+      audioHandler.updateLocalModeNotification(
+        item: mediaItem,
+        playing: isPlaying,
+        duration: track.duration,
+        position: position,
+      );
+    } else {
+      audioHandler.setRemotePlaybackState(
+        item: mediaItem,
+        playing: isPlaying,
+        position: position,
+        duration: track.duration,
+      );
+    }
   }
 
   Future<void> _preloadAdjacentPlayers({bool preloadAll = false}) async {
@@ -4988,7 +5216,7 @@ class MusicAssistantProvider with ChangeNotifier {
 
       final isPlayingOrPaused = _selectedPlayer!.state == 'playing' || _selectedPlayer!.state == 'paused';
       final isIdleWithContent = _selectedPlayer!.state == 'idle' && _selectedPlayer!.powered;
-      final shouldShowTrack = _selectedPlayer!.available && (isPlayingOrPaused || isIdleWithContent);
+      final shouldShowTrack = _selectedPlayer!.available && (isPlayingOrPaused || isIdleWithContent || isPcmPlaying);
 
       if (!shouldShowTrack) {
         if (_currentTrack != null) {
@@ -5032,6 +5260,10 @@ class MusicAssistantProvider with ChangeNotifier {
       }
 
       if (queue != null && queue.currentItem != null) {
+        if (queue.currentIndex != null) {
+          audioHandler.updateQueueIndex(queue.currentIndex!);
+        }
+
         final queueTrack = queue.currentItem!.track;
         final trackChanged = _currentTrack == null ||
             _currentTrack!.uri != queueTrack.uri ||
@@ -5127,16 +5359,15 @@ class MusicAssistantProvider with ChangeNotifier {
 
         if (isBuiltinPlayer) {
           // Local playback - use local mode notification (keeps pause working)
-          final artistWithPlayer = track.artistsString.isNotEmpty
-              ? '${track.artistsString} • ${_selectedPlayer!.name}'
-              : _selectedPlayer!.name;
+          final displayArtist = _trackDisplayArtist(track);
+          final artistWithPlayer = '$displayArtist • ${_selectedPlayer!.name}';
           final mediaItem = audio_service.MediaItem(
             id: track.uri ?? track.itemId,
             title: track.name,
             artist: artistWithPlayer,
             album: track.album?.name ?? '',
             duration: track.duration,
-            artUri: artworkUrl != null ? Uri.tryParse(artworkUrl) : null,
+            artUri: _contentArtUri(artworkUrl),
           );
           // Position comes from actual player in updateLocalModeNotification
           audioHandler.updateLocalModeNotification(
@@ -5147,16 +5378,15 @@ class MusicAssistantProvider with ChangeNotifier {
         } else {
           // Remote MA player - show notification via remote mode
           // Include player name in artist line: "Artist • Player Name"
-          final artistWithPlayer = track.artistsString.isNotEmpty
-              ? '${track.artistsString} • ${_selectedPlayer!.name}'
-              : _selectedPlayer!.name;
+          final displayArtist = _trackDisplayArtist(track);
+          final artistWithPlayer = '$displayArtist • ${_selectedPlayer!.name}';
           final mediaItem = audio_service.MediaItem(
             id: track.uri ?? track.itemId,
             title: track.name,
             artist: artistWithPlayer,
             album: track.album?.name ?? '',
             duration: track.duration,
-            artUri: artworkUrl != null ? Uri.tryParse(artworkUrl) : null,
+            artUri: _contentArtUri(artworkUrl),
           );
           // Use position tracker for consistent position (single source of truth)
           final position = _positionTracker.currentPosition;
@@ -5222,9 +5452,9 @@ class MusicAssistantProvider with ChangeNotifier {
           final mediaItem = audio_service.MediaItem(
             id: track.uri ?? track.itemId,
             title: track.name,
-            artist: track.artistsString,
+            artist: _trackDisplayArtist(track),
             album: track.album?.name,
-            artUri: _api != null ? Uri.tryParse(_api!.getImageUrl(track, size: 512) ?? '') : null,
+            artUri: _contentArtUri(_api?.getImageUrl(track, size: 512)),
             duration: track.duration,
           );
           audioHandler.updateLocalModeNotification(
@@ -5259,15 +5489,23 @@ class MusicAssistantProvider with ChangeNotifier {
       // For pause: Don't refresh - we already did optimistic UI update
       // The player_updated event from MA will handle final state sync
     } else {
-      // If player is idle with no active queue but has a last-known track, re-queue it
-      final isIdle = _selectedPlayer!.state == 'idle';
-      final lastKnown = _cacheService.getLastKnownTrack(_selectedPlayer!.playerId);
-      if (isIdle && lastKnown != null) {
-        _logger.log('🔄 Player idle with last-known track - re-queuing "${lastKnown.name}"');
-        await playTrack(_selectedPlayer!.playerId, lastKnown);
-      } else {
-        await resumePlayer(_selectedPlayer!.playerId);
+      // Always try resume first — even if player reports "idle", the server
+      // queue may still be intact (e.g., Sendspin sends "stopped" on pause).
+      // Only fall back to re-queuing if resume fails.
+      final playerId = _selectedPlayer!.playerId;
+      await resumePlayer(playerId);
+
+      // Sendspin PCM streaming has ~5s buffering delay on resume.
+      // For audiobooks, seek back to compensate so the user doesn't miss narration.
+      final builtinPlayerId = await SettingsService.getBuiltinPlayerId();
+      if (builtinPlayerId != null && playerId == builtinPlayerId && _sendspinConnected && isPlayingAudiobook) {
+        final pos = _positionTracker.currentPosition.inSeconds;
+        if (pos > 10) {
+          _logger.log('📚 Seeking back 10s to compensate for Sendspin buffering');
+          unawaited(seek(playerId, pos - 10));
+        }
       }
+
       // For resume: Refresh in background to get updated track info
       unawaited(refreshPlayers());
     }
@@ -5375,6 +5613,9 @@ class MusicAssistantProvider with ChangeNotifier {
         _syncLibraryStatusToService();
         notifyListeners();
         _prefetchAlbumImages();
+        audioHandler.invalidateAutoChildren(const [
+          'cat|artists', 'cat|albums', 'cat|playlists', 'cat|home',
+        ]);
       }
       syncService.removeListener(onSyncComplete);
     }
@@ -5730,7 +5971,6 @@ class MusicAssistantProvider with ChangeNotifier {
 
         final itemJsonList = queue.items.map((item) => jsonEncode(item.toJson())).toList();
         await DatabaseService.instance.saveQueue(playerId, itemJsonList);
-        _logger.debug('💾 Persisted ${queue.items.length} queue items to database');
       } catch (e) {
         _logger.log('⚠️ Error persisting queue to database: $e');
       }
@@ -5795,11 +6035,16 @@ class MusicAssistantProvider with ChangeNotifier {
     try {
       await _api?.playRadio(playerId, track);
     } catch (e) {
-      final errorInfo = ErrorHandler.handleError(e, context: 'Play radio');
-      _error = errorInfo.userMessage;
-      ErrorHandler.logError('Play radio', e);
-      notifyListeners();
-      rethrow;
+      _logger.log('Radio failed, falling back to single track: $e');
+      try {
+        await playTrack(playerId, track);
+      } catch (fallbackError) {
+        final errorInfo = ErrorHandler.handleError(fallbackError, context: 'Play radio fallback');
+        _error = errorInfo.userMessage;
+        ErrorHandler.logError('Play radio fallback', fallbackError);
+        notifyListeners();
+        rethrow;
+      }
     }
   }
 
@@ -5807,11 +6052,21 @@ class MusicAssistantProvider with ChangeNotifier {
     try {
       await _api?.playArtistRadio(playerId, artist);
     } catch (e) {
-      final errorInfo = ErrorHandler.handleError(e, context: 'Play artist radio');
-      _error = errorInfo.userMessage;
-      ErrorHandler.logError('Play artist radio', e);
-      notifyListeners();
-      rethrow;
+      _logger.log('Artist radio failed, falling back to shuffled tracks: $e');
+      try {
+        final results = await searchWithCache(artist.name);
+        final tracks = (results['tracks'] ?? []).whereType<Track>().toList();
+        if (tracks.isEmpty) rethrow;
+        tracks.shuffle(Random());
+        await _api?.playTracks(playerId, tracks, startIndex: 0);
+        await _api?.toggleShuffle(playerId, true);
+      } catch (fallbackError) {
+        final errorInfo = ErrorHandler.handleError(fallbackError, context: 'Play artist radio fallback');
+        _error = errorInfo.userMessage;
+        ErrorHandler.logError('Play artist radio fallback', fallbackError);
+        notifyListeners();
+        rethrow;
+      }
     }
   }
 
