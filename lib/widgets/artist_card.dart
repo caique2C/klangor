@@ -305,8 +305,10 @@ class _ArtistCardState extends State<ArtistCard> with LibraryStatusMixin {
                         ? CachedNetworkImage(
                             imageUrl: imageUrl,
                             fit: BoxFit.cover,
+                            // Only constrain one dimension so non-square source
+                            // photos (e.g. band photos) keep their aspect ratio
+                            // during decode instead of being squashed to a square.
                             memCacheWidth: cacheSize,
-                            memCacheHeight: cacheSize,
                             fadeInDuration: Duration.zero,
                             fadeOutDuration: Duration.zero,
                             placeholder: (context, url) => const SizedBox(),

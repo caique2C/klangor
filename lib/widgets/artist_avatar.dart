@@ -55,9 +55,11 @@ class _ArtistAvatarState extends State<ArtistAvatar> {
           width: widget.radius * 2,
           height: widget.radius * 2,
           fit: BoxFit.cover,
-          // PERF: Use imageSize for memory cache to reduce decode overhead
+          // PERF: Use imageSize for memory cache to reduce decode overhead.
+          // Only constrain one dimension so non-square source photos (e.g.
+          // band photos) keep their aspect ratio during decode instead of
+          // being squashed to a square before BoxFit.cover can crop them.
           memCacheWidth: widget.imageSize,
-          memCacheHeight: widget.imageSize,
           fadeInDuration: Duration.zero,
           fadeOutDuration: Duration.zero,
           placeholder: (context, url) => Container(

@@ -931,9 +931,10 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> with LibraryS
                             ? CachedNetworkImage(
                                 imageUrl: imageUrl,
                                 fit: BoxFit.cover,
-                                // Match source memCacheWidth for smooth Hero animation
+                                // Only constrain one dimension so non-square source
+                                // photos (e.g. band photos) keep their aspect ratio
+                                // during decode instead of being squashed to a square.
                                 memCacheWidth: 256,
-                                memCacheHeight: 256,
                                 fadeInDuration: Duration.zero,
                                 fadeOutDuration: Duration.zero,
                                 placeholder: (_, __) => const SizedBox(),
