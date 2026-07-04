@@ -851,6 +851,18 @@ abstract class S {
   /// **'Failed to add to queue: {error}'**
   String failedToAddToQueue(String error);
 
+  /// Button to play a shuffled mix of an artist's own albums
+  ///
+  /// In en, this message translates to:
+  /// **'Shuffle'**
+  String get shuffleArtist;
+
+  /// Link to reveal the artist Radio button when it's hidden due to low expected quality
+  ///
+  /// In en, this message translates to:
+  /// **'Show Radio Button'**
+  String get showRadioButton;
+
   /// Status when playing radio station
   ///
   /// In en, this message translates to:

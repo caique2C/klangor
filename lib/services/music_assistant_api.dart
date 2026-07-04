@@ -2383,14 +2383,27 @@ class MusicAssistantAPI {
     );
   }
 
+  /// Providers with real "similar tracks"/recommendation data, suitable for
+  /// artist radio. Filesystem-only libraries have no such data, so radio_mode
+  /// for library-only artists tends to fall back to a naive text match
+  /// against track titles instead of genuinely similar music.
+  /// Note: Qobuz is excluded - it doesn't support the similar tracks API.
+  static const _radioCapableProviders = ['spotify', 'tidal', 'deezer', 'apple', 'ytmusic', 'subsonic', 'opensubsonic'];
+
+  /// Whether this artist has a provider mapping likely to produce a good
+  /// artist radio (i.e. an actual streaming provider, not just a local
+  /// filesystem/library entry).
+  bool artistSupportsRadio(Artist artist) {
+    if (artist.providerMappings == null || artist.providerMappings!.isEmpty) return false;
+    return artist.providerMappings!.any((m) =>
+        m.available && _radioCapableProviders.any((p) => m.providerInstance.toLowerCase().startsWith(p)));
+  }
+
   /// Build URI for artist radio mode, preferring streaming providers
   /// Note: Qobuz does NOT support radio mode (no dynamic_tracks API)
   String _buildArtistRadioUri(Artist artist) {
     if (artist.providerMappings != null && artist.providerMappings!.isNotEmpty) {
-      // Qobuz is excluded - it doesn't support similar tracks API
-      const radioProviders = ['spotify', 'tidal', 'deezer', 'apple', 'ytmusic', 'subsonic', 'opensubsonic'];
-
-      for (final providerPrefix in radioProviders) {
+      for (final providerPrefix in _radioCapableProviders) {
         final mapping = artist.providerMappings!.firstWhere(
           (m) => m.available && m.providerInstance.toLowerCase().startsWith(providerPrefix),
           orElse: () => ProviderMapping(providerInstance: '', providerDomain: '', itemId: '', available: false),

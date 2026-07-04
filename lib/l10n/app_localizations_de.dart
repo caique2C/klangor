@@ -427,6 +427,12 @@ class SDe extends S {
   }
 
   @override
+  String get shuffleArtist => 'Zufallswiedergabe';
+
+  @override
+  String get showRadioButton => 'Radio-Button anzeigen';
+
+  @override
   String playingRadioStation(String name) {
     return 'Playing $name';
   }

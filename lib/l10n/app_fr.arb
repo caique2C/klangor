@@ -341,6 +341,16 @@
     "description": "Radio category"
   },
 
+  "shuffleArtist": "Aléatoire",
+  "@shuffleArtist": {
+    "description": "Button to play a shuffled mix of an artist's own albums"
+  },
+
+  "showRadioButton": "Afficher le bouton Radio",
+  "@showRadioButton": {
+    "description": "Link to reveal the artist Radio button when it's hidden due to low expected quality"
+  },
+
   "stations": "Stations",
   "@stations": {
     "description": "Radio stations subcategory"

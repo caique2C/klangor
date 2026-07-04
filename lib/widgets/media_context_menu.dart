@@ -486,9 +486,14 @@ class _MediaContextMenuOverlayState extends State<_MediaContextMenuOverlay>
   }
 
   /// Check if radio actions should be shown for this media type
-  bool get _supportsRadio {
-    return widget.mediaType == ContextMenuMediaType.artist ||
-        widget.mediaType == ContextMenuMediaType.track;
+  bool _supportsRadio(BuildContext context) {
+    if (widget.mediaType == ContextMenuMediaType.artist) {
+      // Music Assistant's filesystem-only libraries have no real
+      // "similar tracks" data, so radio for library-only artists tends to
+      // produce unrelated results — only offer it when it'll actually be good.
+      return context.read<MusicAssistantProvider>().artistSupportsRadio(widget.item as Artist);
+    }
+    return widget.mediaType == ContextMenuMediaType.track;
   }
 
   @override
@@ -683,7 +688,7 @@ class _MediaContextMenuOverlayState extends State<_MediaContextMenuOverlay>
                           colorScheme: colorScheme,
                         ),
                       ],
-                      if (_supportsRadio) ...[
+                      if (_supportsRadio(context)) ...[
                         _buildMenuItem(
                           icon: Icons.radio,
                           label: l10n.startRadio,

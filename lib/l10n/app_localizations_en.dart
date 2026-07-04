@@ -422,6 +422,12 @@ class SEn extends S {
   }
 
   @override
+  String get shuffleArtist => 'Shuffle';
+
+  @override
+  String get showRadioButton => 'Show Radio Button';
+
+  @override
   String playingRadioStation(String name) {
     return 'Playing $name';
   }

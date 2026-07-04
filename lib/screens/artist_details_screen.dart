@@ -49,6 +49,9 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> with LibraryS
   String? _artistDescription;
   String? _artistImageUrl;
   MusicAssistantProvider? _maProvider;
+  // Manually revealed for this screen instance after tapping "Show Radio
+  // Button", overriding the default hide-when-unlikely-to-be-good behavior.
+  bool _radioRevealed = false;
 
   @override
   String get libraryItemKey => LibraryStatusService.makeKey(
@@ -497,6 +500,35 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> with LibraryS
     }
   }
 
+  /// Play a shuffled mix of this artist's own albums on the selected player
+  void _startShuffle(BuildContext context) async {
+    final maProvider = context.read<MusicAssistantProvider>();
+    final player = maProvider.selectedPlayer;
+
+    if (player == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context)!.noPlayerSelected)),
+        );
+      }
+      return;
+    }
+
+    try {
+      await maProvider.playArtistShuffled(player.playerId, widget.artist);
+    } catch (e) {
+      _logger.log('Error starting artist shuffle: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(S.of(context)!.failedToStartRadio(e.toString())),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   void _showRadioOnMenu(BuildContext context) {
     final maProvider = context.read<MusicAssistantProvider>();
 
@@ -895,6 +927,10 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> with LibraryS
     }
     final colorScheme = adaptiveScheme ?? Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    // Music Assistant's filesystem-only libraries have no real "similar
+    // tracks" data, so radio for library-only artists tends to produce
+    // poor/unrelated results — only offer it when it'll actually be good.
+    final canRadio = context.read<MusicAssistantProvider>().artistSupportsRadio(widget.artist);
 
     return PopScope(
       canPop: true,
@@ -1017,119 +1053,186 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> with LibraryS
                     Spacing.vGap8,
                   ],
                   // Action Buttons Row
-                  Row(
-                    children: [
-                      // Main Radio Button
-                      Expanded(
-                        child: SizedBox(
-                          height: 50,
-                          child: ElevatedButton.icon(
-                            onPressed: () => _startRadio(context),
-                            icon: const Icon(Icons.radio),
-                            label: Text(S.of(context)!.radio),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: colorScheme.primary,
-                              foregroundColor: colorScheme.onPrimary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                  Builder(
+                    builder: (context) {
+                      final showRadio = canRadio || _radioRevealed;
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              // Shuffle Button — always available; plays only
+                              // tracks actually by this artist, unlike Radio's
+                              // server-side "similar tracks" guesswork.
+                              Expanded(
+                                child: SizedBox(
+                                  height: 50,
+                                  child: ElevatedButton.icon(
+                                    onPressed: () => _startShuffle(context),
+                                    icon: const Icon(Icons.shuffle),
+                                    label: Text(
+                                      S.of(context)!.shuffleArtist,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      softWrap: false,
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: colorScheme.primary,
+                                      foregroundColor: colorScheme.onPrimary,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              // Radio Button — only offered when a real
+                              // streaming provider is available (or the user
+                              // asked to see it anyway); Music Assistant's
+                              // filesystem-only libraries have no similar-tracks
+                              // data, so radio for library-only artists tends
+                              // to produce unrelated results. Compact icon-only
+                              // (like Library/Favorite/More) rather than a second
+                              // labeled button, since two labeled buttons don't
+                              // fit side by side on narrower screens.
+                              if (showRadio) ...[
+                                const SizedBox(width: 12),
+                                SizedBox(
+                                  height: 50,
+                                  width: 50,
+                                  child: Tooltip(
+                                    message: S.of(context)!.radio,
+                                    child: FilledButton.tonal(
+                                      onPressed: () => _startRadio(context),
+                                      style: FilledButton.styleFrom(
+                                        padding: EdgeInsets.zero,
+                                        backgroundColor: colorScheme.primary,
+                                        foregroundColor: colorScheme.onPrimary,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                      child: const Icon(Icons.radio, size: 25),
+                                    ),
+                                  ),
+                                ),
+                              ],
+
+                              const SizedBox(width: 12),
+
+                              // Library Button
+                              SizedBox(
+                                height: 50,
+                                width: 50,
+                                child: FilledButton.tonal(
+                                  onPressed: _toggleLibrary,
+                                  style: FilledButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    Symbols.book_2,
+                                    size: 25,
+                                    fill: isInLibrary ? 1 : 0,
+                                    color: isInLibrary
+                                        ? colorScheme.primary
+                                        : Colors.white70,
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(width: 12),
+
+                              // Favorite Button
+                              SizedBox(
+                                height: 50,
+                                width: 50,
+                                child: FilledButton.tonal(
+                                  onPressed: _toggleFavorite,
+                                  style: FilledButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(Radii.xxl),
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    Icons.favorite,
+                                    size: 25,
+                                    color: isFavorite
+                                        ? colorScheme.error
+                                        : Colors.white70,
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(width: 12),
+
+                              // Three-dot Menu Button
+                              SizedBox(
+                                height: 50,
+                                width: 50,
+                                child: Builder(
+                                  builder: (buttonContext) => FilledButton.tonal(
+                                    onPressed: () {
+                                      final RenderBox box = buttonContext.findRenderObject() as RenderBox;
+                                      final Offset position = box.localToGlobal(Offset(box.size.width / 2, box.size.height));
+                                      MediaContextMenu.show(
+                                        context: context,
+                                        position: position,
+                                        mediaType: ContextMenuMediaType.artist,
+                                        item: widget.artist,
+                                        isFavorite: isFavorite,
+                                        isInLibrary: isInLibrary,
+                                        onToggleFavorite: _toggleFavorite,
+                                        onToggleLibrary: _toggleLibrary,
+                                        adaptiveColorScheme: adaptiveScheme,
+                                        showTopRow: false,
+                                        sortOrder: _sortOrder,
+                                        onToggleSort: _toggleSortOrder,
+                                        viewMode: _viewMode,
+                                        onCycleView: _cycleViewMode,
+                                      );
+                                    },
+                                    style: FilledButton.styleFrom(
+                                      padding: EdgeInsets.zero,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.more_vert,
+                                      size: 25,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (!showRadio)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: TextButton(
+                                onPressed: () => setState(() => _radioRevealed = true),
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: Text(
+                                  S.of(context)!.showRadioButton,
+                                  style: textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.onBackground.withOpacity(0.6),
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(width: 12),
-
-                      // Library Button
-                      SizedBox(
-                        height: 50,
-                        width: 50,
-                        child: FilledButton.tonal(
-                          onPressed: _toggleLibrary,
-                          style: FilledButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Icon(
-                            Symbols.book_2,
-                            size: 25,
-                            fill: isInLibrary ? 1 : 0,
-                            color: isInLibrary
-                                ? colorScheme.primary
-                                : Colors.white70,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(width: 12),
-
-                      // Favorite Button
-                      SizedBox(
-                        height: 50,
-                        width: 50,
-                        child: FilledButton.tonal(
-                          onPressed: _toggleFavorite,
-                          style: FilledButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(Radii.xxl),
-                            ),
-                          ),
-                          child: Icon(
-                            Icons.favorite,
-                            size: 25,
-                            color: isFavorite
-                                ? colorScheme.error
-                                : Colors.white70,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(width: 12),
-
-                      // Three-dot Menu Button
-                      SizedBox(
-                        height: 50,
-                        width: 50,
-                        child: Builder(
-                          builder: (buttonContext) => FilledButton.tonal(
-                            onPressed: () {
-                              final RenderBox box = buttonContext.findRenderObject() as RenderBox;
-                              final Offset position = box.localToGlobal(Offset(box.size.width / 2, box.size.height));
-                              MediaContextMenu.show(
-                                context: context,
-                                position: position,
-                                mediaType: ContextMenuMediaType.artist,
-                                item: widget.artist,
-                                isFavorite: isFavorite,
-                                isInLibrary: isInLibrary,
-                                onToggleFavorite: _toggleFavorite,
-                                onToggleLibrary: _toggleLibrary,
-                                adaptiveColorScheme: adaptiveScheme,
-                                showTopRow: false,
-                                sortOrder: _sortOrder,
-                                onToggleSort: _toggleSortOrder,
-                                viewMode: _viewMode,
-                                onCycleView: _cycleViewMode,
-                              );
-                            },
-                            style: FilledButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: Icon(
-                              Icons.more_vert,
-                              size: 25,
-                              color: Colors.white70,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                        ],
+                      );
+                    },
                   ),
                   Spacing.vGap16,
                 ],

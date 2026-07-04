@@ -6062,6 +6062,31 @@ class MusicAssistantProvider with ChangeNotifier {
     }
   }
 
+  /// Whether this artist has a provider mapping likely to produce a good
+  /// artist radio. Music Assistant's filesystem-only libraries have no real
+  /// "similar tracks" data, so radio for library-only artists tends to
+  /// produce poor/unrelated results (e.g. text-matching track titles).
+  bool artistSupportsRadio(Artist artist) => _api?.artistSupportsRadio(artist) ?? false;
+
+  /// Play a shuffled mix of tracks from every album this artist is credited
+  /// as album artist on. Unlike [playArtistRadio], this only ever plays music
+  /// actually by the artist — no server-side "similar tracks" guesswork.
+  Future<void> playArtistShuffled(String playerId, Artist artist) async {
+    var albums = await getArtistAlbumsWithCache(artist.name);
+    if (albums.isEmpty) {
+      albums = getArtistAlbumsFromLibrary(artist.name);
+    }
+    if (albums.isEmpty) return;
+
+    final trackLists = await Future.wait(
+      albums.map((a) => getAlbumTracksWithCache(a.provider, a.itemId, album: a)),
+    );
+    final allTracks = trackLists.expand((t) => t).toList()..shuffle();
+    if (allTracks.isEmpty) return;
+
+    await playTracks(playerId, allTracks);
+  }
+
   Future<void> playArtistRadio(String playerId, Artist artist) async {
     try {
       await _api?.playArtistRadio(playerId, artist);

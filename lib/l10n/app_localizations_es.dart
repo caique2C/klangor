@@ -430,6 +430,12 @@ class SEs extends S {
   }
 
   @override
+  String get shuffleArtist => 'Aleatorio';
+
+  @override
+  String get showRadioButton => 'Mostrar botón de radio';
+
+  @override
   String playingRadioStation(String name) {
     return 'Playing $name';
   }

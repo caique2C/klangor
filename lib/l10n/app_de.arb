@@ -127,6 +127,8 @@
   "addedRadioToQueue": "{name} Radio zur Warteschlange hinzugefügt",
   "failedToAddToQueue": "Konnte nicht zur Warteschlange hinzufügen: {error}",
   "radio": "Radio",
+  "shuffleArtist": "Zufallswiedergabe",
+  "showRadioButton": "Radio-Button anzeigen",
   "inLibrary": "In Bibliothek",
   "noAlbumsFound": "Keine Alben gefunden",
 

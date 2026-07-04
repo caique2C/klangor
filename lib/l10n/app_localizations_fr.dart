@@ -431,6 +431,12 @@ class SFr extends S {
   }
 
   @override
+  String get shuffleArtist => 'Aléatoire';
+
+  @override
+  String get showRadioButton => 'Afficher le bouton Radio';
+
+  @override
   String playingRadioStation(String name) {
     return 'Lecture de $name';
   }

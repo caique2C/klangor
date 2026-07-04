@@ -710,6 +710,16 @@
     "description": "Radio button label"
   },
 
+  "shuffleArtist": "Shuffle",
+  "@shuffleArtist": {
+    "description": "Button to play a shuffled mix of an artist's own albums"
+  },
+
+  "showRadioButton": "Show Radio Button",
+  "@showRadioButton": {
+    "description": "Link to reveal the artist Radio button when it's hidden due to low expected quality"
+  },
+
   "playingRadioStation": "Playing {name}",
   "@playingRadioStation": {
     "description": "Status when playing radio station",

@@ -1499,13 +1499,19 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       albums = provider.getArtistAlbumsFromLibrary(artistName);
     }
     _logger.log('AndroidAuto: Artist "$artistName" albums: ${albums.length}');
+    // Music Assistant's filesystem-only libraries have no real "similar
+    // tracks" data, so radio for library-only artists tends to produce
+    // unrelated results — only offer it when it'll actually be good.
+    final artist = SyncService.instance.cachedArtists.where((a) => a.name == artistName).firstOrNull;
+    final canRadio = artist != null && provider.artistSupportsRadio(artist);
     return [
-      MediaItem(
-        id: 'artistradio|$artistName',
-        title: 'Start Radio',
-        artUri: _iconRadio,
-        playable: true,
-      ),
+      if (canRadio)
+        MediaItem(
+          id: 'artistradio|$artistName',
+          title: 'Start Radio',
+          artUri: _iconRadio,
+          playable: true,
+        ),
       ...albums.map((a) => MediaItem(
         id: 'album|${a.provider}|${a.itemId}',
         title: a.name,

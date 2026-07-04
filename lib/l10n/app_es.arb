@@ -220,6 +220,8 @@
     }
   },
   "radio": "Radio",
+  "shuffleArtist": "Aleatorio",
+  "showRadioButton": "Mostrar botón de radio",
   "inLibrary": "En la biblioteca",
   "noAlbumsFound": "No se encontraron álbumes",
   "playing": "Reproduciendo {name}",
