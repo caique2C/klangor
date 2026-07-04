@@ -693,7 +693,11 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       // Don't await — reconnection can take seconds and AA may timeout
       // getChildren. Cached data is served immediately; live API calls
       // inside builders will await their own reconnect if needed.
-      provider.checkAndReconnect();
+      // catchError prevents a failed reconnect (e.g. DNS lookup failure)
+      // from surfacing as an uncaught Zone error.
+      provider.checkAndReconnect().catchError((e) {
+        _logger.log('AndroidAuto: reconnect failed: $e');
+      });
     }
 
     // Detect AA connection from any getChildren call (AA may cache the root

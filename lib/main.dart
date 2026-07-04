@@ -295,7 +295,12 @@ class _MusicAssistantAppState extends State<MusicAssistantApp> with WidgetsBindi
     if (state == AppLifecycleState.resumed) {
       // App came back to foreground - check connection and reconnect if needed
       _logger.log('📱 App resumed - checking WebSocket connection...');
-      _musicProvider.checkAndReconnect();
+      // Fire-and-forget: didChangeAppLifecycleState isn't async. Catch errors
+      // here so a failed reconnect (e.g. DNS lookup failure) doesn't surface
+      // as an uncaught Zone error.
+      _musicProvider.checkAndReconnect().catchError((e) {
+        _logger.log('⚠️ checkAndReconnect (app resume) failed: $e');
+      });
     } else if (state == AppLifecycleState.paused) {
       _logger.log('📱 App paused (backgrounded)');
     } else if (state == AppLifecycleState.detached) {
