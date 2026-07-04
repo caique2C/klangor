@@ -438,7 +438,7 @@
   "noSeriesAvailable": "No hay series disponibles en tu biblioteca de audiolibros.\nDesliza para actualizar.",
   "pullToLoadSeries": "Desliza hacia abajo para cargar series\ndesde Music Assistant",
   "search": "Buscar",
-  "metadataApisDescription": "Las imágenes de artistas se obtienen automáticamente de Deezer. Añade claves API a continuación para biografías de artistas y descripciones de álbumes.",
+  "metadataApisDescription": "Añade claves API a continuación para biografías de artistas y descripciones de álbumes.",
   "lastFmApiKey": "Clave API de Last.fm",
   "lastFmApiKeyHint": "Obtén una clave gratuita en last.fm/api",
   "swipeToSwitchDevice": "Desliza para cambiar dispositivo",

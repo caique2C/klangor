@@ -1700,7 +1700,7 @@ abstract class S {
   /// Description for metadata APIs section
   ///
   /// In en, this message translates to:
-  /// **'Artist images are automatically fetched from Deezer. Add API keys below for artist biographies and album descriptions.'**
+  /// **'Add API keys below for artist biographies and album descriptions.'**
   String get metadataApisDescription;
 
   /// Last.fm API key field label

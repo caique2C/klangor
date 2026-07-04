@@ -20,7 +20,6 @@ import '../widgets/letter_scrollbar.dart';
 import '../widgets/hires_badge.dart';
 import '../widgets/media_context_menu.dart';
 import '../services/settings_service.dart';
-import '../services/metadata_service.dart';
 import '../services/debug_logger.dart';
 import '../services/sync_service.dart';
 import '../l10n/app_localizations.dart';
@@ -1173,41 +1172,6 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
         _sortAudiobooks();
       });
       _logger.log('📚 State updated, _audiobooks.length = ${_audiobooks.length}');
-      // Fetch author images in background
-      _fetchAuthorImages(audiobooks);
-    }
-  }
-
-  Future<void> _fetchAuthorImages(List<Audiobook> audiobooks) async {
-    // Get unique author display strings and their primary author for image lookup
-    final authorEntries = <String, String>{}; // displayName -> primaryAuthorName
-    for (final book in audiobooks) {
-      final displayName = book.authorsString;
-      if (!authorEntries.containsKey(displayName)) {
-        // Use first author's name for image lookup (API search works better with single names)
-        final primaryAuthor = book.authors?.isNotEmpty == true
-            ? book.authors!.first.name
-            : displayName;
-        authorEntries[displayName] = primaryAuthor;
-      }
-    }
-
-    // Fetch images for authors not already cached
-    for (final entry in authorEntries.entries) {
-      final displayName = entry.key;
-      final lookupName = entry.value;
-      if (!_authorImages.containsKey(displayName)) {
-        // Mark as loading to avoid duplicate requests
-        _authorImages[displayName] = null;
-        // Fetch in background using primary author name
-        MetadataService.getAuthorImageUrl(lookupName).then((imageUrl) {
-          if (mounted && imageUrl != null) {
-            setState(() {
-              _authorImages[displayName] = imageUrl;
-            });
-          }
-        });
-      }
     }
   }
 

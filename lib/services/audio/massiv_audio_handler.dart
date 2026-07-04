@@ -1479,15 +1479,12 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       artists = SyncService.instance.cachedArtists;
     }
     _logger.log('AndroidAuto: Artists: ${artists.length}');
-    return Future.wait(artists.map((a) async {
-      final imageUrl = await provider.getArtistImageUrlWithFallback(a, size: 256);
-      return MediaItem(
-        id: 'artist|${a.name}',
-        title: a.name,
-        artUri: imageUrl != null ? _contentUriForArtwork(imageUrl) : null,
-        playable: false,
-      );
-    }));
+    return artists.map((a) => MediaItem(
+      id: 'artist|${a.name}',
+      title: a.name,
+      artUri: _autoArtUri(provider, a),
+      playable: false,
+    )).toList();
   }
 
   Future<List<MediaItem>> _autoBuildArtistAlbums(

@@ -614,8 +614,7 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> with LibraryS
   Future<void> _loadArtistImage() async {
     final maProvider = context.read<MusicAssistantProvider>();
 
-    // Get image URL with fallback to Deezer/Fanart.tv
-    final imageUrl = await maProvider.getArtistImageUrlWithFallback(widget.artist, size: 512);
+    final imageUrl = maProvider.getImageUrl(widget.artist, size: 512);
 
     if (mounted && imageUrl != null) {
       setState(() {

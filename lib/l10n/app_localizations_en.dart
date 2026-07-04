@@ -890,7 +890,7 @@ class SEn extends S {
 
   @override
   String get metadataApisDescription =>
-      'Artist images are automatically fetched from Deezer. Add API keys below for artist biographies and album descriptions.';
+      'Add API keys below for artist biographies and album descriptions.';
 
   @override
   String get lastFmApiKey => 'Last.fm API Key';

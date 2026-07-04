@@ -263,7 +263,7 @@
   "pullToLoadSeries": "Ziehe nach unten um Serien\nvon Music Assistant zu laden",
 
   "search": "Suche",
-  "metadataApisDescription": "Künstlerbilder werden automatisch von Deezer abgerufen. Füge unten API-Schlüssel für Künstlerbiografien und Albenbeschreibungen hinzu.",
+  "metadataApisDescription": "Füge unten API-Schlüssel für Künstlerbiografien und Albenbeschreibungen hinzu.",
   "lastFmApiKey": "Last.fm API-Schlüssel",
   "lastFmApiKeyHint": "Kostenlosen Schlüssel auf last.fm/api holen",
   "swipeToSwitchDevice": "Wischen um Gerät zu wechseln",

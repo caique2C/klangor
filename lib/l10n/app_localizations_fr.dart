@@ -913,7 +913,7 @@ class SFr extends S {
 
   @override
   String get metadataApisDescription =>
-      'Les images d\'artistes sont automatiquement recuperees depuis Deezer. Ajoutez les cles API ci-dessous pour les biographies d\'artistes et les descriptions d\'albums.';
+      'Ajoutez les cles API ci-dessous pour les biographies d\'artistes et les descriptions d\'albums.';
 
   @override
   String get lastFmApiKey => 'Cle API Last.fm';

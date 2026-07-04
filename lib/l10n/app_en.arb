@@ -1202,7 +1202,7 @@
     "description": "Search navigation label"
   },
 
-  "metadataApisDescription": "Artist images are automatically fetched from Deezer. Add API keys below for artist biographies and album descriptions.",
+  "metadataApisDescription": "Add API keys below for artist biographies and album descriptions.",
   "@metadataApisDescription": {
     "description": "Description for metadata APIs section"
   },

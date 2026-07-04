@@ -21,7 +21,6 @@ import '../services/cache_service.dart';
 import '../services/recently_played_service.dart';
 import '../services/sync_service.dart';
 import '../services/local_player_service.dart';
-import '../services/metadata_service.dart';
 import '../services/position_tracker.dart';
 import '../services/group_volume_manager.dart';
 import '../services/sendspin_service.dart';
@@ -5854,19 +5853,6 @@ class MusicAssistantProvider with ChangeNotifier {
     }
     // Fall back to MA imageproxy (will be replaced once iTunes fetch completes)
     return _api?.getImageUrl(podcast, size: size);
-  }
-
-  /// Get artist image URL with fallback to external sources (Deezer, Fanart.tv)
-  /// Returns a Future since fallback requires async API calls
-  Future<String?> getArtistImageUrlWithFallback(Artist artist, {int size = 256}) async {
-    // Try Music Assistant first
-    final maUrl = _api?.getImageUrl(artist, size: size);
-    if (maUrl != null) {
-      return maUrl;
-    }
-
-    // Fall back to external sources (Deezer, Fanart.tv, etc.)
-    return MetadataService.getArtistImageUrl(artist.name);
   }
 
   // ============================================================================

@@ -899,7 +899,7 @@ class SDe extends S {
 
   @override
   String get metadataApisDescription =>
-      'Künstlerbilder werden automatisch von Deezer abgerufen. Füge unten API-Schlüssel für Künstlerbiografien und Albenbeschreibungen hinzu.';
+      'Füge unten API-Schlüssel für Künstlerbiografien und Albenbeschreibungen hinzu.';
 
   @override
   String get lastFmApiKey => 'Last.fm API-Schlüssel';

@@ -9,7 +9,6 @@ import '../widgets/global_player_overlay.dart';
 import '../widgets/media_context_menu.dart';
 import '../theme/theme_provider.dart';
 import '../services/settings_service.dart';
-import '../services/metadata_service.dart';
 import '../services/debug_logger.dart';
 import '../utils/page_transitions.dart';
 import '../constants/hero_tags.dart';
@@ -57,16 +56,6 @@ class _AudiobookAuthorScreenState extends State<AudiobookAuthorScreen> {
     _authorImageUrl = widget.initialAuthorImageUrl;
     _loadViewPreferences();
     _sortAudiobooks();
-    _loadAuthorImage();
-  }
-
-  Future<void> _loadAuthorImage() async {
-    final imageUrl = await MetadataService.getAuthorImageUrl(widget.authorName);
-    if (mounted && imageUrl != null) {
-      setState(() {
-        _authorImageUrl = imageUrl;
-      });
-    }
   }
 
   Future<void> _loadViewPreferences() async {

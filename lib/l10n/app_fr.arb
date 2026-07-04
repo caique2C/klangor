@@ -1153,7 +1153,7 @@
     "description": "Search navigation label"
   },
 
-  "metadataApisDescription": "Les images d'artistes sont automatiquement recuperees depuis Deezer. Ajoutez les cles API ci-dessous pour les biographies d'artistes et les descriptions d'albums.",
+  "metadataApisDescription": "Ajoutez les cles API ci-dessous pour les biographies d'artistes et les descriptions d'albums.",
   "@metadataApisDescription": {
     "description": "Description for metadata APIs section"
   },

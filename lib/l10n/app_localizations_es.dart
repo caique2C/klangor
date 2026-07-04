@@ -907,7 +907,7 @@ class SEs extends S {
 
   @override
   String get metadataApisDescription =>
-      'Las imágenes de artistas se obtienen automáticamente de Deezer. Añade claves API a continuación para biografías de artistas y descripciones de álbumes.';
+      'Añade claves API a continuación para biografías de artistas y descripciones de álbumes.';
 
   @override
   String get lastFmApiKey => 'Clave API de Last.fm';
