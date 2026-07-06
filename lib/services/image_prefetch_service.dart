@@ -1,5 +1,6 @@
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'debug_logger.dart';
+import 'image_service.dart';
 
 /// Custom cache manager for album (and audiobook) images with extended retention
 class AlbumImageCacheManager extends CacheManager with ImageCacheManager {
@@ -66,13 +67,19 @@ class ImagePrefetchService {
           final fileInfo = await manager.getFileFromCache(url);
           if (fileInfo != null) {
             skipped++;
-            return;
+          } else {
+            await manager.downloadFile(url);
+            cached++;
           }
-          await manager.downloadFile(url);
-          cached++;
         } catch (_) {
           failed++;
         }
+        // Best-effort: also populate the cache shared with Android Auto's
+        // native artwork provider, independent of the Flutter-side cache
+        // manager above - a failure here shouldn't affect UI image loading.
+        try {
+          await ImageService.instance.fetchAndCache(url);
+        } catch (_) {}
       }));
     }
 
