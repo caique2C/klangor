@@ -544,14 +544,23 @@ class PcmAudioPlayer {
   /// Position is preserved via _bytesPlayed tracking
   /// Uses release() to clear native buffer for instant audio stop
   /// Returns true if pause was successful
-  Future<bool> pause() async {
+  ///
+  /// [isUserInitiated] distinguishes a genuine pause (block auto-recovery
+  /// until an explicit play()/resume) from a transitional pause between
+  /// tracks (stream ended, a new one is about to start) - callers tearing
+  /// down playback only to immediately hand off to the next track (stream
+  /// end, skip-ahead) must pass `false`, otherwise the next track's audio
+  /// can arrive before the official "stream start" message clears
+  /// _userPaused, and _onAudioData's auto-recovery check
+  /// (`_state == paused && !_userPaused`) silently drops it forever.
+  Future<bool> pause({bool isUserInitiated = true}) async {
     if (_state != PcmPlayerState.playing) {
       _logger.log('PcmAudioPlayer: Cannot pause - not playing (state: $_state)');
       return false;
     }
 
-    _logger.log('PcmAudioPlayer: Pause requested');
-    _userPaused = true;
+    _logger.log('PcmAudioPlayer: Pause requested (userInitiated: $isUserInitiated)');
+    _userPaused = isUserInitiated;
 
     // Set pausing state FIRST to stop feed loop from starting new feeds
     _state = PcmPlayerState.pausing;

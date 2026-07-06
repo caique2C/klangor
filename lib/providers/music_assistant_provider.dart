@@ -146,6 +146,15 @@ class MusicAssistantProvider with ChangeNotifier {
 
   // PCM audio player for raw Sendspin audio streaming
   PcmAudioPlayer? _pcmAudioPlayer;
+  // Guards against a stale stream/end (for the track that just finished)
+  // racing a stream/start (for the next track) that arrives right after it.
+  // Both handlers are async and yield at their first `await`, so without
+  // this guard the two can interleave: stream/end suspends, stream/start
+  // runs `play()`, then stream/end resumes and pauses the just-started
+  // track. Bumped synchronously (before any `await`) at the top of
+  // _handleSendspinStreamStart; checked immediately before the pause() call
+  // in _handleSendspinStreamEnd.
+  int _streamGeneration = 0;
 
   // Search state persistence
   String _lastSearchQuery = '';
@@ -2644,6 +2653,10 @@ class MusicAssistantProvider with ChangeNotifier {
   /// 2. Start the foreground service to prevent background throttling
   /// 3. Reset position for new track and start position timer
   void _handleSendspinStreamStart(Map<String, dynamic>? trackInfo) async {
+    // Bump synchronously, before any `await` below, so a concurrently-
+    // suspended _handleSendspinStreamEnd sees this generation and skips its
+    // pause() call - see the field doc comment on _streamGeneration.
+    _streamGeneration++;
     final aaDisc = audioHandler.aaDisconnectedAt;
     if (aaDisc != null && DateTime.now().difference(aaDisc).inSeconds < 2) {
       _logger.log('🎵 Sendspin: Ignoring stream/start (AA disconnected ${DateTime.now().difference(aaDisc).inMilliseconds}ms ago)');
@@ -2741,6 +2754,7 @@ class MusicAssistantProvider with ChangeNotifier {
   /// Handle Sendspin stream end - server stopped sending PCM audio data
   /// This is called when audio streaming ends (pause, stop, track end, etc.)
   void _handleSendspinStreamEnd() async {
+    final generationAtStart = _streamGeneration;
     // Use position tracker (server-synced) instead of PCM elapsed time which resets to 0 each stream
     final lastPosition = _positionTracker.currentPosition;
     _logger.log('🎵 Sendspin: Stream ended at position ${lastPosition.inSeconds}s');
@@ -2748,8 +2762,19 @@ class MusicAssistantProvider with ChangeNotifier {
     // Stop notification position timer
     _notificationPositionTimer?.cancel();
 
-    // Pause PCM playback (preserves position) instead of stop (resets position)
-    await _pcmAudioPlayer?.pause();
+    // A newer stream has already started while this handler was suspended
+    // (see _streamGeneration doc comment) - the just-started track owns the
+    // player now, so pausing it here would incorrectly stop fresh playback.
+    if (_streamGeneration != generationAtStart) {
+      _logger.log('🎵 Sendspin: Ignoring stale stream/end (a newer stream already started: generation $generationAtStart -> $_streamGeneration)');
+      return;
+    }
+
+    // Pause PCM playback (preserves position) instead of stop (resets position).
+    // Not user-initiated: a new track's stream/start is expected momentarily,
+    // and its audio can arrive before that message does - _userPaused must
+    // not block auto-recovery for it (see PcmAudioPlayer.pause doc comment).
+    await _pcmAudioPlayer?.pause(isUserInitiated: false);
 
     // Update foreground service to show paused state with last position.
     // Use updateLocalModeNotification (NOT setRemotePlaybackState) to avoid
@@ -6163,11 +6188,44 @@ class MusicAssistantProvider with ChangeNotifier {
 
   Future<void> playTracks(String playerId, List<Track> tracks, {int? startIndex, bool clearQueue = true}) async {
     try {
+      final trackIndex = startIndex ?? 0;
+      final targetTrack = tracks.isNotEmpty && trackIndex < tracks.length ? tracks[trackIndex] : null;
+
+      // Prefer jumping within the already-loaded queue (player_queues/play_index
+      // - the same lightweight operation next/previous use) over replacing it
+      // wholesale. Confirmed empirically: next/previous reliably start the new
+      // track; player_queues/play_media with option:'replace' sometimes never
+      // sends a stream/start when it arrives while the builtin player is still
+      // actively streaming the current one - a server-side race specific to
+      // the replace path, not something a client-side pause/delay avoids.
+      if (clearQueue && targetTrack != null) {
+        final jumped = await _tryJumpToExistingQueueItem(playerId, targetTrack);
+        if (jumped) {
+          _currentTrack = targetTrack;
+          notifyListeners();
+          return;
+        }
+      }
+
+      // Fallback: not (yet) part of the loaded queue - e.g. a different
+      // album, or nothing has been queued this session. Settle any in-flight
+      // local stream first; still helps this path even though it isn't
+      // sufficient on its own for the same-queue case above.
+      if (clearQueue && (_pcmAudioPlayer?.isPlaying ?? false)) {
+        final builtinPlayerId = await SettingsService.getBuiltinPlayerId();
+        if (builtinPlayerId != null &&
+            PlayerRepository.idsMatchRaw(playerId, builtinPlayerId) &&
+            _sendspinConnected) {
+          await _pcmAudioPlayer?.pause(isUserInitiated: false);
+          _sendspinService?.reportState(playing: false, paused: true);
+          await Future.delayed(const Duration(milliseconds: 200));
+        }
+      }
+
       await _api?.playTracks(playerId, tracks, startIndex: startIndex, clearQueue: clearQueue);
 
-      final trackIndex = startIndex ?? 0;
-      if (tracks.isNotEmpty && trackIndex < tracks.length) {
-        _currentTrack = tracks[trackIndex];
+      if (targetTrack != null) {
+        _currentTrack = targetTrack;
         notifyListeners();
       }
     } catch (e) {
@@ -6176,6 +6234,67 @@ class MusicAssistantProvider with ChangeNotifier {
       ErrorHandler.logError('Play tracks', e);
       notifyListeners();
       rethrow;
+    }
+  }
+
+  /// Attempts to jump to [targetTrack] within [playerId]'s already-loaded
+  /// queue via player_queues/play_index, instead of replacing the whole
+  /// queue. Returns true if a matching queue item was found and the jump
+  /// was sent; false if the caller should fall back to a full replace (e.g.
+  /// cold start, or browsing a different album/playlist than what's
+  /// currently loaded).
+  Future<bool> _tryJumpToExistingQueueItem(String playerId, Track targetTrack) async {
+    if (_api == null) return false;
+    try {
+      final queue = await getQueue(playerId);
+      if (queue == null || queue.items.isEmpty) return false;
+
+      // Match by URI first - playlist tracks in particular can carry a
+      // different "primary" (provider, itemId) than whatever provider
+      // mapping MA actually resolved into the live queue, so a strict
+      // provider/itemId-only comparison misses real matches there (albums
+      // use one consistent provider throughout, which is why this only
+      // showed up for playlists). URI is the track's actual content
+      // identity and matches regardless of provider-mapping bookkeeping.
+      // Fall back to provider/itemId, then to any provider-mapping overlap.
+      QueueItem? match;
+      for (final item in queue.items) {
+        if (targetTrack.uri != null && item.track.uri == targetTrack.uri) {
+          match = item;
+          break;
+        }
+      }
+      match ??= () {
+        for (final item in queue.items) {
+          if (item.track.provider == targetTrack.provider && item.track.itemId == targetTrack.itemId) {
+            return item;
+          }
+        }
+        return null;
+      }();
+      match ??= () {
+        final targetMappings = targetTrack.providerMappings;
+        if (targetMappings == null || targetMappings.isEmpty) return null;
+        for (final item in queue.items) {
+          final itemMappings = item.track.providerMappings;
+          final itemIds = <String>{
+            '${item.track.provider}|${item.track.itemId}',
+            if (itemMappings != null)
+              for (final m in itemMappings) '${m.providerDomain}|${m.itemId}',
+          };
+          final hasOverlap = targetMappings.any((m) => itemIds.contains('${m.providerDomain}|${m.itemId}'));
+          if (hasOverlap) return item;
+        }
+        return null;
+      }();
+      if (match == null) return false;
+
+      _logger.log('🎯 Jumping to existing queue item for "${targetTrack.name}" via play_index');
+      await _api!.queueCommandPlayIndex(playerId, match.queueItemId);
+      return true;
+    } catch (e) {
+      _logger.log('⚠️ Failed to jump to existing queue item, falling back to replace: $e');
+      return false;
     }
   }
 
@@ -6364,8 +6483,10 @@ class MusicAssistantProvider with ChangeNotifier {
       final builtinPlayerId = await SettingsService.getBuiltinPlayerId();
       if (builtinPlayerId != null && PlayerRepository.idsMatchRaw(playerId, builtinPlayerId) && _sendspinConnected) {
         _logger.log('⏭️ Non-blocking local stop for skip on builtin player');
-        // Stop current audio immediately - fire and forget, but log errors
-        unawaited((_pcmAudioPlayer?.pause() ?? Future.value()).catchError(
+        // Stop current audio immediately - fire and forget, but log errors.
+        // Not user-initiated: the next track's stream/start follows shortly -
+        // see PcmAudioPlayer.pause doc comment.
+        unawaited((_pcmAudioPlayer?.pause(isUserInitiated: false) ?? Future.value()).catchError(
           (e) => _logger.log('⚠️ PCM pause error on next (non-blocking): $e'),
         ));
         // Don't stop just_audio - not used for Sendspin audio output
@@ -6383,8 +6504,10 @@ class MusicAssistantProvider with ChangeNotifier {
       final builtinPlayerId = await SettingsService.getBuiltinPlayerId();
       if (builtinPlayerId != null && PlayerRepository.idsMatchRaw(playerId, builtinPlayerId) && _sendspinConnected) {
         _logger.log('⏮️ Non-blocking local stop for previous on builtin player');
-        // Stop current audio immediately - fire and forget, but log errors
-        unawaited((_pcmAudioPlayer?.pause() ?? Future.value()).catchError(
+        // Stop current audio immediately - fire and forget, but log errors.
+        // Not user-initiated: the next track's stream/start follows shortly -
+        // see PcmAudioPlayer.pause doc comment.
+        unawaited((_pcmAudioPlayer?.pause(isUserInitiated: false) ?? Future.value()).catchError(
           (e) => _logger.log('⚠️ PCM pause error on previous (non-blocking): $e'),
         ));
         // Don't stop just_audio - not used for Sendspin audio output
