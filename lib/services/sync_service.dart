@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../database/database.dart' show BatchCacheItem;
 import '../models/media_item.dart';
+import '../repositories/library_repository.dart';
 import 'database_service.dart';
 import 'debug_logger.dart';
 import 'music_assistant_api.dart';
@@ -31,6 +32,7 @@ class SyncService with ChangeNotifier {
   }
 
   DatabaseService get _db => DatabaseService.instance;
+  final LibraryRepository _libraryRepository = LibraryRepository();
 
   // Sync state
   SyncStatus _status = SyncStatus.idle;
@@ -362,6 +364,16 @@ class SyncService with ChangeNotifier {
       await _savePlaylistsToCache(playlists, newPlaylistSourceProviders);
       await _savePodcastsToCache(podcasts);
 
+      // Also write into the relational schema (LibraryRepository) so screens
+      // that have migrated off this blob cache stay up to date too. Runs
+      // alongside the blob writes above, not instead of them, so this is
+      // purely additive - a failure here must never break the sync this app
+      // already depends on. Tracks/playlist-tracks aren't synced here since
+      // this method never fetches tracks either (see the rate-limit comment
+      // below) - those get written when the on-demand track-fetch path is
+      // migrated to LibraryRepository.
+      await _writeToLibraryRepository(albums, artists, audiobooks, playlists);
+
       // Update sync metadata
       await _db.updateSyncMetadata('albums', albums.length);
       await _db.updateSyncMetadata('artists', artists.length);
@@ -423,6 +435,38 @@ class SyncService with ChangeNotifier {
     } finally {
       _isSyncing = false;
       notifyListeners();
+    }
+  }
+
+  /// Best-effort dual-write into the relational schema. Isolated in its own
+  /// try/catch (rather than relying on syncFromApi's outer one) so a single
+  /// bad item can't be logged as if the *whole* sync failed, and so a
+  /// failure here can never surface as a sync failure to callers - the blob
+  /// cache above is still the source of truth every existing consumer reads
+  /// from until they migrate to LibraryRepository.
+  Future<void> _writeToLibraryRepository(
+    List<Album> albums,
+    List<Artist> artists,
+    List<Audiobook> audiobooks,
+    List<Playlist> playlists,
+  ) async {
+    try {
+      for (final artist in artists) {
+        await _libraryRepository.upsertArtist(artist);
+      }
+      for (final album in albums) {
+        await _libraryRepository.upsertAlbum(album);
+      }
+      for (final audiobook in audiobooks) {
+        await _libraryRepository.upsertAudiobook(audiobook);
+      }
+      for (final playlist in playlists) {
+        await _libraryRepository.upsertPlaylist(playlist);
+      }
+      _logger.log('💾 Synced ${artists.length} artists, ${albums.length} albums, '
+          '${audiobooks.length} audiobooks, ${playlists.length} playlists to relational schema');
+    } catch (e) {
+      _logger.log('⚠️ Relational schema sync failed (blob cache is unaffected): $e');
     }
   }
 

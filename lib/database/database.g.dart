@@ -3291,6 +3291,4567 @@ class DetailTrackCacheCompanion extends UpdateCompanion<DetailTrackCacheData> {
   }
 }
 
+class $ArtistsTable extends Artists
+    with TableInfo<$ArtistsTable, ArtistEntity> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ArtistsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _providerMeta =
+      const VerificationMeta('provider');
+  @override
+  late final GeneratedColumn<String> provider = GeneratedColumn<String>(
+      'provider', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
+  @override
+  late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
+      'item_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _sortNameMeta =
+      const VerificationMeta('sortName');
+  @override
+  late final GeneratedColumn<String> sortName = GeneratedColumn<String>(
+      'sort_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _uriMeta = const VerificationMeta('uri');
+  @override
+  late final GeneratedColumn<String> uri = GeneratedColumn<String>(
+      'uri', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _favoriteMeta =
+      const VerificationMeta('favorite');
+  @override
+  late final GeneratedColumn<bool> favorite = GeneratedColumn<bool>(
+      'favorite', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("favorite" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _inLibraryMeta =
+      const VerificationMeta('inLibrary');
+  @override
+  late final GeneratedColumn<bool> inLibrary = GeneratedColumn<bool>(
+      'in_library', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("in_library" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _metadataJsonMeta =
+      const VerificationMeta('metadataJson');
+  @override
+  late final GeneratedColumn<String> metadataJson = GeneratedColumn<String>(
+      'metadata_json', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _lastSyncedMeta =
+      const VerificationMeta('lastSynced');
+  @override
+  late final GeneratedColumn<DateTime> lastSynced = GeneratedColumn<DateTime>(
+      'last_synced', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        provider,
+        itemId,
+        name,
+        sortName,
+        uri,
+        favorite,
+        inLibrary,
+        metadataJson,
+        lastSynced
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'artists';
+  @override
+  VerificationContext validateIntegrity(Insertable<ArtistEntity> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('provider')) {
+      context.handle(_providerMeta,
+          provider.isAcceptableOrUnknown(data['provider']!, _providerMeta));
+    } else if (isInserting) {
+      context.missing(_providerMeta);
+    }
+    if (data.containsKey('item_id')) {
+      context.handle(_itemIdMeta,
+          itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta));
+    } else if (isInserting) {
+      context.missing(_itemIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('sort_name')) {
+      context.handle(_sortNameMeta,
+          sortName.isAcceptableOrUnknown(data['sort_name']!, _sortNameMeta));
+    }
+    if (data.containsKey('uri')) {
+      context.handle(
+          _uriMeta, uri.isAcceptableOrUnknown(data['uri']!, _uriMeta));
+    }
+    if (data.containsKey('favorite')) {
+      context.handle(_favoriteMeta,
+          favorite.isAcceptableOrUnknown(data['favorite']!, _favoriteMeta));
+    }
+    if (data.containsKey('in_library')) {
+      context.handle(_inLibraryMeta,
+          inLibrary.isAcceptableOrUnknown(data['in_library']!, _inLibraryMeta));
+    }
+    if (data.containsKey('metadata_json')) {
+      context.handle(
+          _metadataJsonMeta,
+          metadataJson.isAcceptableOrUnknown(
+              data['metadata_json']!, _metadataJsonMeta));
+    }
+    if (data.containsKey('last_synced')) {
+      context.handle(
+          _lastSyncedMeta,
+          lastSynced.isAcceptableOrUnknown(
+              data['last_synced']!, _lastSyncedMeta));
+    } else if (isInserting) {
+      context.missing(_lastSyncedMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {provider, itemId};
+  @override
+  ArtistEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ArtistEntity(
+      provider: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}provider'])!,
+      itemId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}item_id'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      sortName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sort_name']),
+      uri: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}uri']),
+      favorite: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}favorite'])!,
+      inLibrary: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}in_library'])!,
+      metadataJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}metadata_json']),
+      lastSynced: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}last_synced'])!,
+    );
+  }
+
+  @override
+  $ArtistsTable createAlias(String alias) {
+    return $ArtistsTable(attachedDatabase, alias);
+  }
+}
+
+class ArtistEntity extends DataClass implements Insertable<ArtistEntity> {
+  final String provider;
+  final String itemId;
+  final String name;
+  final String? sortName;
+  final String? uri;
+  final bool favorite;
+  final bool inLibrary;
+
+  /// Anything not modeled as its own column (images, description, etc.)
+  final String? metadataJson;
+  final DateTime lastSynced;
+  const ArtistEntity(
+      {required this.provider,
+      required this.itemId,
+      required this.name,
+      this.sortName,
+      this.uri,
+      required this.favorite,
+      required this.inLibrary,
+      this.metadataJson,
+      required this.lastSynced});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['provider'] = Variable<String>(provider);
+    map['item_id'] = Variable<String>(itemId);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || sortName != null) {
+      map['sort_name'] = Variable<String>(sortName);
+    }
+    if (!nullToAbsent || uri != null) {
+      map['uri'] = Variable<String>(uri);
+    }
+    map['favorite'] = Variable<bool>(favorite);
+    map['in_library'] = Variable<bool>(inLibrary);
+    if (!nullToAbsent || metadataJson != null) {
+      map['metadata_json'] = Variable<String>(metadataJson);
+    }
+    map['last_synced'] = Variable<DateTime>(lastSynced);
+    return map;
+  }
+
+  ArtistsCompanion toCompanion(bool nullToAbsent) {
+    return ArtistsCompanion(
+      provider: Value(provider),
+      itemId: Value(itemId),
+      name: Value(name),
+      sortName: sortName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sortName),
+      uri: uri == null && nullToAbsent ? const Value.absent() : Value(uri),
+      favorite: Value(favorite),
+      inLibrary: Value(inLibrary),
+      metadataJson: metadataJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(metadataJson),
+      lastSynced: Value(lastSynced),
+    );
+  }
+
+  factory ArtistEntity.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ArtistEntity(
+      provider: serializer.fromJson<String>(json['provider']),
+      itemId: serializer.fromJson<String>(json['itemId']),
+      name: serializer.fromJson<String>(json['name']),
+      sortName: serializer.fromJson<String?>(json['sortName']),
+      uri: serializer.fromJson<String?>(json['uri']),
+      favorite: serializer.fromJson<bool>(json['favorite']),
+      inLibrary: serializer.fromJson<bool>(json['inLibrary']),
+      metadataJson: serializer.fromJson<String?>(json['metadataJson']),
+      lastSynced: serializer.fromJson<DateTime>(json['lastSynced']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'provider': serializer.toJson<String>(provider),
+      'itemId': serializer.toJson<String>(itemId),
+      'name': serializer.toJson<String>(name),
+      'sortName': serializer.toJson<String?>(sortName),
+      'uri': serializer.toJson<String?>(uri),
+      'favorite': serializer.toJson<bool>(favorite),
+      'inLibrary': serializer.toJson<bool>(inLibrary),
+      'metadataJson': serializer.toJson<String?>(metadataJson),
+      'lastSynced': serializer.toJson<DateTime>(lastSynced),
+    };
+  }
+
+  ArtistEntity copyWith(
+          {String? provider,
+          String? itemId,
+          String? name,
+          Value<String?> sortName = const Value.absent(),
+          Value<String?> uri = const Value.absent(),
+          bool? favorite,
+          bool? inLibrary,
+          Value<String?> metadataJson = const Value.absent(),
+          DateTime? lastSynced}) =>
+      ArtistEntity(
+        provider: provider ?? this.provider,
+        itemId: itemId ?? this.itemId,
+        name: name ?? this.name,
+        sortName: sortName.present ? sortName.value : this.sortName,
+        uri: uri.present ? uri.value : this.uri,
+        favorite: favorite ?? this.favorite,
+        inLibrary: inLibrary ?? this.inLibrary,
+        metadataJson:
+            metadataJson.present ? metadataJson.value : this.metadataJson,
+        lastSynced: lastSynced ?? this.lastSynced,
+      );
+  ArtistEntity copyWithCompanion(ArtistsCompanion data) {
+    return ArtistEntity(
+      provider: data.provider.present ? data.provider.value : this.provider,
+      itemId: data.itemId.present ? data.itemId.value : this.itemId,
+      name: data.name.present ? data.name.value : this.name,
+      sortName: data.sortName.present ? data.sortName.value : this.sortName,
+      uri: data.uri.present ? data.uri.value : this.uri,
+      favorite: data.favorite.present ? data.favorite.value : this.favorite,
+      inLibrary: data.inLibrary.present ? data.inLibrary.value : this.inLibrary,
+      metadataJson: data.metadataJson.present
+          ? data.metadataJson.value
+          : this.metadataJson,
+      lastSynced:
+          data.lastSynced.present ? data.lastSynced.value : this.lastSynced,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArtistEntity(')
+          ..write('provider: $provider, ')
+          ..write('itemId: $itemId, ')
+          ..write('name: $name, ')
+          ..write('sortName: $sortName, ')
+          ..write('uri: $uri, ')
+          ..write('favorite: $favorite, ')
+          ..write('inLibrary: $inLibrary, ')
+          ..write('metadataJson: $metadataJson, ')
+          ..write('lastSynced: $lastSynced')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(provider, itemId, name, sortName, uri,
+      favorite, inLibrary, metadataJson, lastSynced);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ArtistEntity &&
+          other.provider == this.provider &&
+          other.itemId == this.itemId &&
+          other.name == this.name &&
+          other.sortName == this.sortName &&
+          other.uri == this.uri &&
+          other.favorite == this.favorite &&
+          other.inLibrary == this.inLibrary &&
+          other.metadataJson == this.metadataJson &&
+          other.lastSynced == this.lastSynced);
+}
+
+class ArtistsCompanion extends UpdateCompanion<ArtistEntity> {
+  final Value<String> provider;
+  final Value<String> itemId;
+  final Value<String> name;
+  final Value<String?> sortName;
+  final Value<String?> uri;
+  final Value<bool> favorite;
+  final Value<bool> inLibrary;
+  final Value<String?> metadataJson;
+  final Value<DateTime> lastSynced;
+  final Value<int> rowid;
+  const ArtistsCompanion({
+    this.provider = const Value.absent(),
+    this.itemId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.sortName = const Value.absent(),
+    this.uri = const Value.absent(),
+    this.favorite = const Value.absent(),
+    this.inLibrary = const Value.absent(),
+    this.metadataJson = const Value.absent(),
+    this.lastSynced = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ArtistsCompanion.insert({
+    required String provider,
+    required String itemId,
+    required String name,
+    this.sortName = const Value.absent(),
+    this.uri = const Value.absent(),
+    this.favorite = const Value.absent(),
+    this.inLibrary = const Value.absent(),
+    this.metadataJson = const Value.absent(),
+    required DateTime lastSynced,
+    this.rowid = const Value.absent(),
+  })  : provider = Value(provider),
+        itemId = Value(itemId),
+        name = Value(name),
+        lastSynced = Value(lastSynced);
+  static Insertable<ArtistEntity> custom({
+    Expression<String>? provider,
+    Expression<String>? itemId,
+    Expression<String>? name,
+    Expression<String>? sortName,
+    Expression<String>? uri,
+    Expression<bool>? favorite,
+    Expression<bool>? inLibrary,
+    Expression<String>? metadataJson,
+    Expression<DateTime>? lastSynced,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (provider != null) 'provider': provider,
+      if (itemId != null) 'item_id': itemId,
+      if (name != null) 'name': name,
+      if (sortName != null) 'sort_name': sortName,
+      if (uri != null) 'uri': uri,
+      if (favorite != null) 'favorite': favorite,
+      if (inLibrary != null) 'in_library': inLibrary,
+      if (metadataJson != null) 'metadata_json': metadataJson,
+      if (lastSynced != null) 'last_synced': lastSynced,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ArtistsCompanion copyWith(
+      {Value<String>? provider,
+      Value<String>? itemId,
+      Value<String>? name,
+      Value<String?>? sortName,
+      Value<String?>? uri,
+      Value<bool>? favorite,
+      Value<bool>? inLibrary,
+      Value<String?>? metadataJson,
+      Value<DateTime>? lastSynced,
+      Value<int>? rowid}) {
+    return ArtistsCompanion(
+      provider: provider ?? this.provider,
+      itemId: itemId ?? this.itemId,
+      name: name ?? this.name,
+      sortName: sortName ?? this.sortName,
+      uri: uri ?? this.uri,
+      favorite: favorite ?? this.favorite,
+      inLibrary: inLibrary ?? this.inLibrary,
+      metadataJson: metadataJson ?? this.metadataJson,
+      lastSynced: lastSynced ?? this.lastSynced,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (provider.present) {
+      map['provider'] = Variable<String>(provider.value);
+    }
+    if (itemId.present) {
+      map['item_id'] = Variable<String>(itemId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (sortName.present) {
+      map['sort_name'] = Variable<String>(sortName.value);
+    }
+    if (uri.present) {
+      map['uri'] = Variable<String>(uri.value);
+    }
+    if (favorite.present) {
+      map['favorite'] = Variable<bool>(favorite.value);
+    }
+    if (inLibrary.present) {
+      map['in_library'] = Variable<bool>(inLibrary.value);
+    }
+    if (metadataJson.present) {
+      map['metadata_json'] = Variable<String>(metadataJson.value);
+    }
+    if (lastSynced.present) {
+      map['last_synced'] = Variable<DateTime>(lastSynced.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArtistsCompanion(')
+          ..write('provider: $provider, ')
+          ..write('itemId: $itemId, ')
+          ..write('name: $name, ')
+          ..write('sortName: $sortName, ')
+          ..write('uri: $uri, ')
+          ..write('favorite: $favorite, ')
+          ..write('inLibrary: $inLibrary, ')
+          ..write('metadataJson: $metadataJson, ')
+          ..write('lastSynced: $lastSynced, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AlbumsTable extends Albums with TableInfo<$AlbumsTable, AlbumEntity> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AlbumsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _providerMeta =
+      const VerificationMeta('provider');
+  @override
+  late final GeneratedColumn<String> provider = GeneratedColumn<String>(
+      'provider', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
+  @override
+  late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
+      'item_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _sortNameMeta =
+      const VerificationMeta('sortName');
+  @override
+  late final GeneratedColumn<String> sortName = GeneratedColumn<String>(
+      'sort_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _uriMeta = const VerificationMeta('uri');
+  @override
+  late final GeneratedColumn<String> uri = GeneratedColumn<String>(
+      'uri', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _albumTypeMeta =
+      const VerificationMeta('albumType');
+  @override
+  late final GeneratedColumn<String> albumType = GeneratedColumn<String>(
+      'album_type', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _yearMeta = const VerificationMeta('year');
+  @override
+  late final GeneratedColumn<int> year = GeneratedColumn<int>(
+      'year', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _artistsJsonMeta =
+      const VerificationMeta('artistsJson');
+  @override
+  late final GeneratedColumn<String> artistsJson = GeneratedColumn<String>(
+      'artists_json', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _favoriteMeta =
+      const VerificationMeta('favorite');
+  @override
+  late final GeneratedColumn<bool> favorite = GeneratedColumn<bool>(
+      'favorite', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("favorite" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _inLibraryMeta =
+      const VerificationMeta('inLibrary');
+  @override
+  late final GeneratedColumn<bool> inLibrary = GeneratedColumn<bool>(
+      'in_library', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("in_library" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _metadataJsonMeta =
+      const VerificationMeta('metadataJson');
+  @override
+  late final GeneratedColumn<String> metadataJson = GeneratedColumn<String>(
+      'metadata_json', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _lastSyncedMeta =
+      const VerificationMeta('lastSynced');
+  @override
+  late final GeneratedColumn<DateTime> lastSynced = GeneratedColumn<DateTime>(
+      'last_synced', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        provider,
+        itemId,
+        name,
+        sortName,
+        uri,
+        albumType,
+        year,
+        artistsJson,
+        favorite,
+        inLibrary,
+        metadataJson,
+        lastSynced
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'albums';
+  @override
+  VerificationContext validateIntegrity(Insertable<AlbumEntity> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('provider')) {
+      context.handle(_providerMeta,
+          provider.isAcceptableOrUnknown(data['provider']!, _providerMeta));
+    } else if (isInserting) {
+      context.missing(_providerMeta);
+    }
+    if (data.containsKey('item_id')) {
+      context.handle(_itemIdMeta,
+          itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta));
+    } else if (isInserting) {
+      context.missing(_itemIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('sort_name')) {
+      context.handle(_sortNameMeta,
+          sortName.isAcceptableOrUnknown(data['sort_name']!, _sortNameMeta));
+    }
+    if (data.containsKey('uri')) {
+      context.handle(
+          _uriMeta, uri.isAcceptableOrUnknown(data['uri']!, _uriMeta));
+    }
+    if (data.containsKey('album_type')) {
+      context.handle(_albumTypeMeta,
+          albumType.isAcceptableOrUnknown(data['album_type']!, _albumTypeMeta));
+    }
+    if (data.containsKey('year')) {
+      context.handle(
+          _yearMeta, year.isAcceptableOrUnknown(data['year']!, _yearMeta));
+    }
+    if (data.containsKey('artists_json')) {
+      context.handle(
+          _artistsJsonMeta,
+          artistsJson.isAcceptableOrUnknown(
+              data['artists_json']!, _artistsJsonMeta));
+    }
+    if (data.containsKey('favorite')) {
+      context.handle(_favoriteMeta,
+          favorite.isAcceptableOrUnknown(data['favorite']!, _favoriteMeta));
+    }
+    if (data.containsKey('in_library')) {
+      context.handle(_inLibraryMeta,
+          inLibrary.isAcceptableOrUnknown(data['in_library']!, _inLibraryMeta));
+    }
+    if (data.containsKey('metadata_json')) {
+      context.handle(
+          _metadataJsonMeta,
+          metadataJson.isAcceptableOrUnknown(
+              data['metadata_json']!, _metadataJsonMeta));
+    }
+    if (data.containsKey('last_synced')) {
+      context.handle(
+          _lastSyncedMeta,
+          lastSynced.isAcceptableOrUnknown(
+              data['last_synced']!, _lastSyncedMeta));
+    } else if (isInserting) {
+      context.missing(_lastSyncedMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {provider, itemId};
+  @override
+  AlbumEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AlbumEntity(
+      provider: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}provider'])!,
+      itemId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}item_id'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      sortName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sort_name']),
+      uri: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}uri']),
+      albumType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}album_type']),
+      year: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}year']),
+      artistsJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}artists_json']),
+      favorite: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}favorite'])!,
+      inLibrary: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}in_library'])!,
+      metadataJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}metadata_json']),
+      lastSynced: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}last_synced'])!,
+    );
+  }
+
+  @override
+  $AlbumsTable createAlias(String alias) {
+    return $AlbumsTable(attachedDatabase, alias);
+  }
+}
+
+class AlbumEntity extends DataClass implements Insertable<AlbumEntity> {
+  final String provider;
+  final String itemId;
+  final String name;
+  final String? sortName;
+  final String? uri;
+  final String? albumType;
+  final int? year;
+
+  /// Denormalized JSON list of {item_id, provider, name} - nothing today
+  /// queries "albums by artist X" via a join (the existing code matches by
+  /// artist name), so a many-to-many join table here would be
+  /// overengineering rather than architecture.
+  final String? artistsJson;
+  final bool favorite;
+  final bool inLibrary;
+  final String? metadataJson;
+  final DateTime lastSynced;
+  const AlbumEntity(
+      {required this.provider,
+      required this.itemId,
+      required this.name,
+      this.sortName,
+      this.uri,
+      this.albumType,
+      this.year,
+      this.artistsJson,
+      required this.favorite,
+      required this.inLibrary,
+      this.metadataJson,
+      required this.lastSynced});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['provider'] = Variable<String>(provider);
+    map['item_id'] = Variable<String>(itemId);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || sortName != null) {
+      map['sort_name'] = Variable<String>(sortName);
+    }
+    if (!nullToAbsent || uri != null) {
+      map['uri'] = Variable<String>(uri);
+    }
+    if (!nullToAbsent || albumType != null) {
+      map['album_type'] = Variable<String>(albumType);
+    }
+    if (!nullToAbsent || year != null) {
+      map['year'] = Variable<int>(year);
+    }
+    if (!nullToAbsent || artistsJson != null) {
+      map['artists_json'] = Variable<String>(artistsJson);
+    }
+    map['favorite'] = Variable<bool>(favorite);
+    map['in_library'] = Variable<bool>(inLibrary);
+    if (!nullToAbsent || metadataJson != null) {
+      map['metadata_json'] = Variable<String>(metadataJson);
+    }
+    map['last_synced'] = Variable<DateTime>(lastSynced);
+    return map;
+  }
+
+  AlbumsCompanion toCompanion(bool nullToAbsent) {
+    return AlbumsCompanion(
+      provider: Value(provider),
+      itemId: Value(itemId),
+      name: Value(name),
+      sortName: sortName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sortName),
+      uri: uri == null && nullToAbsent ? const Value.absent() : Value(uri),
+      albumType: albumType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(albumType),
+      year: year == null && nullToAbsent ? const Value.absent() : Value(year),
+      artistsJson: artistsJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(artistsJson),
+      favorite: Value(favorite),
+      inLibrary: Value(inLibrary),
+      metadataJson: metadataJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(metadataJson),
+      lastSynced: Value(lastSynced),
+    );
+  }
+
+  factory AlbumEntity.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AlbumEntity(
+      provider: serializer.fromJson<String>(json['provider']),
+      itemId: serializer.fromJson<String>(json['itemId']),
+      name: serializer.fromJson<String>(json['name']),
+      sortName: serializer.fromJson<String?>(json['sortName']),
+      uri: serializer.fromJson<String?>(json['uri']),
+      albumType: serializer.fromJson<String?>(json['albumType']),
+      year: serializer.fromJson<int?>(json['year']),
+      artistsJson: serializer.fromJson<String?>(json['artistsJson']),
+      favorite: serializer.fromJson<bool>(json['favorite']),
+      inLibrary: serializer.fromJson<bool>(json['inLibrary']),
+      metadataJson: serializer.fromJson<String?>(json['metadataJson']),
+      lastSynced: serializer.fromJson<DateTime>(json['lastSynced']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'provider': serializer.toJson<String>(provider),
+      'itemId': serializer.toJson<String>(itemId),
+      'name': serializer.toJson<String>(name),
+      'sortName': serializer.toJson<String?>(sortName),
+      'uri': serializer.toJson<String?>(uri),
+      'albumType': serializer.toJson<String?>(albumType),
+      'year': serializer.toJson<int?>(year),
+      'artistsJson': serializer.toJson<String?>(artistsJson),
+      'favorite': serializer.toJson<bool>(favorite),
+      'inLibrary': serializer.toJson<bool>(inLibrary),
+      'metadataJson': serializer.toJson<String?>(metadataJson),
+      'lastSynced': serializer.toJson<DateTime>(lastSynced),
+    };
+  }
+
+  AlbumEntity copyWith(
+          {String? provider,
+          String? itemId,
+          String? name,
+          Value<String?> sortName = const Value.absent(),
+          Value<String?> uri = const Value.absent(),
+          Value<String?> albumType = const Value.absent(),
+          Value<int?> year = const Value.absent(),
+          Value<String?> artistsJson = const Value.absent(),
+          bool? favorite,
+          bool? inLibrary,
+          Value<String?> metadataJson = const Value.absent(),
+          DateTime? lastSynced}) =>
+      AlbumEntity(
+        provider: provider ?? this.provider,
+        itemId: itemId ?? this.itemId,
+        name: name ?? this.name,
+        sortName: sortName.present ? sortName.value : this.sortName,
+        uri: uri.present ? uri.value : this.uri,
+        albumType: albumType.present ? albumType.value : this.albumType,
+        year: year.present ? year.value : this.year,
+        artistsJson: artistsJson.present ? artistsJson.value : this.artistsJson,
+        favorite: favorite ?? this.favorite,
+        inLibrary: inLibrary ?? this.inLibrary,
+        metadataJson:
+            metadataJson.present ? metadataJson.value : this.metadataJson,
+        lastSynced: lastSynced ?? this.lastSynced,
+      );
+  AlbumEntity copyWithCompanion(AlbumsCompanion data) {
+    return AlbumEntity(
+      provider: data.provider.present ? data.provider.value : this.provider,
+      itemId: data.itemId.present ? data.itemId.value : this.itemId,
+      name: data.name.present ? data.name.value : this.name,
+      sortName: data.sortName.present ? data.sortName.value : this.sortName,
+      uri: data.uri.present ? data.uri.value : this.uri,
+      albumType: data.albumType.present ? data.albumType.value : this.albumType,
+      year: data.year.present ? data.year.value : this.year,
+      artistsJson:
+          data.artistsJson.present ? data.artistsJson.value : this.artistsJson,
+      favorite: data.favorite.present ? data.favorite.value : this.favorite,
+      inLibrary: data.inLibrary.present ? data.inLibrary.value : this.inLibrary,
+      metadataJson: data.metadataJson.present
+          ? data.metadataJson.value
+          : this.metadataJson,
+      lastSynced:
+          data.lastSynced.present ? data.lastSynced.value : this.lastSynced,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AlbumEntity(')
+          ..write('provider: $provider, ')
+          ..write('itemId: $itemId, ')
+          ..write('name: $name, ')
+          ..write('sortName: $sortName, ')
+          ..write('uri: $uri, ')
+          ..write('albumType: $albumType, ')
+          ..write('year: $year, ')
+          ..write('artistsJson: $artistsJson, ')
+          ..write('favorite: $favorite, ')
+          ..write('inLibrary: $inLibrary, ')
+          ..write('metadataJson: $metadataJson, ')
+          ..write('lastSynced: $lastSynced')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      provider,
+      itemId,
+      name,
+      sortName,
+      uri,
+      albumType,
+      year,
+      artistsJson,
+      favorite,
+      inLibrary,
+      metadataJson,
+      lastSynced);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AlbumEntity &&
+          other.provider == this.provider &&
+          other.itemId == this.itemId &&
+          other.name == this.name &&
+          other.sortName == this.sortName &&
+          other.uri == this.uri &&
+          other.albumType == this.albumType &&
+          other.year == this.year &&
+          other.artistsJson == this.artistsJson &&
+          other.favorite == this.favorite &&
+          other.inLibrary == this.inLibrary &&
+          other.metadataJson == this.metadataJson &&
+          other.lastSynced == this.lastSynced);
+}
+
+class AlbumsCompanion extends UpdateCompanion<AlbumEntity> {
+  final Value<String> provider;
+  final Value<String> itemId;
+  final Value<String> name;
+  final Value<String?> sortName;
+  final Value<String?> uri;
+  final Value<String?> albumType;
+  final Value<int?> year;
+  final Value<String?> artistsJson;
+  final Value<bool> favorite;
+  final Value<bool> inLibrary;
+  final Value<String?> metadataJson;
+  final Value<DateTime> lastSynced;
+  final Value<int> rowid;
+  const AlbumsCompanion({
+    this.provider = const Value.absent(),
+    this.itemId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.sortName = const Value.absent(),
+    this.uri = const Value.absent(),
+    this.albumType = const Value.absent(),
+    this.year = const Value.absent(),
+    this.artistsJson = const Value.absent(),
+    this.favorite = const Value.absent(),
+    this.inLibrary = const Value.absent(),
+    this.metadataJson = const Value.absent(),
+    this.lastSynced = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AlbumsCompanion.insert({
+    required String provider,
+    required String itemId,
+    required String name,
+    this.sortName = const Value.absent(),
+    this.uri = const Value.absent(),
+    this.albumType = const Value.absent(),
+    this.year = const Value.absent(),
+    this.artistsJson = const Value.absent(),
+    this.favorite = const Value.absent(),
+    this.inLibrary = const Value.absent(),
+    this.metadataJson = const Value.absent(),
+    required DateTime lastSynced,
+    this.rowid = const Value.absent(),
+  })  : provider = Value(provider),
+        itemId = Value(itemId),
+        name = Value(name),
+        lastSynced = Value(lastSynced);
+  static Insertable<AlbumEntity> custom({
+    Expression<String>? provider,
+    Expression<String>? itemId,
+    Expression<String>? name,
+    Expression<String>? sortName,
+    Expression<String>? uri,
+    Expression<String>? albumType,
+    Expression<int>? year,
+    Expression<String>? artistsJson,
+    Expression<bool>? favorite,
+    Expression<bool>? inLibrary,
+    Expression<String>? metadataJson,
+    Expression<DateTime>? lastSynced,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (provider != null) 'provider': provider,
+      if (itemId != null) 'item_id': itemId,
+      if (name != null) 'name': name,
+      if (sortName != null) 'sort_name': sortName,
+      if (uri != null) 'uri': uri,
+      if (albumType != null) 'album_type': albumType,
+      if (year != null) 'year': year,
+      if (artistsJson != null) 'artists_json': artistsJson,
+      if (favorite != null) 'favorite': favorite,
+      if (inLibrary != null) 'in_library': inLibrary,
+      if (metadataJson != null) 'metadata_json': metadataJson,
+      if (lastSynced != null) 'last_synced': lastSynced,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AlbumsCompanion copyWith(
+      {Value<String>? provider,
+      Value<String>? itemId,
+      Value<String>? name,
+      Value<String?>? sortName,
+      Value<String?>? uri,
+      Value<String?>? albumType,
+      Value<int?>? year,
+      Value<String?>? artistsJson,
+      Value<bool>? favorite,
+      Value<bool>? inLibrary,
+      Value<String?>? metadataJson,
+      Value<DateTime>? lastSynced,
+      Value<int>? rowid}) {
+    return AlbumsCompanion(
+      provider: provider ?? this.provider,
+      itemId: itemId ?? this.itemId,
+      name: name ?? this.name,
+      sortName: sortName ?? this.sortName,
+      uri: uri ?? this.uri,
+      albumType: albumType ?? this.albumType,
+      year: year ?? this.year,
+      artistsJson: artistsJson ?? this.artistsJson,
+      favorite: favorite ?? this.favorite,
+      inLibrary: inLibrary ?? this.inLibrary,
+      metadataJson: metadataJson ?? this.metadataJson,
+      lastSynced: lastSynced ?? this.lastSynced,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (provider.present) {
+      map['provider'] = Variable<String>(provider.value);
+    }
+    if (itemId.present) {
+      map['item_id'] = Variable<String>(itemId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (sortName.present) {
+      map['sort_name'] = Variable<String>(sortName.value);
+    }
+    if (uri.present) {
+      map['uri'] = Variable<String>(uri.value);
+    }
+    if (albumType.present) {
+      map['album_type'] = Variable<String>(albumType.value);
+    }
+    if (year.present) {
+      map['year'] = Variable<int>(year.value);
+    }
+    if (artistsJson.present) {
+      map['artists_json'] = Variable<String>(artistsJson.value);
+    }
+    if (favorite.present) {
+      map['favorite'] = Variable<bool>(favorite.value);
+    }
+    if (inLibrary.present) {
+      map['in_library'] = Variable<bool>(inLibrary.value);
+    }
+    if (metadataJson.present) {
+      map['metadata_json'] = Variable<String>(metadataJson.value);
+    }
+    if (lastSynced.present) {
+      map['last_synced'] = Variable<DateTime>(lastSynced.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AlbumsCompanion(')
+          ..write('provider: $provider, ')
+          ..write('itemId: $itemId, ')
+          ..write('name: $name, ')
+          ..write('sortName: $sortName, ')
+          ..write('uri: $uri, ')
+          ..write('albumType: $albumType, ')
+          ..write('year: $year, ')
+          ..write('artistsJson: $artistsJson, ')
+          ..write('favorite: $favorite, ')
+          ..write('inLibrary: $inLibrary, ')
+          ..write('metadataJson: $metadataJson, ')
+          ..write('lastSynced: $lastSynced, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $TracksTable extends Tracks with TableInfo<$TracksTable, TrackEntity> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TracksTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _providerMeta =
+      const VerificationMeta('provider');
+  @override
+  late final GeneratedColumn<String> provider = GeneratedColumn<String>(
+      'provider', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
+  @override
+  late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
+      'item_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _sortNameMeta =
+      const VerificationMeta('sortName');
+  @override
+  late final GeneratedColumn<String> sortName = GeneratedColumn<String>(
+      'sort_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _uriMeta = const VerificationMeta('uri');
+  @override
+  late final GeneratedColumn<String> uri = GeneratedColumn<String>(
+      'uri', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _durationSecondsMeta =
+      const VerificationMeta('durationSeconds');
+  @override
+  late final GeneratedColumn<int> durationSeconds = GeneratedColumn<int>(
+      'duration_seconds', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _artistsJsonMeta =
+      const VerificationMeta('artistsJson');
+  @override
+  late final GeneratedColumn<String> artistsJson = GeneratedColumn<String>(
+      'artists_json', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _albumProviderMeta =
+      const VerificationMeta('albumProvider');
+  @override
+  late final GeneratedColumn<String> albumProvider = GeneratedColumn<String>(
+      'album_provider', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _albumItemIdMeta =
+      const VerificationMeta('albumItemId');
+  @override
+  late final GeneratedColumn<String> albumItemId = GeneratedColumn<String>(
+      'album_item_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _positionMeta =
+      const VerificationMeta('position');
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+      'position', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _favoriteMeta =
+      const VerificationMeta('favorite');
+  @override
+  late final GeneratedColumn<bool> favorite = GeneratedColumn<bool>(
+      'favorite', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("favorite" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _inLibraryMeta =
+      const VerificationMeta('inLibrary');
+  @override
+  late final GeneratedColumn<bool> inLibrary = GeneratedColumn<bool>(
+      'in_library', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("in_library" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _metadataJsonMeta =
+      const VerificationMeta('metadataJson');
+  @override
+  late final GeneratedColumn<String> metadataJson = GeneratedColumn<String>(
+      'metadata_json', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _lastSyncedMeta =
+      const VerificationMeta('lastSynced');
+  @override
+  late final GeneratedColumn<DateTime> lastSynced = GeneratedColumn<DateTime>(
+      'last_synced', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        provider,
+        itemId,
+        name,
+        sortName,
+        uri,
+        durationSeconds,
+        artistsJson,
+        albumProvider,
+        albumItemId,
+        position,
+        favorite,
+        inLibrary,
+        metadataJson,
+        lastSynced
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'tracks';
+  @override
+  VerificationContext validateIntegrity(Insertable<TrackEntity> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('provider')) {
+      context.handle(_providerMeta,
+          provider.isAcceptableOrUnknown(data['provider']!, _providerMeta));
+    } else if (isInserting) {
+      context.missing(_providerMeta);
+    }
+    if (data.containsKey('item_id')) {
+      context.handle(_itemIdMeta,
+          itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta));
+    } else if (isInserting) {
+      context.missing(_itemIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('sort_name')) {
+      context.handle(_sortNameMeta,
+          sortName.isAcceptableOrUnknown(data['sort_name']!, _sortNameMeta));
+    }
+    if (data.containsKey('uri')) {
+      context.handle(
+          _uriMeta, uri.isAcceptableOrUnknown(data['uri']!, _uriMeta));
+    }
+    if (data.containsKey('duration_seconds')) {
+      context.handle(
+          _durationSecondsMeta,
+          durationSeconds.isAcceptableOrUnknown(
+              data['duration_seconds']!, _durationSecondsMeta));
+    }
+    if (data.containsKey('artists_json')) {
+      context.handle(
+          _artistsJsonMeta,
+          artistsJson.isAcceptableOrUnknown(
+              data['artists_json']!, _artistsJsonMeta));
+    }
+    if (data.containsKey('album_provider')) {
+      context.handle(
+          _albumProviderMeta,
+          albumProvider.isAcceptableOrUnknown(
+              data['album_provider']!, _albumProviderMeta));
+    }
+    if (data.containsKey('album_item_id')) {
+      context.handle(
+          _albumItemIdMeta,
+          albumItemId.isAcceptableOrUnknown(
+              data['album_item_id']!, _albumItemIdMeta));
+    }
+    if (data.containsKey('position')) {
+      context.handle(_positionMeta,
+          position.isAcceptableOrUnknown(data['position']!, _positionMeta));
+    }
+    if (data.containsKey('favorite')) {
+      context.handle(_favoriteMeta,
+          favorite.isAcceptableOrUnknown(data['favorite']!, _favoriteMeta));
+    }
+    if (data.containsKey('in_library')) {
+      context.handle(_inLibraryMeta,
+          inLibrary.isAcceptableOrUnknown(data['in_library']!, _inLibraryMeta));
+    }
+    if (data.containsKey('metadata_json')) {
+      context.handle(
+          _metadataJsonMeta,
+          metadataJson.isAcceptableOrUnknown(
+              data['metadata_json']!, _metadataJsonMeta));
+    }
+    if (data.containsKey('last_synced')) {
+      context.handle(
+          _lastSyncedMeta,
+          lastSynced.isAcceptableOrUnknown(
+              data['last_synced']!, _lastSyncedMeta));
+    } else if (isInserting) {
+      context.missing(_lastSyncedMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {provider, itemId};
+  @override
+  TrackEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TrackEntity(
+      provider: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}provider'])!,
+      itemId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}item_id'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      sortName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sort_name']),
+      uri: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}uri']),
+      durationSeconds: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}duration_seconds']),
+      artistsJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}artists_json']),
+      albumProvider: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}album_provider']),
+      albumItemId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}album_item_id']),
+      position: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}position']),
+      favorite: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}favorite'])!,
+      inLibrary: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}in_library'])!,
+      metadataJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}metadata_json']),
+      lastSynced: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}last_synced'])!,
+    );
+  }
+
+  @override
+  $TracksTable createAlias(String alias) {
+    return $TracksTable(attachedDatabase, alias);
+  }
+}
+
+class TrackEntity extends DataClass implements Insertable<TrackEntity> {
+  final String provider;
+  final String itemId;
+  final String name;
+  final String? sortName;
+  final String? uri;
+  final int? durationSeconds;
+  final String? artistsJson;
+  final String? albumProvider;
+  final String? albumItemId;
+
+  /// Position within the owning album (for ordered track listings).
+  final int? position;
+  final bool favorite;
+  final bool inLibrary;
+  final String? metadataJson;
+  final DateTime lastSynced;
+  const TrackEntity(
+      {required this.provider,
+      required this.itemId,
+      required this.name,
+      this.sortName,
+      this.uri,
+      this.durationSeconds,
+      this.artistsJson,
+      this.albumProvider,
+      this.albumItemId,
+      this.position,
+      required this.favorite,
+      required this.inLibrary,
+      this.metadataJson,
+      required this.lastSynced});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['provider'] = Variable<String>(provider);
+    map['item_id'] = Variable<String>(itemId);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || sortName != null) {
+      map['sort_name'] = Variable<String>(sortName);
+    }
+    if (!nullToAbsent || uri != null) {
+      map['uri'] = Variable<String>(uri);
+    }
+    if (!nullToAbsent || durationSeconds != null) {
+      map['duration_seconds'] = Variable<int>(durationSeconds);
+    }
+    if (!nullToAbsent || artistsJson != null) {
+      map['artists_json'] = Variable<String>(artistsJson);
+    }
+    if (!nullToAbsent || albumProvider != null) {
+      map['album_provider'] = Variable<String>(albumProvider);
+    }
+    if (!nullToAbsent || albumItemId != null) {
+      map['album_item_id'] = Variable<String>(albumItemId);
+    }
+    if (!nullToAbsent || position != null) {
+      map['position'] = Variable<int>(position);
+    }
+    map['favorite'] = Variable<bool>(favorite);
+    map['in_library'] = Variable<bool>(inLibrary);
+    if (!nullToAbsent || metadataJson != null) {
+      map['metadata_json'] = Variable<String>(metadataJson);
+    }
+    map['last_synced'] = Variable<DateTime>(lastSynced);
+    return map;
+  }
+
+  TracksCompanion toCompanion(bool nullToAbsent) {
+    return TracksCompanion(
+      provider: Value(provider),
+      itemId: Value(itemId),
+      name: Value(name),
+      sortName: sortName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sortName),
+      uri: uri == null && nullToAbsent ? const Value.absent() : Value(uri),
+      durationSeconds: durationSeconds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(durationSeconds),
+      artistsJson: artistsJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(artistsJson),
+      albumProvider: albumProvider == null && nullToAbsent
+          ? const Value.absent()
+          : Value(albumProvider),
+      albumItemId: albumItemId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(albumItemId),
+      position: position == null && nullToAbsent
+          ? const Value.absent()
+          : Value(position),
+      favorite: Value(favorite),
+      inLibrary: Value(inLibrary),
+      metadataJson: metadataJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(metadataJson),
+      lastSynced: Value(lastSynced),
+    );
+  }
+
+  factory TrackEntity.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TrackEntity(
+      provider: serializer.fromJson<String>(json['provider']),
+      itemId: serializer.fromJson<String>(json['itemId']),
+      name: serializer.fromJson<String>(json['name']),
+      sortName: serializer.fromJson<String?>(json['sortName']),
+      uri: serializer.fromJson<String?>(json['uri']),
+      durationSeconds: serializer.fromJson<int?>(json['durationSeconds']),
+      artistsJson: serializer.fromJson<String?>(json['artistsJson']),
+      albumProvider: serializer.fromJson<String?>(json['albumProvider']),
+      albumItemId: serializer.fromJson<String?>(json['albumItemId']),
+      position: serializer.fromJson<int?>(json['position']),
+      favorite: serializer.fromJson<bool>(json['favorite']),
+      inLibrary: serializer.fromJson<bool>(json['inLibrary']),
+      metadataJson: serializer.fromJson<String?>(json['metadataJson']),
+      lastSynced: serializer.fromJson<DateTime>(json['lastSynced']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'provider': serializer.toJson<String>(provider),
+      'itemId': serializer.toJson<String>(itemId),
+      'name': serializer.toJson<String>(name),
+      'sortName': serializer.toJson<String?>(sortName),
+      'uri': serializer.toJson<String?>(uri),
+      'durationSeconds': serializer.toJson<int?>(durationSeconds),
+      'artistsJson': serializer.toJson<String?>(artistsJson),
+      'albumProvider': serializer.toJson<String?>(albumProvider),
+      'albumItemId': serializer.toJson<String?>(albumItemId),
+      'position': serializer.toJson<int?>(position),
+      'favorite': serializer.toJson<bool>(favorite),
+      'inLibrary': serializer.toJson<bool>(inLibrary),
+      'metadataJson': serializer.toJson<String?>(metadataJson),
+      'lastSynced': serializer.toJson<DateTime>(lastSynced),
+    };
+  }
+
+  TrackEntity copyWith(
+          {String? provider,
+          String? itemId,
+          String? name,
+          Value<String?> sortName = const Value.absent(),
+          Value<String?> uri = const Value.absent(),
+          Value<int?> durationSeconds = const Value.absent(),
+          Value<String?> artistsJson = const Value.absent(),
+          Value<String?> albumProvider = const Value.absent(),
+          Value<String?> albumItemId = const Value.absent(),
+          Value<int?> position = const Value.absent(),
+          bool? favorite,
+          bool? inLibrary,
+          Value<String?> metadataJson = const Value.absent(),
+          DateTime? lastSynced}) =>
+      TrackEntity(
+        provider: provider ?? this.provider,
+        itemId: itemId ?? this.itemId,
+        name: name ?? this.name,
+        sortName: sortName.present ? sortName.value : this.sortName,
+        uri: uri.present ? uri.value : this.uri,
+        durationSeconds: durationSeconds.present
+            ? durationSeconds.value
+            : this.durationSeconds,
+        artistsJson: artistsJson.present ? artistsJson.value : this.artistsJson,
+        albumProvider:
+            albumProvider.present ? albumProvider.value : this.albumProvider,
+        albumItemId: albumItemId.present ? albumItemId.value : this.albumItemId,
+        position: position.present ? position.value : this.position,
+        favorite: favorite ?? this.favorite,
+        inLibrary: inLibrary ?? this.inLibrary,
+        metadataJson:
+            metadataJson.present ? metadataJson.value : this.metadataJson,
+        lastSynced: lastSynced ?? this.lastSynced,
+      );
+  TrackEntity copyWithCompanion(TracksCompanion data) {
+    return TrackEntity(
+      provider: data.provider.present ? data.provider.value : this.provider,
+      itemId: data.itemId.present ? data.itemId.value : this.itemId,
+      name: data.name.present ? data.name.value : this.name,
+      sortName: data.sortName.present ? data.sortName.value : this.sortName,
+      uri: data.uri.present ? data.uri.value : this.uri,
+      durationSeconds: data.durationSeconds.present
+          ? data.durationSeconds.value
+          : this.durationSeconds,
+      artistsJson:
+          data.artistsJson.present ? data.artistsJson.value : this.artistsJson,
+      albumProvider: data.albumProvider.present
+          ? data.albumProvider.value
+          : this.albumProvider,
+      albumItemId:
+          data.albumItemId.present ? data.albumItemId.value : this.albumItemId,
+      position: data.position.present ? data.position.value : this.position,
+      favorite: data.favorite.present ? data.favorite.value : this.favorite,
+      inLibrary: data.inLibrary.present ? data.inLibrary.value : this.inLibrary,
+      metadataJson: data.metadataJson.present
+          ? data.metadataJson.value
+          : this.metadataJson,
+      lastSynced:
+          data.lastSynced.present ? data.lastSynced.value : this.lastSynced,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrackEntity(')
+          ..write('provider: $provider, ')
+          ..write('itemId: $itemId, ')
+          ..write('name: $name, ')
+          ..write('sortName: $sortName, ')
+          ..write('uri: $uri, ')
+          ..write('durationSeconds: $durationSeconds, ')
+          ..write('artistsJson: $artistsJson, ')
+          ..write('albumProvider: $albumProvider, ')
+          ..write('albumItemId: $albumItemId, ')
+          ..write('position: $position, ')
+          ..write('favorite: $favorite, ')
+          ..write('inLibrary: $inLibrary, ')
+          ..write('metadataJson: $metadataJson, ')
+          ..write('lastSynced: $lastSynced')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      provider,
+      itemId,
+      name,
+      sortName,
+      uri,
+      durationSeconds,
+      artistsJson,
+      albumProvider,
+      albumItemId,
+      position,
+      favorite,
+      inLibrary,
+      metadataJson,
+      lastSynced);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TrackEntity &&
+          other.provider == this.provider &&
+          other.itemId == this.itemId &&
+          other.name == this.name &&
+          other.sortName == this.sortName &&
+          other.uri == this.uri &&
+          other.durationSeconds == this.durationSeconds &&
+          other.artistsJson == this.artistsJson &&
+          other.albumProvider == this.albumProvider &&
+          other.albumItemId == this.albumItemId &&
+          other.position == this.position &&
+          other.favorite == this.favorite &&
+          other.inLibrary == this.inLibrary &&
+          other.metadataJson == this.metadataJson &&
+          other.lastSynced == this.lastSynced);
+}
+
+class TracksCompanion extends UpdateCompanion<TrackEntity> {
+  final Value<String> provider;
+  final Value<String> itemId;
+  final Value<String> name;
+  final Value<String?> sortName;
+  final Value<String?> uri;
+  final Value<int?> durationSeconds;
+  final Value<String?> artistsJson;
+  final Value<String?> albumProvider;
+  final Value<String?> albumItemId;
+  final Value<int?> position;
+  final Value<bool> favorite;
+  final Value<bool> inLibrary;
+  final Value<String?> metadataJson;
+  final Value<DateTime> lastSynced;
+  final Value<int> rowid;
+  const TracksCompanion({
+    this.provider = const Value.absent(),
+    this.itemId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.sortName = const Value.absent(),
+    this.uri = const Value.absent(),
+    this.durationSeconds = const Value.absent(),
+    this.artistsJson = const Value.absent(),
+    this.albumProvider = const Value.absent(),
+    this.albumItemId = const Value.absent(),
+    this.position = const Value.absent(),
+    this.favorite = const Value.absent(),
+    this.inLibrary = const Value.absent(),
+    this.metadataJson = const Value.absent(),
+    this.lastSynced = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TracksCompanion.insert({
+    required String provider,
+    required String itemId,
+    required String name,
+    this.sortName = const Value.absent(),
+    this.uri = const Value.absent(),
+    this.durationSeconds = const Value.absent(),
+    this.artistsJson = const Value.absent(),
+    this.albumProvider = const Value.absent(),
+    this.albumItemId = const Value.absent(),
+    this.position = const Value.absent(),
+    this.favorite = const Value.absent(),
+    this.inLibrary = const Value.absent(),
+    this.metadataJson = const Value.absent(),
+    required DateTime lastSynced,
+    this.rowid = const Value.absent(),
+  })  : provider = Value(provider),
+        itemId = Value(itemId),
+        name = Value(name),
+        lastSynced = Value(lastSynced);
+  static Insertable<TrackEntity> custom({
+    Expression<String>? provider,
+    Expression<String>? itemId,
+    Expression<String>? name,
+    Expression<String>? sortName,
+    Expression<String>? uri,
+    Expression<int>? durationSeconds,
+    Expression<String>? artistsJson,
+    Expression<String>? albumProvider,
+    Expression<String>? albumItemId,
+    Expression<int>? position,
+    Expression<bool>? favorite,
+    Expression<bool>? inLibrary,
+    Expression<String>? metadataJson,
+    Expression<DateTime>? lastSynced,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (provider != null) 'provider': provider,
+      if (itemId != null) 'item_id': itemId,
+      if (name != null) 'name': name,
+      if (sortName != null) 'sort_name': sortName,
+      if (uri != null) 'uri': uri,
+      if (durationSeconds != null) 'duration_seconds': durationSeconds,
+      if (artistsJson != null) 'artists_json': artistsJson,
+      if (albumProvider != null) 'album_provider': albumProvider,
+      if (albumItemId != null) 'album_item_id': albumItemId,
+      if (position != null) 'position': position,
+      if (favorite != null) 'favorite': favorite,
+      if (inLibrary != null) 'in_library': inLibrary,
+      if (metadataJson != null) 'metadata_json': metadataJson,
+      if (lastSynced != null) 'last_synced': lastSynced,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TracksCompanion copyWith(
+      {Value<String>? provider,
+      Value<String>? itemId,
+      Value<String>? name,
+      Value<String?>? sortName,
+      Value<String?>? uri,
+      Value<int?>? durationSeconds,
+      Value<String?>? artistsJson,
+      Value<String?>? albumProvider,
+      Value<String?>? albumItemId,
+      Value<int?>? position,
+      Value<bool>? favorite,
+      Value<bool>? inLibrary,
+      Value<String?>? metadataJson,
+      Value<DateTime>? lastSynced,
+      Value<int>? rowid}) {
+    return TracksCompanion(
+      provider: provider ?? this.provider,
+      itemId: itemId ?? this.itemId,
+      name: name ?? this.name,
+      sortName: sortName ?? this.sortName,
+      uri: uri ?? this.uri,
+      durationSeconds: durationSeconds ?? this.durationSeconds,
+      artistsJson: artistsJson ?? this.artistsJson,
+      albumProvider: albumProvider ?? this.albumProvider,
+      albumItemId: albumItemId ?? this.albumItemId,
+      position: position ?? this.position,
+      favorite: favorite ?? this.favorite,
+      inLibrary: inLibrary ?? this.inLibrary,
+      metadataJson: metadataJson ?? this.metadataJson,
+      lastSynced: lastSynced ?? this.lastSynced,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (provider.present) {
+      map['provider'] = Variable<String>(provider.value);
+    }
+    if (itemId.present) {
+      map['item_id'] = Variable<String>(itemId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (sortName.present) {
+      map['sort_name'] = Variable<String>(sortName.value);
+    }
+    if (uri.present) {
+      map['uri'] = Variable<String>(uri.value);
+    }
+    if (durationSeconds.present) {
+      map['duration_seconds'] = Variable<int>(durationSeconds.value);
+    }
+    if (artistsJson.present) {
+      map['artists_json'] = Variable<String>(artistsJson.value);
+    }
+    if (albumProvider.present) {
+      map['album_provider'] = Variable<String>(albumProvider.value);
+    }
+    if (albumItemId.present) {
+      map['album_item_id'] = Variable<String>(albumItemId.value);
+    }
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
+    }
+    if (favorite.present) {
+      map['favorite'] = Variable<bool>(favorite.value);
+    }
+    if (inLibrary.present) {
+      map['in_library'] = Variable<bool>(inLibrary.value);
+    }
+    if (metadataJson.present) {
+      map['metadata_json'] = Variable<String>(metadataJson.value);
+    }
+    if (lastSynced.present) {
+      map['last_synced'] = Variable<DateTime>(lastSynced.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TracksCompanion(')
+          ..write('provider: $provider, ')
+          ..write('itemId: $itemId, ')
+          ..write('name: $name, ')
+          ..write('sortName: $sortName, ')
+          ..write('uri: $uri, ')
+          ..write('durationSeconds: $durationSeconds, ')
+          ..write('artistsJson: $artistsJson, ')
+          ..write('albumProvider: $albumProvider, ')
+          ..write('albumItemId: $albumItemId, ')
+          ..write('position: $position, ')
+          ..write('favorite: $favorite, ')
+          ..write('inLibrary: $inLibrary, ')
+          ..write('metadataJson: $metadataJson, ')
+          ..write('lastSynced: $lastSynced, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PlaylistsTable extends Playlists
+    with TableInfo<$PlaylistsTable, PlaylistEntity> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PlaylistsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _providerMeta =
+      const VerificationMeta('provider');
+  @override
+  late final GeneratedColumn<String> provider = GeneratedColumn<String>(
+      'provider', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
+  @override
+  late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
+      'item_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _sortNameMeta =
+      const VerificationMeta('sortName');
+  @override
+  late final GeneratedColumn<String> sortName = GeneratedColumn<String>(
+      'sort_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _uriMeta = const VerificationMeta('uri');
+  @override
+  late final GeneratedColumn<String> uri = GeneratedColumn<String>(
+      'uri', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _ownerMeta = const VerificationMeta('owner');
+  @override
+  late final GeneratedColumn<String> owner = GeneratedColumn<String>(
+      'owner', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _isEditableMeta =
+      const VerificationMeta('isEditable');
+  @override
+  late final GeneratedColumn<bool> isEditable = GeneratedColumn<bool>(
+      'is_editable', aliasedName, true,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("is_editable" IN (0, 1))'));
+  static const VerificationMeta _trackCountMeta =
+      const VerificationMeta('trackCount');
+  @override
+  late final GeneratedColumn<int> trackCount = GeneratedColumn<int>(
+      'track_count', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _favoriteMeta =
+      const VerificationMeta('favorite');
+  @override
+  late final GeneratedColumn<bool> favorite = GeneratedColumn<bool>(
+      'favorite', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("favorite" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _inLibraryMeta =
+      const VerificationMeta('inLibrary');
+  @override
+  late final GeneratedColumn<bool> inLibrary = GeneratedColumn<bool>(
+      'in_library', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("in_library" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _metadataJsonMeta =
+      const VerificationMeta('metadataJson');
+  @override
+  late final GeneratedColumn<String> metadataJson = GeneratedColumn<String>(
+      'metadata_json', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _lastSyncedMeta =
+      const VerificationMeta('lastSynced');
+  @override
+  late final GeneratedColumn<DateTime> lastSynced = GeneratedColumn<DateTime>(
+      'last_synced', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        provider,
+        itemId,
+        name,
+        sortName,
+        uri,
+        owner,
+        isEditable,
+        trackCount,
+        favorite,
+        inLibrary,
+        metadataJson,
+        lastSynced
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'playlists';
+  @override
+  VerificationContext validateIntegrity(Insertable<PlaylistEntity> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('provider')) {
+      context.handle(_providerMeta,
+          provider.isAcceptableOrUnknown(data['provider']!, _providerMeta));
+    } else if (isInserting) {
+      context.missing(_providerMeta);
+    }
+    if (data.containsKey('item_id')) {
+      context.handle(_itemIdMeta,
+          itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta));
+    } else if (isInserting) {
+      context.missing(_itemIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('sort_name')) {
+      context.handle(_sortNameMeta,
+          sortName.isAcceptableOrUnknown(data['sort_name']!, _sortNameMeta));
+    }
+    if (data.containsKey('uri')) {
+      context.handle(
+          _uriMeta, uri.isAcceptableOrUnknown(data['uri']!, _uriMeta));
+    }
+    if (data.containsKey('owner')) {
+      context.handle(
+          _ownerMeta, owner.isAcceptableOrUnknown(data['owner']!, _ownerMeta));
+    }
+    if (data.containsKey('is_editable')) {
+      context.handle(
+          _isEditableMeta,
+          isEditable.isAcceptableOrUnknown(
+              data['is_editable']!, _isEditableMeta));
+    }
+    if (data.containsKey('track_count')) {
+      context.handle(
+          _trackCountMeta,
+          trackCount.isAcceptableOrUnknown(
+              data['track_count']!, _trackCountMeta));
+    }
+    if (data.containsKey('favorite')) {
+      context.handle(_favoriteMeta,
+          favorite.isAcceptableOrUnknown(data['favorite']!, _favoriteMeta));
+    }
+    if (data.containsKey('in_library')) {
+      context.handle(_inLibraryMeta,
+          inLibrary.isAcceptableOrUnknown(data['in_library']!, _inLibraryMeta));
+    }
+    if (data.containsKey('metadata_json')) {
+      context.handle(
+          _metadataJsonMeta,
+          metadataJson.isAcceptableOrUnknown(
+              data['metadata_json']!, _metadataJsonMeta));
+    }
+    if (data.containsKey('last_synced')) {
+      context.handle(
+          _lastSyncedMeta,
+          lastSynced.isAcceptableOrUnknown(
+              data['last_synced']!, _lastSyncedMeta));
+    } else if (isInserting) {
+      context.missing(_lastSyncedMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {provider, itemId};
+  @override
+  PlaylistEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PlaylistEntity(
+      provider: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}provider'])!,
+      itemId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}item_id'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      sortName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sort_name']),
+      uri: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}uri']),
+      owner: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}owner']),
+      isEditable: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_editable']),
+      trackCount: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}track_count']),
+      favorite: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}favorite'])!,
+      inLibrary: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}in_library'])!,
+      metadataJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}metadata_json']),
+      lastSynced: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}last_synced'])!,
+    );
+  }
+
+  @override
+  $PlaylistsTable createAlias(String alias) {
+    return $PlaylistsTable(attachedDatabase, alias);
+  }
+}
+
+class PlaylistEntity extends DataClass implements Insertable<PlaylistEntity> {
+  final String provider;
+  final String itemId;
+  final String name;
+  final String? sortName;
+  final String? uri;
+  final String? owner;
+  final bool? isEditable;
+  final int? trackCount;
+  final bool favorite;
+  final bool inLibrary;
+  final String? metadataJson;
+  final DateTime lastSynced;
+  const PlaylistEntity(
+      {required this.provider,
+      required this.itemId,
+      required this.name,
+      this.sortName,
+      this.uri,
+      this.owner,
+      this.isEditable,
+      this.trackCount,
+      required this.favorite,
+      required this.inLibrary,
+      this.metadataJson,
+      required this.lastSynced});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['provider'] = Variable<String>(provider);
+    map['item_id'] = Variable<String>(itemId);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || sortName != null) {
+      map['sort_name'] = Variable<String>(sortName);
+    }
+    if (!nullToAbsent || uri != null) {
+      map['uri'] = Variable<String>(uri);
+    }
+    if (!nullToAbsent || owner != null) {
+      map['owner'] = Variable<String>(owner);
+    }
+    if (!nullToAbsent || isEditable != null) {
+      map['is_editable'] = Variable<bool>(isEditable);
+    }
+    if (!nullToAbsent || trackCount != null) {
+      map['track_count'] = Variable<int>(trackCount);
+    }
+    map['favorite'] = Variable<bool>(favorite);
+    map['in_library'] = Variable<bool>(inLibrary);
+    if (!nullToAbsent || metadataJson != null) {
+      map['metadata_json'] = Variable<String>(metadataJson);
+    }
+    map['last_synced'] = Variable<DateTime>(lastSynced);
+    return map;
+  }
+
+  PlaylistsCompanion toCompanion(bool nullToAbsent) {
+    return PlaylistsCompanion(
+      provider: Value(provider),
+      itemId: Value(itemId),
+      name: Value(name),
+      sortName: sortName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sortName),
+      uri: uri == null && nullToAbsent ? const Value.absent() : Value(uri),
+      owner:
+          owner == null && nullToAbsent ? const Value.absent() : Value(owner),
+      isEditable: isEditable == null && nullToAbsent
+          ? const Value.absent()
+          : Value(isEditable),
+      trackCount: trackCount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(trackCount),
+      favorite: Value(favorite),
+      inLibrary: Value(inLibrary),
+      metadataJson: metadataJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(metadataJson),
+      lastSynced: Value(lastSynced),
+    );
+  }
+
+  factory PlaylistEntity.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PlaylistEntity(
+      provider: serializer.fromJson<String>(json['provider']),
+      itemId: serializer.fromJson<String>(json['itemId']),
+      name: serializer.fromJson<String>(json['name']),
+      sortName: serializer.fromJson<String?>(json['sortName']),
+      uri: serializer.fromJson<String?>(json['uri']),
+      owner: serializer.fromJson<String?>(json['owner']),
+      isEditable: serializer.fromJson<bool?>(json['isEditable']),
+      trackCount: serializer.fromJson<int?>(json['trackCount']),
+      favorite: serializer.fromJson<bool>(json['favorite']),
+      inLibrary: serializer.fromJson<bool>(json['inLibrary']),
+      metadataJson: serializer.fromJson<String?>(json['metadataJson']),
+      lastSynced: serializer.fromJson<DateTime>(json['lastSynced']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'provider': serializer.toJson<String>(provider),
+      'itemId': serializer.toJson<String>(itemId),
+      'name': serializer.toJson<String>(name),
+      'sortName': serializer.toJson<String?>(sortName),
+      'uri': serializer.toJson<String?>(uri),
+      'owner': serializer.toJson<String?>(owner),
+      'isEditable': serializer.toJson<bool?>(isEditable),
+      'trackCount': serializer.toJson<int?>(trackCount),
+      'favorite': serializer.toJson<bool>(favorite),
+      'inLibrary': serializer.toJson<bool>(inLibrary),
+      'metadataJson': serializer.toJson<String?>(metadataJson),
+      'lastSynced': serializer.toJson<DateTime>(lastSynced),
+    };
+  }
+
+  PlaylistEntity copyWith(
+          {String? provider,
+          String? itemId,
+          String? name,
+          Value<String?> sortName = const Value.absent(),
+          Value<String?> uri = const Value.absent(),
+          Value<String?> owner = const Value.absent(),
+          Value<bool?> isEditable = const Value.absent(),
+          Value<int?> trackCount = const Value.absent(),
+          bool? favorite,
+          bool? inLibrary,
+          Value<String?> metadataJson = const Value.absent(),
+          DateTime? lastSynced}) =>
+      PlaylistEntity(
+        provider: provider ?? this.provider,
+        itemId: itemId ?? this.itemId,
+        name: name ?? this.name,
+        sortName: sortName.present ? sortName.value : this.sortName,
+        uri: uri.present ? uri.value : this.uri,
+        owner: owner.present ? owner.value : this.owner,
+        isEditable: isEditable.present ? isEditable.value : this.isEditable,
+        trackCount: trackCount.present ? trackCount.value : this.trackCount,
+        favorite: favorite ?? this.favorite,
+        inLibrary: inLibrary ?? this.inLibrary,
+        metadataJson:
+            metadataJson.present ? metadataJson.value : this.metadataJson,
+        lastSynced: lastSynced ?? this.lastSynced,
+      );
+  PlaylistEntity copyWithCompanion(PlaylistsCompanion data) {
+    return PlaylistEntity(
+      provider: data.provider.present ? data.provider.value : this.provider,
+      itemId: data.itemId.present ? data.itemId.value : this.itemId,
+      name: data.name.present ? data.name.value : this.name,
+      sortName: data.sortName.present ? data.sortName.value : this.sortName,
+      uri: data.uri.present ? data.uri.value : this.uri,
+      owner: data.owner.present ? data.owner.value : this.owner,
+      isEditable:
+          data.isEditable.present ? data.isEditable.value : this.isEditable,
+      trackCount:
+          data.trackCount.present ? data.trackCount.value : this.trackCount,
+      favorite: data.favorite.present ? data.favorite.value : this.favorite,
+      inLibrary: data.inLibrary.present ? data.inLibrary.value : this.inLibrary,
+      metadataJson: data.metadataJson.present
+          ? data.metadataJson.value
+          : this.metadataJson,
+      lastSynced:
+          data.lastSynced.present ? data.lastSynced.value : this.lastSynced,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PlaylistEntity(')
+          ..write('provider: $provider, ')
+          ..write('itemId: $itemId, ')
+          ..write('name: $name, ')
+          ..write('sortName: $sortName, ')
+          ..write('uri: $uri, ')
+          ..write('owner: $owner, ')
+          ..write('isEditable: $isEditable, ')
+          ..write('trackCount: $trackCount, ')
+          ..write('favorite: $favorite, ')
+          ..write('inLibrary: $inLibrary, ')
+          ..write('metadataJson: $metadataJson, ')
+          ..write('lastSynced: $lastSynced')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(provider, itemId, name, sortName, uri, owner,
+      isEditable, trackCount, favorite, inLibrary, metadataJson, lastSynced);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PlaylistEntity &&
+          other.provider == this.provider &&
+          other.itemId == this.itemId &&
+          other.name == this.name &&
+          other.sortName == this.sortName &&
+          other.uri == this.uri &&
+          other.owner == this.owner &&
+          other.isEditable == this.isEditable &&
+          other.trackCount == this.trackCount &&
+          other.favorite == this.favorite &&
+          other.inLibrary == this.inLibrary &&
+          other.metadataJson == this.metadataJson &&
+          other.lastSynced == this.lastSynced);
+}
+
+class PlaylistsCompanion extends UpdateCompanion<PlaylistEntity> {
+  final Value<String> provider;
+  final Value<String> itemId;
+  final Value<String> name;
+  final Value<String?> sortName;
+  final Value<String?> uri;
+  final Value<String?> owner;
+  final Value<bool?> isEditable;
+  final Value<int?> trackCount;
+  final Value<bool> favorite;
+  final Value<bool> inLibrary;
+  final Value<String?> metadataJson;
+  final Value<DateTime> lastSynced;
+  final Value<int> rowid;
+  const PlaylistsCompanion({
+    this.provider = const Value.absent(),
+    this.itemId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.sortName = const Value.absent(),
+    this.uri = const Value.absent(),
+    this.owner = const Value.absent(),
+    this.isEditable = const Value.absent(),
+    this.trackCount = const Value.absent(),
+    this.favorite = const Value.absent(),
+    this.inLibrary = const Value.absent(),
+    this.metadataJson = const Value.absent(),
+    this.lastSynced = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PlaylistsCompanion.insert({
+    required String provider,
+    required String itemId,
+    required String name,
+    this.sortName = const Value.absent(),
+    this.uri = const Value.absent(),
+    this.owner = const Value.absent(),
+    this.isEditable = const Value.absent(),
+    this.trackCount = const Value.absent(),
+    this.favorite = const Value.absent(),
+    this.inLibrary = const Value.absent(),
+    this.metadataJson = const Value.absent(),
+    required DateTime lastSynced,
+    this.rowid = const Value.absent(),
+  })  : provider = Value(provider),
+        itemId = Value(itemId),
+        name = Value(name),
+        lastSynced = Value(lastSynced);
+  static Insertable<PlaylistEntity> custom({
+    Expression<String>? provider,
+    Expression<String>? itemId,
+    Expression<String>? name,
+    Expression<String>? sortName,
+    Expression<String>? uri,
+    Expression<String>? owner,
+    Expression<bool>? isEditable,
+    Expression<int>? trackCount,
+    Expression<bool>? favorite,
+    Expression<bool>? inLibrary,
+    Expression<String>? metadataJson,
+    Expression<DateTime>? lastSynced,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (provider != null) 'provider': provider,
+      if (itemId != null) 'item_id': itemId,
+      if (name != null) 'name': name,
+      if (sortName != null) 'sort_name': sortName,
+      if (uri != null) 'uri': uri,
+      if (owner != null) 'owner': owner,
+      if (isEditable != null) 'is_editable': isEditable,
+      if (trackCount != null) 'track_count': trackCount,
+      if (favorite != null) 'favorite': favorite,
+      if (inLibrary != null) 'in_library': inLibrary,
+      if (metadataJson != null) 'metadata_json': metadataJson,
+      if (lastSynced != null) 'last_synced': lastSynced,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PlaylistsCompanion copyWith(
+      {Value<String>? provider,
+      Value<String>? itemId,
+      Value<String>? name,
+      Value<String?>? sortName,
+      Value<String?>? uri,
+      Value<String?>? owner,
+      Value<bool?>? isEditable,
+      Value<int?>? trackCount,
+      Value<bool>? favorite,
+      Value<bool>? inLibrary,
+      Value<String?>? metadataJson,
+      Value<DateTime>? lastSynced,
+      Value<int>? rowid}) {
+    return PlaylistsCompanion(
+      provider: provider ?? this.provider,
+      itemId: itemId ?? this.itemId,
+      name: name ?? this.name,
+      sortName: sortName ?? this.sortName,
+      uri: uri ?? this.uri,
+      owner: owner ?? this.owner,
+      isEditable: isEditable ?? this.isEditable,
+      trackCount: trackCount ?? this.trackCount,
+      favorite: favorite ?? this.favorite,
+      inLibrary: inLibrary ?? this.inLibrary,
+      metadataJson: metadataJson ?? this.metadataJson,
+      lastSynced: lastSynced ?? this.lastSynced,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (provider.present) {
+      map['provider'] = Variable<String>(provider.value);
+    }
+    if (itemId.present) {
+      map['item_id'] = Variable<String>(itemId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (sortName.present) {
+      map['sort_name'] = Variable<String>(sortName.value);
+    }
+    if (uri.present) {
+      map['uri'] = Variable<String>(uri.value);
+    }
+    if (owner.present) {
+      map['owner'] = Variable<String>(owner.value);
+    }
+    if (isEditable.present) {
+      map['is_editable'] = Variable<bool>(isEditable.value);
+    }
+    if (trackCount.present) {
+      map['track_count'] = Variable<int>(trackCount.value);
+    }
+    if (favorite.present) {
+      map['favorite'] = Variable<bool>(favorite.value);
+    }
+    if (inLibrary.present) {
+      map['in_library'] = Variable<bool>(inLibrary.value);
+    }
+    if (metadataJson.present) {
+      map['metadata_json'] = Variable<String>(metadataJson.value);
+    }
+    if (lastSynced.present) {
+      map['last_synced'] = Variable<DateTime>(lastSynced.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PlaylistsCompanion(')
+          ..write('provider: $provider, ')
+          ..write('itemId: $itemId, ')
+          ..write('name: $name, ')
+          ..write('sortName: $sortName, ')
+          ..write('uri: $uri, ')
+          ..write('owner: $owner, ')
+          ..write('isEditable: $isEditable, ')
+          ..write('trackCount: $trackCount, ')
+          ..write('favorite: $favorite, ')
+          ..write('inLibrary: $inLibrary, ')
+          ..write('metadataJson: $metadataJson, ')
+          ..write('lastSynced: $lastSynced, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PlaylistTracksTable extends PlaylistTracks
+    with TableInfo<$PlaylistTracksTable, PlaylistTrackEntity> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PlaylistTracksTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _playlistProviderMeta =
+      const VerificationMeta('playlistProvider');
+  @override
+  late final GeneratedColumn<String> playlistProvider = GeneratedColumn<String>(
+      'playlist_provider', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _playlistItemIdMeta =
+      const VerificationMeta('playlistItemId');
+  @override
+  late final GeneratedColumn<String> playlistItemId = GeneratedColumn<String>(
+      'playlist_item_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _trackProviderMeta =
+      const VerificationMeta('trackProvider');
+  @override
+  late final GeneratedColumn<String> trackProvider = GeneratedColumn<String>(
+      'track_provider', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _trackItemIdMeta =
+      const VerificationMeta('trackItemId');
+  @override
+  late final GeneratedColumn<String> trackItemId = GeneratedColumn<String>(
+      'track_item_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _positionMeta =
+      const VerificationMeta('position');
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+      'position', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        playlistProvider,
+        playlistItemId,
+        trackProvider,
+        trackItemId,
+        position
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'playlist_tracks';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<PlaylistTrackEntity> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('playlist_provider')) {
+      context.handle(
+          _playlistProviderMeta,
+          playlistProvider.isAcceptableOrUnknown(
+              data['playlist_provider']!, _playlistProviderMeta));
+    } else if (isInserting) {
+      context.missing(_playlistProviderMeta);
+    }
+    if (data.containsKey('playlist_item_id')) {
+      context.handle(
+          _playlistItemIdMeta,
+          playlistItemId.isAcceptableOrUnknown(
+              data['playlist_item_id']!, _playlistItemIdMeta));
+    } else if (isInserting) {
+      context.missing(_playlistItemIdMeta);
+    }
+    if (data.containsKey('track_provider')) {
+      context.handle(
+          _trackProviderMeta,
+          trackProvider.isAcceptableOrUnknown(
+              data['track_provider']!, _trackProviderMeta));
+    } else if (isInserting) {
+      context.missing(_trackProviderMeta);
+    }
+    if (data.containsKey('track_item_id')) {
+      context.handle(
+          _trackItemIdMeta,
+          trackItemId.isAcceptableOrUnknown(
+              data['track_item_id']!, _trackItemIdMeta));
+    } else if (isInserting) {
+      context.missing(_trackItemIdMeta);
+    }
+    if (data.containsKey('position')) {
+      context.handle(_positionMeta,
+          position.isAcceptableOrUnknown(data['position']!, _positionMeta));
+    } else if (isInserting) {
+      context.missing(_positionMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PlaylistTrackEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PlaylistTrackEntity(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      playlistProvider: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}playlist_provider'])!,
+      playlistItemId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}playlist_item_id'])!,
+      trackProvider: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}track_provider'])!,
+      trackItemId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}track_item_id'])!,
+      position: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}position'])!,
+    );
+  }
+
+  @override
+  $PlaylistTracksTable createAlias(String alias) {
+    return $PlaylistTracksTable(attachedDatabase, alias);
+  }
+}
+
+class PlaylistTrackEntity extends DataClass
+    implements Insertable<PlaylistTrackEntity> {
+  final int id;
+  final String playlistProvider;
+  final String playlistItemId;
+  final String trackProvider;
+  final String trackItemId;
+  final int position;
+  const PlaylistTrackEntity(
+      {required this.id,
+      required this.playlistProvider,
+      required this.playlistItemId,
+      required this.trackProvider,
+      required this.trackItemId,
+      required this.position});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['playlist_provider'] = Variable<String>(playlistProvider);
+    map['playlist_item_id'] = Variable<String>(playlistItemId);
+    map['track_provider'] = Variable<String>(trackProvider);
+    map['track_item_id'] = Variable<String>(trackItemId);
+    map['position'] = Variable<int>(position);
+    return map;
+  }
+
+  PlaylistTracksCompanion toCompanion(bool nullToAbsent) {
+    return PlaylistTracksCompanion(
+      id: Value(id),
+      playlistProvider: Value(playlistProvider),
+      playlistItemId: Value(playlistItemId),
+      trackProvider: Value(trackProvider),
+      trackItemId: Value(trackItemId),
+      position: Value(position),
+    );
+  }
+
+  factory PlaylistTrackEntity.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PlaylistTrackEntity(
+      id: serializer.fromJson<int>(json['id']),
+      playlistProvider: serializer.fromJson<String>(json['playlistProvider']),
+      playlistItemId: serializer.fromJson<String>(json['playlistItemId']),
+      trackProvider: serializer.fromJson<String>(json['trackProvider']),
+      trackItemId: serializer.fromJson<String>(json['trackItemId']),
+      position: serializer.fromJson<int>(json['position']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'playlistProvider': serializer.toJson<String>(playlistProvider),
+      'playlistItemId': serializer.toJson<String>(playlistItemId),
+      'trackProvider': serializer.toJson<String>(trackProvider),
+      'trackItemId': serializer.toJson<String>(trackItemId),
+      'position': serializer.toJson<int>(position),
+    };
+  }
+
+  PlaylistTrackEntity copyWith(
+          {int? id,
+          String? playlistProvider,
+          String? playlistItemId,
+          String? trackProvider,
+          String? trackItemId,
+          int? position}) =>
+      PlaylistTrackEntity(
+        id: id ?? this.id,
+        playlistProvider: playlistProvider ?? this.playlistProvider,
+        playlistItemId: playlistItemId ?? this.playlistItemId,
+        trackProvider: trackProvider ?? this.trackProvider,
+        trackItemId: trackItemId ?? this.trackItemId,
+        position: position ?? this.position,
+      );
+  PlaylistTrackEntity copyWithCompanion(PlaylistTracksCompanion data) {
+    return PlaylistTrackEntity(
+      id: data.id.present ? data.id.value : this.id,
+      playlistProvider: data.playlistProvider.present
+          ? data.playlistProvider.value
+          : this.playlistProvider,
+      playlistItemId: data.playlistItemId.present
+          ? data.playlistItemId.value
+          : this.playlistItemId,
+      trackProvider: data.trackProvider.present
+          ? data.trackProvider.value
+          : this.trackProvider,
+      trackItemId:
+          data.trackItemId.present ? data.trackItemId.value : this.trackItemId,
+      position: data.position.present ? data.position.value : this.position,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PlaylistTrackEntity(')
+          ..write('id: $id, ')
+          ..write('playlistProvider: $playlistProvider, ')
+          ..write('playlistItemId: $playlistItemId, ')
+          ..write('trackProvider: $trackProvider, ')
+          ..write('trackItemId: $trackItemId, ')
+          ..write('position: $position')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, playlistProvider, playlistItemId,
+      trackProvider, trackItemId, position);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PlaylistTrackEntity &&
+          other.id == this.id &&
+          other.playlistProvider == this.playlistProvider &&
+          other.playlistItemId == this.playlistItemId &&
+          other.trackProvider == this.trackProvider &&
+          other.trackItemId == this.trackItemId &&
+          other.position == this.position);
+}
+
+class PlaylistTracksCompanion extends UpdateCompanion<PlaylistTrackEntity> {
+  final Value<int> id;
+  final Value<String> playlistProvider;
+  final Value<String> playlistItemId;
+  final Value<String> trackProvider;
+  final Value<String> trackItemId;
+  final Value<int> position;
+  const PlaylistTracksCompanion({
+    this.id = const Value.absent(),
+    this.playlistProvider = const Value.absent(),
+    this.playlistItemId = const Value.absent(),
+    this.trackProvider = const Value.absent(),
+    this.trackItemId = const Value.absent(),
+    this.position = const Value.absent(),
+  });
+  PlaylistTracksCompanion.insert({
+    this.id = const Value.absent(),
+    required String playlistProvider,
+    required String playlistItemId,
+    required String trackProvider,
+    required String trackItemId,
+    required int position,
+  })  : playlistProvider = Value(playlistProvider),
+        playlistItemId = Value(playlistItemId),
+        trackProvider = Value(trackProvider),
+        trackItemId = Value(trackItemId),
+        position = Value(position);
+  static Insertable<PlaylistTrackEntity> custom({
+    Expression<int>? id,
+    Expression<String>? playlistProvider,
+    Expression<String>? playlistItemId,
+    Expression<String>? trackProvider,
+    Expression<String>? trackItemId,
+    Expression<int>? position,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (playlistProvider != null) 'playlist_provider': playlistProvider,
+      if (playlistItemId != null) 'playlist_item_id': playlistItemId,
+      if (trackProvider != null) 'track_provider': trackProvider,
+      if (trackItemId != null) 'track_item_id': trackItemId,
+      if (position != null) 'position': position,
+    });
+  }
+
+  PlaylistTracksCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? playlistProvider,
+      Value<String>? playlistItemId,
+      Value<String>? trackProvider,
+      Value<String>? trackItemId,
+      Value<int>? position}) {
+    return PlaylistTracksCompanion(
+      id: id ?? this.id,
+      playlistProvider: playlistProvider ?? this.playlistProvider,
+      playlistItemId: playlistItemId ?? this.playlistItemId,
+      trackProvider: trackProvider ?? this.trackProvider,
+      trackItemId: trackItemId ?? this.trackItemId,
+      position: position ?? this.position,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (playlistProvider.present) {
+      map['playlist_provider'] = Variable<String>(playlistProvider.value);
+    }
+    if (playlistItemId.present) {
+      map['playlist_item_id'] = Variable<String>(playlistItemId.value);
+    }
+    if (trackProvider.present) {
+      map['track_provider'] = Variable<String>(trackProvider.value);
+    }
+    if (trackItemId.present) {
+      map['track_item_id'] = Variable<String>(trackItemId.value);
+    }
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PlaylistTracksCompanion(')
+          ..write('id: $id, ')
+          ..write('playlistProvider: $playlistProvider, ')
+          ..write('playlistItemId: $playlistItemId, ')
+          ..write('trackProvider: $trackProvider, ')
+          ..write('trackItemId: $trackItemId, ')
+          ..write('position: $position')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AudiobooksTable extends Audiobooks
+    with TableInfo<$AudiobooksTable, AudiobookEntity> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AudiobooksTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _providerMeta =
+      const VerificationMeta('provider');
+  @override
+  late final GeneratedColumn<String> provider = GeneratedColumn<String>(
+      'provider', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
+  @override
+  late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
+      'item_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _sortNameMeta =
+      const VerificationMeta('sortName');
+  @override
+  late final GeneratedColumn<String> sortName = GeneratedColumn<String>(
+      'sort_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _uriMeta = const VerificationMeta('uri');
+  @override
+  late final GeneratedColumn<String> uri = GeneratedColumn<String>(
+      'uri', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _authorsJsonMeta =
+      const VerificationMeta('authorsJson');
+  @override
+  late final GeneratedColumn<String> authorsJson = GeneratedColumn<String>(
+      'authors_json', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _narratorsJsonMeta =
+      const VerificationMeta('narratorsJson');
+  @override
+  late final GeneratedColumn<String> narratorsJson = GeneratedColumn<String>(
+      'narrators_json', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _publisherMeta =
+      const VerificationMeta('publisher');
+  @override
+  late final GeneratedColumn<String> publisher = GeneratedColumn<String>(
+      'publisher', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _descriptionMeta =
+      const VerificationMeta('description');
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+      'description', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _yearMeta = const VerificationMeta('year');
+  @override
+  late final GeneratedColumn<int> year = GeneratedColumn<int>(
+      'year', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _durationSecondsMeta =
+      const VerificationMeta('durationSeconds');
+  @override
+  late final GeneratedColumn<int> durationSeconds = GeneratedColumn<int>(
+      'duration_seconds', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _resumePositionMsMeta =
+      const VerificationMeta('resumePositionMs');
+  @override
+  late final GeneratedColumn<int> resumePositionMs = GeneratedColumn<int>(
+      'resume_position_ms', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _fullyPlayedMeta =
+      const VerificationMeta('fullyPlayed');
+  @override
+  late final GeneratedColumn<bool> fullyPlayed = GeneratedColumn<bool>(
+      'fully_played', aliasedName, true,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("fully_played" IN (0, 1))'));
+  static const VerificationMeta _browseOrderMeta =
+      const VerificationMeta('browseOrder');
+  @override
+  late final GeneratedColumn<int> browseOrder = GeneratedColumn<int>(
+      'browse_order', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _favoriteMeta =
+      const VerificationMeta('favorite');
+  @override
+  late final GeneratedColumn<bool> favorite = GeneratedColumn<bool>(
+      'favorite', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("favorite" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _inLibraryMeta =
+      const VerificationMeta('inLibrary');
+  @override
+  late final GeneratedColumn<bool> inLibrary = GeneratedColumn<bool>(
+      'in_library', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("in_library" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _metadataJsonMeta =
+      const VerificationMeta('metadataJson');
+  @override
+  late final GeneratedColumn<String> metadataJson = GeneratedColumn<String>(
+      'metadata_json', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _lastSyncedMeta =
+      const VerificationMeta('lastSynced');
+  @override
+  late final GeneratedColumn<DateTime> lastSynced = GeneratedColumn<DateTime>(
+      'last_synced', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        provider,
+        itemId,
+        name,
+        sortName,
+        uri,
+        authorsJson,
+        narratorsJson,
+        publisher,
+        description,
+        year,
+        durationSeconds,
+        resumePositionMs,
+        fullyPlayed,
+        browseOrder,
+        favorite,
+        inLibrary,
+        metadataJson,
+        lastSynced
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'audiobooks';
+  @override
+  VerificationContext validateIntegrity(Insertable<AudiobookEntity> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('provider')) {
+      context.handle(_providerMeta,
+          provider.isAcceptableOrUnknown(data['provider']!, _providerMeta));
+    } else if (isInserting) {
+      context.missing(_providerMeta);
+    }
+    if (data.containsKey('item_id')) {
+      context.handle(_itemIdMeta,
+          itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta));
+    } else if (isInserting) {
+      context.missing(_itemIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('sort_name')) {
+      context.handle(_sortNameMeta,
+          sortName.isAcceptableOrUnknown(data['sort_name']!, _sortNameMeta));
+    }
+    if (data.containsKey('uri')) {
+      context.handle(
+          _uriMeta, uri.isAcceptableOrUnknown(data['uri']!, _uriMeta));
+    }
+    if (data.containsKey('authors_json')) {
+      context.handle(
+          _authorsJsonMeta,
+          authorsJson.isAcceptableOrUnknown(
+              data['authors_json']!, _authorsJsonMeta));
+    }
+    if (data.containsKey('narrators_json')) {
+      context.handle(
+          _narratorsJsonMeta,
+          narratorsJson.isAcceptableOrUnknown(
+              data['narrators_json']!, _narratorsJsonMeta));
+    }
+    if (data.containsKey('publisher')) {
+      context.handle(_publisherMeta,
+          publisher.isAcceptableOrUnknown(data['publisher']!, _publisherMeta));
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+          _descriptionMeta,
+          description.isAcceptableOrUnknown(
+              data['description']!, _descriptionMeta));
+    }
+    if (data.containsKey('year')) {
+      context.handle(
+          _yearMeta, year.isAcceptableOrUnknown(data['year']!, _yearMeta));
+    }
+    if (data.containsKey('duration_seconds')) {
+      context.handle(
+          _durationSecondsMeta,
+          durationSeconds.isAcceptableOrUnknown(
+              data['duration_seconds']!, _durationSecondsMeta));
+    }
+    if (data.containsKey('resume_position_ms')) {
+      context.handle(
+          _resumePositionMsMeta,
+          resumePositionMs.isAcceptableOrUnknown(
+              data['resume_position_ms']!, _resumePositionMsMeta));
+    }
+    if (data.containsKey('fully_played')) {
+      context.handle(
+          _fullyPlayedMeta,
+          fullyPlayed.isAcceptableOrUnknown(
+              data['fully_played']!, _fullyPlayedMeta));
+    }
+    if (data.containsKey('browse_order')) {
+      context.handle(
+          _browseOrderMeta,
+          browseOrder.isAcceptableOrUnknown(
+              data['browse_order']!, _browseOrderMeta));
+    }
+    if (data.containsKey('favorite')) {
+      context.handle(_favoriteMeta,
+          favorite.isAcceptableOrUnknown(data['favorite']!, _favoriteMeta));
+    }
+    if (data.containsKey('in_library')) {
+      context.handle(_inLibraryMeta,
+          inLibrary.isAcceptableOrUnknown(data['in_library']!, _inLibraryMeta));
+    }
+    if (data.containsKey('metadata_json')) {
+      context.handle(
+          _metadataJsonMeta,
+          metadataJson.isAcceptableOrUnknown(
+              data['metadata_json']!, _metadataJsonMeta));
+    }
+    if (data.containsKey('last_synced')) {
+      context.handle(
+          _lastSyncedMeta,
+          lastSynced.isAcceptableOrUnknown(
+              data['last_synced']!, _lastSyncedMeta));
+    } else if (isInserting) {
+      context.missing(_lastSyncedMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {provider, itemId};
+  @override
+  AudiobookEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AudiobookEntity(
+      provider: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}provider'])!,
+      itemId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}item_id'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      sortName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sort_name']),
+      uri: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}uri']),
+      authorsJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}authors_json']),
+      narratorsJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}narrators_json']),
+      publisher: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}publisher']),
+      description: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}description']),
+      year: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}year']),
+      durationSeconds: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}duration_seconds']),
+      resumePositionMs: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}resume_position_ms']),
+      fullyPlayed: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}fully_played']),
+      browseOrder: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}browse_order']),
+      favorite: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}favorite'])!,
+      inLibrary: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}in_library'])!,
+      metadataJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}metadata_json']),
+      lastSynced: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}last_synced'])!,
+    );
+  }
+
+  @override
+  $AudiobooksTable createAlias(String alias) {
+    return $AudiobooksTable(attachedDatabase, alias);
+  }
+}
+
+class AudiobookEntity extends DataClass implements Insertable<AudiobookEntity> {
+  final String provider;
+  final String itemId;
+  final String name;
+  final String? sortName;
+  final String? uri;
+  final String? authorsJson;
+  final String? narratorsJson;
+  final String? publisher;
+  final String? description;
+  final int? year;
+  final int? durationSeconds;
+  final int? resumePositionMs;
+  final bool? fullyPlayed;
+  final int? browseOrder;
+  final bool favorite;
+  final bool inLibrary;
+  final String? metadataJson;
+  final DateTime lastSynced;
+  const AudiobookEntity(
+      {required this.provider,
+      required this.itemId,
+      required this.name,
+      this.sortName,
+      this.uri,
+      this.authorsJson,
+      this.narratorsJson,
+      this.publisher,
+      this.description,
+      this.year,
+      this.durationSeconds,
+      this.resumePositionMs,
+      this.fullyPlayed,
+      this.browseOrder,
+      required this.favorite,
+      required this.inLibrary,
+      this.metadataJson,
+      required this.lastSynced});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['provider'] = Variable<String>(provider);
+    map['item_id'] = Variable<String>(itemId);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || sortName != null) {
+      map['sort_name'] = Variable<String>(sortName);
+    }
+    if (!nullToAbsent || uri != null) {
+      map['uri'] = Variable<String>(uri);
+    }
+    if (!nullToAbsent || authorsJson != null) {
+      map['authors_json'] = Variable<String>(authorsJson);
+    }
+    if (!nullToAbsent || narratorsJson != null) {
+      map['narrators_json'] = Variable<String>(narratorsJson);
+    }
+    if (!nullToAbsent || publisher != null) {
+      map['publisher'] = Variable<String>(publisher);
+    }
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
+    if (!nullToAbsent || year != null) {
+      map['year'] = Variable<int>(year);
+    }
+    if (!nullToAbsent || durationSeconds != null) {
+      map['duration_seconds'] = Variable<int>(durationSeconds);
+    }
+    if (!nullToAbsent || resumePositionMs != null) {
+      map['resume_position_ms'] = Variable<int>(resumePositionMs);
+    }
+    if (!nullToAbsent || fullyPlayed != null) {
+      map['fully_played'] = Variable<bool>(fullyPlayed);
+    }
+    if (!nullToAbsent || browseOrder != null) {
+      map['browse_order'] = Variable<int>(browseOrder);
+    }
+    map['favorite'] = Variable<bool>(favorite);
+    map['in_library'] = Variable<bool>(inLibrary);
+    if (!nullToAbsent || metadataJson != null) {
+      map['metadata_json'] = Variable<String>(metadataJson);
+    }
+    map['last_synced'] = Variable<DateTime>(lastSynced);
+    return map;
+  }
+
+  AudiobooksCompanion toCompanion(bool nullToAbsent) {
+    return AudiobooksCompanion(
+      provider: Value(provider),
+      itemId: Value(itemId),
+      name: Value(name),
+      sortName: sortName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sortName),
+      uri: uri == null && nullToAbsent ? const Value.absent() : Value(uri),
+      authorsJson: authorsJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(authorsJson),
+      narratorsJson: narratorsJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(narratorsJson),
+      publisher: publisher == null && nullToAbsent
+          ? const Value.absent()
+          : Value(publisher),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
+      year: year == null && nullToAbsent ? const Value.absent() : Value(year),
+      durationSeconds: durationSeconds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(durationSeconds),
+      resumePositionMs: resumePositionMs == null && nullToAbsent
+          ? const Value.absent()
+          : Value(resumePositionMs),
+      fullyPlayed: fullyPlayed == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fullyPlayed),
+      browseOrder: browseOrder == null && nullToAbsent
+          ? const Value.absent()
+          : Value(browseOrder),
+      favorite: Value(favorite),
+      inLibrary: Value(inLibrary),
+      metadataJson: metadataJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(metadataJson),
+      lastSynced: Value(lastSynced),
+    );
+  }
+
+  factory AudiobookEntity.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AudiobookEntity(
+      provider: serializer.fromJson<String>(json['provider']),
+      itemId: serializer.fromJson<String>(json['itemId']),
+      name: serializer.fromJson<String>(json['name']),
+      sortName: serializer.fromJson<String?>(json['sortName']),
+      uri: serializer.fromJson<String?>(json['uri']),
+      authorsJson: serializer.fromJson<String?>(json['authorsJson']),
+      narratorsJson: serializer.fromJson<String?>(json['narratorsJson']),
+      publisher: serializer.fromJson<String?>(json['publisher']),
+      description: serializer.fromJson<String?>(json['description']),
+      year: serializer.fromJson<int?>(json['year']),
+      durationSeconds: serializer.fromJson<int?>(json['durationSeconds']),
+      resumePositionMs: serializer.fromJson<int?>(json['resumePositionMs']),
+      fullyPlayed: serializer.fromJson<bool?>(json['fullyPlayed']),
+      browseOrder: serializer.fromJson<int?>(json['browseOrder']),
+      favorite: serializer.fromJson<bool>(json['favorite']),
+      inLibrary: serializer.fromJson<bool>(json['inLibrary']),
+      metadataJson: serializer.fromJson<String?>(json['metadataJson']),
+      lastSynced: serializer.fromJson<DateTime>(json['lastSynced']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'provider': serializer.toJson<String>(provider),
+      'itemId': serializer.toJson<String>(itemId),
+      'name': serializer.toJson<String>(name),
+      'sortName': serializer.toJson<String?>(sortName),
+      'uri': serializer.toJson<String?>(uri),
+      'authorsJson': serializer.toJson<String?>(authorsJson),
+      'narratorsJson': serializer.toJson<String?>(narratorsJson),
+      'publisher': serializer.toJson<String?>(publisher),
+      'description': serializer.toJson<String?>(description),
+      'year': serializer.toJson<int?>(year),
+      'durationSeconds': serializer.toJson<int?>(durationSeconds),
+      'resumePositionMs': serializer.toJson<int?>(resumePositionMs),
+      'fullyPlayed': serializer.toJson<bool?>(fullyPlayed),
+      'browseOrder': serializer.toJson<int?>(browseOrder),
+      'favorite': serializer.toJson<bool>(favorite),
+      'inLibrary': serializer.toJson<bool>(inLibrary),
+      'metadataJson': serializer.toJson<String?>(metadataJson),
+      'lastSynced': serializer.toJson<DateTime>(lastSynced),
+    };
+  }
+
+  AudiobookEntity copyWith(
+          {String? provider,
+          String? itemId,
+          String? name,
+          Value<String?> sortName = const Value.absent(),
+          Value<String?> uri = const Value.absent(),
+          Value<String?> authorsJson = const Value.absent(),
+          Value<String?> narratorsJson = const Value.absent(),
+          Value<String?> publisher = const Value.absent(),
+          Value<String?> description = const Value.absent(),
+          Value<int?> year = const Value.absent(),
+          Value<int?> durationSeconds = const Value.absent(),
+          Value<int?> resumePositionMs = const Value.absent(),
+          Value<bool?> fullyPlayed = const Value.absent(),
+          Value<int?> browseOrder = const Value.absent(),
+          bool? favorite,
+          bool? inLibrary,
+          Value<String?> metadataJson = const Value.absent(),
+          DateTime? lastSynced}) =>
+      AudiobookEntity(
+        provider: provider ?? this.provider,
+        itemId: itemId ?? this.itemId,
+        name: name ?? this.name,
+        sortName: sortName.present ? sortName.value : this.sortName,
+        uri: uri.present ? uri.value : this.uri,
+        authorsJson: authorsJson.present ? authorsJson.value : this.authorsJson,
+        narratorsJson:
+            narratorsJson.present ? narratorsJson.value : this.narratorsJson,
+        publisher: publisher.present ? publisher.value : this.publisher,
+        description: description.present ? description.value : this.description,
+        year: year.present ? year.value : this.year,
+        durationSeconds: durationSeconds.present
+            ? durationSeconds.value
+            : this.durationSeconds,
+        resumePositionMs: resumePositionMs.present
+            ? resumePositionMs.value
+            : this.resumePositionMs,
+        fullyPlayed: fullyPlayed.present ? fullyPlayed.value : this.fullyPlayed,
+        browseOrder: browseOrder.present ? browseOrder.value : this.browseOrder,
+        favorite: favorite ?? this.favorite,
+        inLibrary: inLibrary ?? this.inLibrary,
+        metadataJson:
+            metadataJson.present ? metadataJson.value : this.metadataJson,
+        lastSynced: lastSynced ?? this.lastSynced,
+      );
+  AudiobookEntity copyWithCompanion(AudiobooksCompanion data) {
+    return AudiobookEntity(
+      provider: data.provider.present ? data.provider.value : this.provider,
+      itemId: data.itemId.present ? data.itemId.value : this.itemId,
+      name: data.name.present ? data.name.value : this.name,
+      sortName: data.sortName.present ? data.sortName.value : this.sortName,
+      uri: data.uri.present ? data.uri.value : this.uri,
+      authorsJson:
+          data.authorsJson.present ? data.authorsJson.value : this.authorsJson,
+      narratorsJson: data.narratorsJson.present
+          ? data.narratorsJson.value
+          : this.narratorsJson,
+      publisher: data.publisher.present ? data.publisher.value : this.publisher,
+      description:
+          data.description.present ? data.description.value : this.description,
+      year: data.year.present ? data.year.value : this.year,
+      durationSeconds: data.durationSeconds.present
+          ? data.durationSeconds.value
+          : this.durationSeconds,
+      resumePositionMs: data.resumePositionMs.present
+          ? data.resumePositionMs.value
+          : this.resumePositionMs,
+      fullyPlayed:
+          data.fullyPlayed.present ? data.fullyPlayed.value : this.fullyPlayed,
+      browseOrder:
+          data.browseOrder.present ? data.browseOrder.value : this.browseOrder,
+      favorite: data.favorite.present ? data.favorite.value : this.favorite,
+      inLibrary: data.inLibrary.present ? data.inLibrary.value : this.inLibrary,
+      metadataJson: data.metadataJson.present
+          ? data.metadataJson.value
+          : this.metadataJson,
+      lastSynced:
+          data.lastSynced.present ? data.lastSynced.value : this.lastSynced,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AudiobookEntity(')
+          ..write('provider: $provider, ')
+          ..write('itemId: $itemId, ')
+          ..write('name: $name, ')
+          ..write('sortName: $sortName, ')
+          ..write('uri: $uri, ')
+          ..write('authorsJson: $authorsJson, ')
+          ..write('narratorsJson: $narratorsJson, ')
+          ..write('publisher: $publisher, ')
+          ..write('description: $description, ')
+          ..write('year: $year, ')
+          ..write('durationSeconds: $durationSeconds, ')
+          ..write('resumePositionMs: $resumePositionMs, ')
+          ..write('fullyPlayed: $fullyPlayed, ')
+          ..write('browseOrder: $browseOrder, ')
+          ..write('favorite: $favorite, ')
+          ..write('inLibrary: $inLibrary, ')
+          ..write('metadataJson: $metadataJson, ')
+          ..write('lastSynced: $lastSynced')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      provider,
+      itemId,
+      name,
+      sortName,
+      uri,
+      authorsJson,
+      narratorsJson,
+      publisher,
+      description,
+      year,
+      durationSeconds,
+      resumePositionMs,
+      fullyPlayed,
+      browseOrder,
+      favorite,
+      inLibrary,
+      metadataJson,
+      lastSynced);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AudiobookEntity &&
+          other.provider == this.provider &&
+          other.itemId == this.itemId &&
+          other.name == this.name &&
+          other.sortName == this.sortName &&
+          other.uri == this.uri &&
+          other.authorsJson == this.authorsJson &&
+          other.narratorsJson == this.narratorsJson &&
+          other.publisher == this.publisher &&
+          other.description == this.description &&
+          other.year == this.year &&
+          other.durationSeconds == this.durationSeconds &&
+          other.resumePositionMs == this.resumePositionMs &&
+          other.fullyPlayed == this.fullyPlayed &&
+          other.browseOrder == this.browseOrder &&
+          other.favorite == this.favorite &&
+          other.inLibrary == this.inLibrary &&
+          other.metadataJson == this.metadataJson &&
+          other.lastSynced == this.lastSynced);
+}
+
+class AudiobooksCompanion extends UpdateCompanion<AudiobookEntity> {
+  final Value<String> provider;
+  final Value<String> itemId;
+  final Value<String> name;
+  final Value<String?> sortName;
+  final Value<String?> uri;
+  final Value<String?> authorsJson;
+  final Value<String?> narratorsJson;
+  final Value<String?> publisher;
+  final Value<String?> description;
+  final Value<int?> year;
+  final Value<int?> durationSeconds;
+  final Value<int?> resumePositionMs;
+  final Value<bool?> fullyPlayed;
+  final Value<int?> browseOrder;
+  final Value<bool> favorite;
+  final Value<bool> inLibrary;
+  final Value<String?> metadataJson;
+  final Value<DateTime> lastSynced;
+  final Value<int> rowid;
+  const AudiobooksCompanion({
+    this.provider = const Value.absent(),
+    this.itemId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.sortName = const Value.absent(),
+    this.uri = const Value.absent(),
+    this.authorsJson = const Value.absent(),
+    this.narratorsJson = const Value.absent(),
+    this.publisher = const Value.absent(),
+    this.description = const Value.absent(),
+    this.year = const Value.absent(),
+    this.durationSeconds = const Value.absent(),
+    this.resumePositionMs = const Value.absent(),
+    this.fullyPlayed = const Value.absent(),
+    this.browseOrder = const Value.absent(),
+    this.favorite = const Value.absent(),
+    this.inLibrary = const Value.absent(),
+    this.metadataJson = const Value.absent(),
+    this.lastSynced = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AudiobooksCompanion.insert({
+    required String provider,
+    required String itemId,
+    required String name,
+    this.sortName = const Value.absent(),
+    this.uri = const Value.absent(),
+    this.authorsJson = const Value.absent(),
+    this.narratorsJson = const Value.absent(),
+    this.publisher = const Value.absent(),
+    this.description = const Value.absent(),
+    this.year = const Value.absent(),
+    this.durationSeconds = const Value.absent(),
+    this.resumePositionMs = const Value.absent(),
+    this.fullyPlayed = const Value.absent(),
+    this.browseOrder = const Value.absent(),
+    this.favorite = const Value.absent(),
+    this.inLibrary = const Value.absent(),
+    this.metadataJson = const Value.absent(),
+    required DateTime lastSynced,
+    this.rowid = const Value.absent(),
+  })  : provider = Value(provider),
+        itemId = Value(itemId),
+        name = Value(name),
+        lastSynced = Value(lastSynced);
+  static Insertable<AudiobookEntity> custom({
+    Expression<String>? provider,
+    Expression<String>? itemId,
+    Expression<String>? name,
+    Expression<String>? sortName,
+    Expression<String>? uri,
+    Expression<String>? authorsJson,
+    Expression<String>? narratorsJson,
+    Expression<String>? publisher,
+    Expression<String>? description,
+    Expression<int>? year,
+    Expression<int>? durationSeconds,
+    Expression<int>? resumePositionMs,
+    Expression<bool>? fullyPlayed,
+    Expression<int>? browseOrder,
+    Expression<bool>? favorite,
+    Expression<bool>? inLibrary,
+    Expression<String>? metadataJson,
+    Expression<DateTime>? lastSynced,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (provider != null) 'provider': provider,
+      if (itemId != null) 'item_id': itemId,
+      if (name != null) 'name': name,
+      if (sortName != null) 'sort_name': sortName,
+      if (uri != null) 'uri': uri,
+      if (authorsJson != null) 'authors_json': authorsJson,
+      if (narratorsJson != null) 'narrators_json': narratorsJson,
+      if (publisher != null) 'publisher': publisher,
+      if (description != null) 'description': description,
+      if (year != null) 'year': year,
+      if (durationSeconds != null) 'duration_seconds': durationSeconds,
+      if (resumePositionMs != null) 'resume_position_ms': resumePositionMs,
+      if (fullyPlayed != null) 'fully_played': fullyPlayed,
+      if (browseOrder != null) 'browse_order': browseOrder,
+      if (favorite != null) 'favorite': favorite,
+      if (inLibrary != null) 'in_library': inLibrary,
+      if (metadataJson != null) 'metadata_json': metadataJson,
+      if (lastSynced != null) 'last_synced': lastSynced,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AudiobooksCompanion copyWith(
+      {Value<String>? provider,
+      Value<String>? itemId,
+      Value<String>? name,
+      Value<String?>? sortName,
+      Value<String?>? uri,
+      Value<String?>? authorsJson,
+      Value<String?>? narratorsJson,
+      Value<String?>? publisher,
+      Value<String?>? description,
+      Value<int?>? year,
+      Value<int?>? durationSeconds,
+      Value<int?>? resumePositionMs,
+      Value<bool?>? fullyPlayed,
+      Value<int?>? browseOrder,
+      Value<bool>? favorite,
+      Value<bool>? inLibrary,
+      Value<String?>? metadataJson,
+      Value<DateTime>? lastSynced,
+      Value<int>? rowid}) {
+    return AudiobooksCompanion(
+      provider: provider ?? this.provider,
+      itemId: itemId ?? this.itemId,
+      name: name ?? this.name,
+      sortName: sortName ?? this.sortName,
+      uri: uri ?? this.uri,
+      authorsJson: authorsJson ?? this.authorsJson,
+      narratorsJson: narratorsJson ?? this.narratorsJson,
+      publisher: publisher ?? this.publisher,
+      description: description ?? this.description,
+      year: year ?? this.year,
+      durationSeconds: durationSeconds ?? this.durationSeconds,
+      resumePositionMs: resumePositionMs ?? this.resumePositionMs,
+      fullyPlayed: fullyPlayed ?? this.fullyPlayed,
+      browseOrder: browseOrder ?? this.browseOrder,
+      favorite: favorite ?? this.favorite,
+      inLibrary: inLibrary ?? this.inLibrary,
+      metadataJson: metadataJson ?? this.metadataJson,
+      lastSynced: lastSynced ?? this.lastSynced,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (provider.present) {
+      map['provider'] = Variable<String>(provider.value);
+    }
+    if (itemId.present) {
+      map['item_id'] = Variable<String>(itemId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (sortName.present) {
+      map['sort_name'] = Variable<String>(sortName.value);
+    }
+    if (uri.present) {
+      map['uri'] = Variable<String>(uri.value);
+    }
+    if (authorsJson.present) {
+      map['authors_json'] = Variable<String>(authorsJson.value);
+    }
+    if (narratorsJson.present) {
+      map['narrators_json'] = Variable<String>(narratorsJson.value);
+    }
+    if (publisher.present) {
+      map['publisher'] = Variable<String>(publisher.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (year.present) {
+      map['year'] = Variable<int>(year.value);
+    }
+    if (durationSeconds.present) {
+      map['duration_seconds'] = Variable<int>(durationSeconds.value);
+    }
+    if (resumePositionMs.present) {
+      map['resume_position_ms'] = Variable<int>(resumePositionMs.value);
+    }
+    if (fullyPlayed.present) {
+      map['fully_played'] = Variable<bool>(fullyPlayed.value);
+    }
+    if (browseOrder.present) {
+      map['browse_order'] = Variable<int>(browseOrder.value);
+    }
+    if (favorite.present) {
+      map['favorite'] = Variable<bool>(favorite.value);
+    }
+    if (inLibrary.present) {
+      map['in_library'] = Variable<bool>(inLibrary.value);
+    }
+    if (metadataJson.present) {
+      map['metadata_json'] = Variable<String>(metadataJson.value);
+    }
+    if (lastSynced.present) {
+      map['last_synced'] = Variable<DateTime>(lastSynced.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AudiobooksCompanion(')
+          ..write('provider: $provider, ')
+          ..write('itemId: $itemId, ')
+          ..write('name: $name, ')
+          ..write('sortName: $sortName, ')
+          ..write('uri: $uri, ')
+          ..write('authorsJson: $authorsJson, ')
+          ..write('narratorsJson: $narratorsJson, ')
+          ..write('publisher: $publisher, ')
+          ..write('description: $description, ')
+          ..write('year: $year, ')
+          ..write('durationSeconds: $durationSeconds, ')
+          ..write('resumePositionMs: $resumePositionMs, ')
+          ..write('fullyPlayed: $fullyPlayed, ')
+          ..write('browseOrder: $browseOrder, ')
+          ..write('favorite: $favorite, ')
+          ..write('inLibrary: $inLibrary, ')
+          ..write('metadataJson: $metadataJson, ')
+          ..write('lastSynced: $lastSynced, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ChaptersTable extends Chapters
+    with TableInfo<$ChaptersTable, ChapterEntity> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ChaptersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _audiobookProviderMeta =
+      const VerificationMeta('audiobookProvider');
+  @override
+  late final GeneratedColumn<String> audiobookProvider =
+      GeneratedColumn<String>('audiobook_provider', aliasedName, false,
+          type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _audiobookItemIdMeta =
+      const VerificationMeta('audiobookItemId');
+  @override
+  late final GeneratedColumn<String> audiobookItemId = GeneratedColumn<String>(
+      'audiobook_item_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _chapterNumberMeta =
+      const VerificationMeta('chapterNumber');
+  @override
+  late final GeneratedColumn<int> chapterNumber = GeneratedColumn<int>(
+      'chapter_number', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _positionMsMeta =
+      const VerificationMeta('positionMs');
+  @override
+  late final GeneratedColumn<int> positionMs = GeneratedColumn<int>(
+      'position_ms', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+      'title', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _durationMsMeta =
+      const VerificationMeta('durationMs');
+  @override
+  late final GeneratedColumn<int> durationMs = GeneratedColumn<int>(
+      'duration_ms', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        audiobookProvider,
+        audiobookItemId,
+        chapterNumber,
+        positionMs,
+        title,
+        durationMs
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'chapters';
+  @override
+  VerificationContext validateIntegrity(Insertable<ChapterEntity> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('audiobook_provider')) {
+      context.handle(
+          _audiobookProviderMeta,
+          audiobookProvider.isAcceptableOrUnknown(
+              data['audiobook_provider']!, _audiobookProviderMeta));
+    } else if (isInserting) {
+      context.missing(_audiobookProviderMeta);
+    }
+    if (data.containsKey('audiobook_item_id')) {
+      context.handle(
+          _audiobookItemIdMeta,
+          audiobookItemId.isAcceptableOrUnknown(
+              data['audiobook_item_id']!, _audiobookItemIdMeta));
+    } else if (isInserting) {
+      context.missing(_audiobookItemIdMeta);
+    }
+    if (data.containsKey('chapter_number')) {
+      context.handle(
+          _chapterNumberMeta,
+          chapterNumber.isAcceptableOrUnknown(
+              data['chapter_number']!, _chapterNumberMeta));
+    } else if (isInserting) {
+      context.missing(_chapterNumberMeta);
+    }
+    if (data.containsKey('position_ms')) {
+      context.handle(
+          _positionMsMeta,
+          positionMs.isAcceptableOrUnknown(
+              data['position_ms']!, _positionMsMeta));
+    } else if (isInserting) {
+      context.missing(_positionMsMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+          _titleMeta, title.isAcceptableOrUnknown(data['title']!, _titleMeta));
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('duration_ms')) {
+      context.handle(
+          _durationMsMeta,
+          durationMs.isAcceptableOrUnknown(
+              data['duration_ms']!, _durationMsMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ChapterEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ChapterEntity(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      audiobookProvider: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}audiobook_provider'])!,
+      audiobookItemId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}audiobook_item_id'])!,
+      chapterNumber: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}chapter_number'])!,
+      positionMs: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}position_ms'])!,
+      title: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}title'])!,
+      durationMs: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}duration_ms']),
+    );
+  }
+
+  @override
+  $ChaptersTable createAlias(String alias) {
+    return $ChaptersTable(attachedDatabase, alias);
+  }
+}
+
+class ChapterEntity extends DataClass implements Insertable<ChapterEntity> {
+  final int id;
+  final String audiobookProvider;
+  final String audiobookItemId;
+  final int chapterNumber;
+  final int positionMs;
+  final String title;
+  final int? durationMs;
+  const ChapterEntity(
+      {required this.id,
+      required this.audiobookProvider,
+      required this.audiobookItemId,
+      required this.chapterNumber,
+      required this.positionMs,
+      required this.title,
+      this.durationMs});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['audiobook_provider'] = Variable<String>(audiobookProvider);
+    map['audiobook_item_id'] = Variable<String>(audiobookItemId);
+    map['chapter_number'] = Variable<int>(chapterNumber);
+    map['position_ms'] = Variable<int>(positionMs);
+    map['title'] = Variable<String>(title);
+    if (!nullToAbsent || durationMs != null) {
+      map['duration_ms'] = Variable<int>(durationMs);
+    }
+    return map;
+  }
+
+  ChaptersCompanion toCompanion(bool nullToAbsent) {
+    return ChaptersCompanion(
+      id: Value(id),
+      audiobookProvider: Value(audiobookProvider),
+      audiobookItemId: Value(audiobookItemId),
+      chapterNumber: Value(chapterNumber),
+      positionMs: Value(positionMs),
+      title: Value(title),
+      durationMs: durationMs == null && nullToAbsent
+          ? const Value.absent()
+          : Value(durationMs),
+    );
+  }
+
+  factory ChapterEntity.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ChapterEntity(
+      id: serializer.fromJson<int>(json['id']),
+      audiobookProvider: serializer.fromJson<String>(json['audiobookProvider']),
+      audiobookItemId: serializer.fromJson<String>(json['audiobookItemId']),
+      chapterNumber: serializer.fromJson<int>(json['chapterNumber']),
+      positionMs: serializer.fromJson<int>(json['positionMs']),
+      title: serializer.fromJson<String>(json['title']),
+      durationMs: serializer.fromJson<int?>(json['durationMs']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'audiobookProvider': serializer.toJson<String>(audiobookProvider),
+      'audiobookItemId': serializer.toJson<String>(audiobookItemId),
+      'chapterNumber': serializer.toJson<int>(chapterNumber),
+      'positionMs': serializer.toJson<int>(positionMs),
+      'title': serializer.toJson<String>(title),
+      'durationMs': serializer.toJson<int?>(durationMs),
+    };
+  }
+
+  ChapterEntity copyWith(
+          {int? id,
+          String? audiobookProvider,
+          String? audiobookItemId,
+          int? chapterNumber,
+          int? positionMs,
+          String? title,
+          Value<int?> durationMs = const Value.absent()}) =>
+      ChapterEntity(
+        id: id ?? this.id,
+        audiobookProvider: audiobookProvider ?? this.audiobookProvider,
+        audiobookItemId: audiobookItemId ?? this.audiobookItemId,
+        chapterNumber: chapterNumber ?? this.chapterNumber,
+        positionMs: positionMs ?? this.positionMs,
+        title: title ?? this.title,
+        durationMs: durationMs.present ? durationMs.value : this.durationMs,
+      );
+  ChapterEntity copyWithCompanion(ChaptersCompanion data) {
+    return ChapterEntity(
+      id: data.id.present ? data.id.value : this.id,
+      audiobookProvider: data.audiobookProvider.present
+          ? data.audiobookProvider.value
+          : this.audiobookProvider,
+      audiobookItemId: data.audiobookItemId.present
+          ? data.audiobookItemId.value
+          : this.audiobookItemId,
+      chapterNumber: data.chapterNumber.present
+          ? data.chapterNumber.value
+          : this.chapterNumber,
+      positionMs:
+          data.positionMs.present ? data.positionMs.value : this.positionMs,
+      title: data.title.present ? data.title.value : this.title,
+      durationMs:
+          data.durationMs.present ? data.durationMs.value : this.durationMs,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChapterEntity(')
+          ..write('id: $id, ')
+          ..write('audiobookProvider: $audiobookProvider, ')
+          ..write('audiobookItemId: $audiobookItemId, ')
+          ..write('chapterNumber: $chapterNumber, ')
+          ..write('positionMs: $positionMs, ')
+          ..write('title: $title, ')
+          ..write('durationMs: $durationMs')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, audiobookProvider, audiobookItemId,
+      chapterNumber, positionMs, title, durationMs);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ChapterEntity &&
+          other.id == this.id &&
+          other.audiobookProvider == this.audiobookProvider &&
+          other.audiobookItemId == this.audiobookItemId &&
+          other.chapterNumber == this.chapterNumber &&
+          other.positionMs == this.positionMs &&
+          other.title == this.title &&
+          other.durationMs == this.durationMs);
+}
+
+class ChaptersCompanion extends UpdateCompanion<ChapterEntity> {
+  final Value<int> id;
+  final Value<String> audiobookProvider;
+  final Value<String> audiobookItemId;
+  final Value<int> chapterNumber;
+  final Value<int> positionMs;
+  final Value<String> title;
+  final Value<int?> durationMs;
+  const ChaptersCompanion({
+    this.id = const Value.absent(),
+    this.audiobookProvider = const Value.absent(),
+    this.audiobookItemId = const Value.absent(),
+    this.chapterNumber = const Value.absent(),
+    this.positionMs = const Value.absent(),
+    this.title = const Value.absent(),
+    this.durationMs = const Value.absent(),
+  });
+  ChaptersCompanion.insert({
+    this.id = const Value.absent(),
+    required String audiobookProvider,
+    required String audiobookItemId,
+    required int chapterNumber,
+    required int positionMs,
+    required String title,
+    this.durationMs = const Value.absent(),
+  })  : audiobookProvider = Value(audiobookProvider),
+        audiobookItemId = Value(audiobookItemId),
+        chapterNumber = Value(chapterNumber),
+        positionMs = Value(positionMs),
+        title = Value(title);
+  static Insertable<ChapterEntity> custom({
+    Expression<int>? id,
+    Expression<String>? audiobookProvider,
+    Expression<String>? audiobookItemId,
+    Expression<int>? chapterNumber,
+    Expression<int>? positionMs,
+    Expression<String>? title,
+    Expression<int>? durationMs,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (audiobookProvider != null) 'audiobook_provider': audiobookProvider,
+      if (audiobookItemId != null) 'audiobook_item_id': audiobookItemId,
+      if (chapterNumber != null) 'chapter_number': chapterNumber,
+      if (positionMs != null) 'position_ms': positionMs,
+      if (title != null) 'title': title,
+      if (durationMs != null) 'duration_ms': durationMs,
+    });
+  }
+
+  ChaptersCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? audiobookProvider,
+      Value<String>? audiobookItemId,
+      Value<int>? chapterNumber,
+      Value<int>? positionMs,
+      Value<String>? title,
+      Value<int?>? durationMs}) {
+    return ChaptersCompanion(
+      id: id ?? this.id,
+      audiobookProvider: audiobookProvider ?? this.audiobookProvider,
+      audiobookItemId: audiobookItemId ?? this.audiobookItemId,
+      chapterNumber: chapterNumber ?? this.chapterNumber,
+      positionMs: positionMs ?? this.positionMs,
+      title: title ?? this.title,
+      durationMs: durationMs ?? this.durationMs,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (audiobookProvider.present) {
+      map['audiobook_provider'] = Variable<String>(audiobookProvider.value);
+    }
+    if (audiobookItemId.present) {
+      map['audiobook_item_id'] = Variable<String>(audiobookItemId.value);
+    }
+    if (chapterNumber.present) {
+      map['chapter_number'] = Variable<int>(chapterNumber.value);
+    }
+    if (positionMs.present) {
+      map['position_ms'] = Variable<int>(positionMs.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (durationMs.present) {
+      map['duration_ms'] = Variable<int>(durationMs.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChaptersCompanion(')
+          ..write('id: $id, ')
+          ..write('audiobookProvider: $audiobookProvider, ')
+          ..write('audiobookItemId: $audiobookItemId, ')
+          ..write('chapterNumber: $chapterNumber, ')
+          ..write('positionMs: $positionMs, ')
+          ..write('title: $title, ')
+          ..write('durationMs: $durationMs')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ProviderMappingsTable extends ProviderMappings
+    with TableInfo<$ProviderMappingsTable, ProviderMappingEntity> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProviderMappingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _ownerTypeMeta =
+      const VerificationMeta('ownerType');
+  @override
+  late final GeneratedColumn<String> ownerType = GeneratedColumn<String>(
+      'owner_type', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _ownerProviderMeta =
+      const VerificationMeta('ownerProvider');
+  @override
+  late final GeneratedColumn<String> ownerProvider = GeneratedColumn<String>(
+      'owner_provider', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _ownerItemIdMeta =
+      const VerificationMeta('ownerItemId');
+  @override
+  late final GeneratedColumn<String> ownerItemId = GeneratedColumn<String>(
+      'owner_item_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _mappingItemIdMeta =
+      const VerificationMeta('mappingItemId');
+  @override
+  late final GeneratedColumn<String> mappingItemId = GeneratedColumn<String>(
+      'mapping_item_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _providerDomainMeta =
+      const VerificationMeta('providerDomain');
+  @override
+  late final GeneratedColumn<String> providerDomain = GeneratedColumn<String>(
+      'provider_domain', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _providerInstanceMeta =
+      const VerificationMeta('providerInstance');
+  @override
+  late final GeneratedColumn<String> providerInstance = GeneratedColumn<String>(
+      'provider_instance', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _availableMeta =
+      const VerificationMeta('available');
+  @override
+  late final GeneratedColumn<bool> available = GeneratedColumn<bool>(
+      'available', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("available" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  static const VerificationMeta _inLibraryMeta =
+      const VerificationMeta('inLibrary');
+  @override
+  late final GeneratedColumn<bool> inLibrary = GeneratedColumn<bool>(
+      'in_library', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("in_library" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  static const VerificationMeta _audioFormatJsonMeta =
+      const VerificationMeta('audioFormatJson');
+  @override
+  late final GeneratedColumn<String> audioFormatJson = GeneratedColumn<String>(
+      'audio_format_json', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        ownerType,
+        ownerProvider,
+        ownerItemId,
+        mappingItemId,
+        providerDomain,
+        providerInstance,
+        available,
+        inLibrary,
+        audioFormatJson
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'provider_mappings';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<ProviderMappingEntity> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('owner_type')) {
+      context.handle(_ownerTypeMeta,
+          ownerType.isAcceptableOrUnknown(data['owner_type']!, _ownerTypeMeta));
+    } else if (isInserting) {
+      context.missing(_ownerTypeMeta);
+    }
+    if (data.containsKey('owner_provider')) {
+      context.handle(
+          _ownerProviderMeta,
+          ownerProvider.isAcceptableOrUnknown(
+              data['owner_provider']!, _ownerProviderMeta));
+    } else if (isInserting) {
+      context.missing(_ownerProviderMeta);
+    }
+    if (data.containsKey('owner_item_id')) {
+      context.handle(
+          _ownerItemIdMeta,
+          ownerItemId.isAcceptableOrUnknown(
+              data['owner_item_id']!, _ownerItemIdMeta));
+    } else if (isInserting) {
+      context.missing(_ownerItemIdMeta);
+    }
+    if (data.containsKey('mapping_item_id')) {
+      context.handle(
+          _mappingItemIdMeta,
+          mappingItemId.isAcceptableOrUnknown(
+              data['mapping_item_id']!, _mappingItemIdMeta));
+    } else if (isInserting) {
+      context.missing(_mappingItemIdMeta);
+    }
+    if (data.containsKey('provider_domain')) {
+      context.handle(
+          _providerDomainMeta,
+          providerDomain.isAcceptableOrUnknown(
+              data['provider_domain']!, _providerDomainMeta));
+    } else if (isInserting) {
+      context.missing(_providerDomainMeta);
+    }
+    if (data.containsKey('provider_instance')) {
+      context.handle(
+          _providerInstanceMeta,
+          providerInstance.isAcceptableOrUnknown(
+              data['provider_instance']!, _providerInstanceMeta));
+    } else if (isInserting) {
+      context.missing(_providerInstanceMeta);
+    }
+    if (data.containsKey('available')) {
+      context.handle(_availableMeta,
+          available.isAcceptableOrUnknown(data['available']!, _availableMeta));
+    }
+    if (data.containsKey('in_library')) {
+      context.handle(_inLibraryMeta,
+          inLibrary.isAcceptableOrUnknown(data['in_library']!, _inLibraryMeta));
+    }
+    if (data.containsKey('audio_format_json')) {
+      context.handle(
+          _audioFormatJsonMeta,
+          audioFormatJson.isAcceptableOrUnknown(
+              data['audio_format_json']!, _audioFormatJsonMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ProviderMappingEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ProviderMappingEntity(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      ownerType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}owner_type'])!,
+      ownerProvider: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}owner_provider'])!,
+      ownerItemId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}owner_item_id'])!,
+      mappingItemId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}mapping_item_id'])!,
+      providerDomain: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}provider_domain'])!,
+      providerInstance: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}provider_instance'])!,
+      available: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}available'])!,
+      inLibrary: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}in_library'])!,
+      audioFormatJson: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}audio_format_json']),
+    );
+  }
+
+  @override
+  $ProviderMappingsTable createAlias(String alias) {
+    return $ProviderMappingsTable(attachedDatabase, alias);
+  }
+}
+
+class ProviderMappingEntity extends DataClass
+    implements Insertable<ProviderMappingEntity> {
+  final int id;
+
+  /// 'artist' | 'album' | 'track' | 'playlist' | 'audiobook'
+  final String ownerType;
+  final String ownerProvider;
+  final String ownerItemId;
+  final String mappingItemId;
+  final String providerDomain;
+  final String providerInstance;
+  final bool available;
+  final bool inLibrary;
+  final String? audioFormatJson;
+  const ProviderMappingEntity(
+      {required this.id,
+      required this.ownerType,
+      required this.ownerProvider,
+      required this.ownerItemId,
+      required this.mappingItemId,
+      required this.providerDomain,
+      required this.providerInstance,
+      required this.available,
+      required this.inLibrary,
+      this.audioFormatJson});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['owner_type'] = Variable<String>(ownerType);
+    map['owner_provider'] = Variable<String>(ownerProvider);
+    map['owner_item_id'] = Variable<String>(ownerItemId);
+    map['mapping_item_id'] = Variable<String>(mappingItemId);
+    map['provider_domain'] = Variable<String>(providerDomain);
+    map['provider_instance'] = Variable<String>(providerInstance);
+    map['available'] = Variable<bool>(available);
+    map['in_library'] = Variable<bool>(inLibrary);
+    if (!nullToAbsent || audioFormatJson != null) {
+      map['audio_format_json'] = Variable<String>(audioFormatJson);
+    }
+    return map;
+  }
+
+  ProviderMappingsCompanion toCompanion(bool nullToAbsent) {
+    return ProviderMappingsCompanion(
+      id: Value(id),
+      ownerType: Value(ownerType),
+      ownerProvider: Value(ownerProvider),
+      ownerItemId: Value(ownerItemId),
+      mappingItemId: Value(mappingItemId),
+      providerDomain: Value(providerDomain),
+      providerInstance: Value(providerInstance),
+      available: Value(available),
+      inLibrary: Value(inLibrary),
+      audioFormatJson: audioFormatJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(audioFormatJson),
+    );
+  }
+
+  factory ProviderMappingEntity.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ProviderMappingEntity(
+      id: serializer.fromJson<int>(json['id']),
+      ownerType: serializer.fromJson<String>(json['ownerType']),
+      ownerProvider: serializer.fromJson<String>(json['ownerProvider']),
+      ownerItemId: serializer.fromJson<String>(json['ownerItemId']),
+      mappingItemId: serializer.fromJson<String>(json['mappingItemId']),
+      providerDomain: serializer.fromJson<String>(json['providerDomain']),
+      providerInstance: serializer.fromJson<String>(json['providerInstance']),
+      available: serializer.fromJson<bool>(json['available']),
+      inLibrary: serializer.fromJson<bool>(json['inLibrary']),
+      audioFormatJson: serializer.fromJson<String?>(json['audioFormatJson']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'ownerType': serializer.toJson<String>(ownerType),
+      'ownerProvider': serializer.toJson<String>(ownerProvider),
+      'ownerItemId': serializer.toJson<String>(ownerItemId),
+      'mappingItemId': serializer.toJson<String>(mappingItemId),
+      'providerDomain': serializer.toJson<String>(providerDomain),
+      'providerInstance': serializer.toJson<String>(providerInstance),
+      'available': serializer.toJson<bool>(available),
+      'inLibrary': serializer.toJson<bool>(inLibrary),
+      'audioFormatJson': serializer.toJson<String?>(audioFormatJson),
+    };
+  }
+
+  ProviderMappingEntity copyWith(
+          {int? id,
+          String? ownerType,
+          String? ownerProvider,
+          String? ownerItemId,
+          String? mappingItemId,
+          String? providerDomain,
+          String? providerInstance,
+          bool? available,
+          bool? inLibrary,
+          Value<String?> audioFormatJson = const Value.absent()}) =>
+      ProviderMappingEntity(
+        id: id ?? this.id,
+        ownerType: ownerType ?? this.ownerType,
+        ownerProvider: ownerProvider ?? this.ownerProvider,
+        ownerItemId: ownerItemId ?? this.ownerItemId,
+        mappingItemId: mappingItemId ?? this.mappingItemId,
+        providerDomain: providerDomain ?? this.providerDomain,
+        providerInstance: providerInstance ?? this.providerInstance,
+        available: available ?? this.available,
+        inLibrary: inLibrary ?? this.inLibrary,
+        audioFormatJson: audioFormatJson.present
+            ? audioFormatJson.value
+            : this.audioFormatJson,
+      );
+  ProviderMappingEntity copyWithCompanion(ProviderMappingsCompanion data) {
+    return ProviderMappingEntity(
+      id: data.id.present ? data.id.value : this.id,
+      ownerType: data.ownerType.present ? data.ownerType.value : this.ownerType,
+      ownerProvider: data.ownerProvider.present
+          ? data.ownerProvider.value
+          : this.ownerProvider,
+      ownerItemId:
+          data.ownerItemId.present ? data.ownerItemId.value : this.ownerItemId,
+      mappingItemId: data.mappingItemId.present
+          ? data.mappingItemId.value
+          : this.mappingItemId,
+      providerDomain: data.providerDomain.present
+          ? data.providerDomain.value
+          : this.providerDomain,
+      providerInstance: data.providerInstance.present
+          ? data.providerInstance.value
+          : this.providerInstance,
+      available: data.available.present ? data.available.value : this.available,
+      inLibrary: data.inLibrary.present ? data.inLibrary.value : this.inLibrary,
+      audioFormatJson: data.audioFormatJson.present
+          ? data.audioFormatJson.value
+          : this.audioFormatJson,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProviderMappingEntity(')
+          ..write('id: $id, ')
+          ..write('ownerType: $ownerType, ')
+          ..write('ownerProvider: $ownerProvider, ')
+          ..write('ownerItemId: $ownerItemId, ')
+          ..write('mappingItemId: $mappingItemId, ')
+          ..write('providerDomain: $providerDomain, ')
+          ..write('providerInstance: $providerInstance, ')
+          ..write('available: $available, ')
+          ..write('inLibrary: $inLibrary, ')
+          ..write('audioFormatJson: $audioFormatJson')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      ownerType,
+      ownerProvider,
+      ownerItemId,
+      mappingItemId,
+      providerDomain,
+      providerInstance,
+      available,
+      inLibrary,
+      audioFormatJson);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProviderMappingEntity &&
+          other.id == this.id &&
+          other.ownerType == this.ownerType &&
+          other.ownerProvider == this.ownerProvider &&
+          other.ownerItemId == this.ownerItemId &&
+          other.mappingItemId == this.mappingItemId &&
+          other.providerDomain == this.providerDomain &&
+          other.providerInstance == this.providerInstance &&
+          other.available == this.available &&
+          other.inLibrary == this.inLibrary &&
+          other.audioFormatJson == this.audioFormatJson);
+}
+
+class ProviderMappingsCompanion extends UpdateCompanion<ProviderMappingEntity> {
+  final Value<int> id;
+  final Value<String> ownerType;
+  final Value<String> ownerProvider;
+  final Value<String> ownerItemId;
+  final Value<String> mappingItemId;
+  final Value<String> providerDomain;
+  final Value<String> providerInstance;
+  final Value<bool> available;
+  final Value<bool> inLibrary;
+  final Value<String?> audioFormatJson;
+  const ProviderMappingsCompanion({
+    this.id = const Value.absent(),
+    this.ownerType = const Value.absent(),
+    this.ownerProvider = const Value.absent(),
+    this.ownerItemId = const Value.absent(),
+    this.mappingItemId = const Value.absent(),
+    this.providerDomain = const Value.absent(),
+    this.providerInstance = const Value.absent(),
+    this.available = const Value.absent(),
+    this.inLibrary = const Value.absent(),
+    this.audioFormatJson = const Value.absent(),
+  });
+  ProviderMappingsCompanion.insert({
+    this.id = const Value.absent(),
+    required String ownerType,
+    required String ownerProvider,
+    required String ownerItemId,
+    required String mappingItemId,
+    required String providerDomain,
+    required String providerInstance,
+    this.available = const Value.absent(),
+    this.inLibrary = const Value.absent(),
+    this.audioFormatJson = const Value.absent(),
+  })  : ownerType = Value(ownerType),
+        ownerProvider = Value(ownerProvider),
+        ownerItemId = Value(ownerItemId),
+        mappingItemId = Value(mappingItemId),
+        providerDomain = Value(providerDomain),
+        providerInstance = Value(providerInstance);
+  static Insertable<ProviderMappingEntity> custom({
+    Expression<int>? id,
+    Expression<String>? ownerType,
+    Expression<String>? ownerProvider,
+    Expression<String>? ownerItemId,
+    Expression<String>? mappingItemId,
+    Expression<String>? providerDomain,
+    Expression<String>? providerInstance,
+    Expression<bool>? available,
+    Expression<bool>? inLibrary,
+    Expression<String>? audioFormatJson,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (ownerType != null) 'owner_type': ownerType,
+      if (ownerProvider != null) 'owner_provider': ownerProvider,
+      if (ownerItemId != null) 'owner_item_id': ownerItemId,
+      if (mappingItemId != null) 'mapping_item_id': mappingItemId,
+      if (providerDomain != null) 'provider_domain': providerDomain,
+      if (providerInstance != null) 'provider_instance': providerInstance,
+      if (available != null) 'available': available,
+      if (inLibrary != null) 'in_library': inLibrary,
+      if (audioFormatJson != null) 'audio_format_json': audioFormatJson,
+    });
+  }
+
+  ProviderMappingsCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? ownerType,
+      Value<String>? ownerProvider,
+      Value<String>? ownerItemId,
+      Value<String>? mappingItemId,
+      Value<String>? providerDomain,
+      Value<String>? providerInstance,
+      Value<bool>? available,
+      Value<bool>? inLibrary,
+      Value<String?>? audioFormatJson}) {
+    return ProviderMappingsCompanion(
+      id: id ?? this.id,
+      ownerType: ownerType ?? this.ownerType,
+      ownerProvider: ownerProvider ?? this.ownerProvider,
+      ownerItemId: ownerItemId ?? this.ownerItemId,
+      mappingItemId: mappingItemId ?? this.mappingItemId,
+      providerDomain: providerDomain ?? this.providerDomain,
+      providerInstance: providerInstance ?? this.providerInstance,
+      available: available ?? this.available,
+      inLibrary: inLibrary ?? this.inLibrary,
+      audioFormatJson: audioFormatJson ?? this.audioFormatJson,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (ownerType.present) {
+      map['owner_type'] = Variable<String>(ownerType.value);
+    }
+    if (ownerProvider.present) {
+      map['owner_provider'] = Variable<String>(ownerProvider.value);
+    }
+    if (ownerItemId.present) {
+      map['owner_item_id'] = Variable<String>(ownerItemId.value);
+    }
+    if (mappingItemId.present) {
+      map['mapping_item_id'] = Variable<String>(mappingItemId.value);
+    }
+    if (providerDomain.present) {
+      map['provider_domain'] = Variable<String>(providerDomain.value);
+    }
+    if (providerInstance.present) {
+      map['provider_instance'] = Variable<String>(providerInstance.value);
+    }
+    if (available.present) {
+      map['available'] = Variable<bool>(available.value);
+    }
+    if (inLibrary.present) {
+      map['in_library'] = Variable<bool>(inLibrary.value);
+    }
+    if (audioFormatJson.present) {
+      map['audio_format_json'] = Variable<String>(audioFormatJson.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProviderMappingsCompanion(')
+          ..write('id: $id, ')
+          ..write('ownerType: $ownerType, ')
+          ..write('ownerProvider: $ownerProvider, ')
+          ..write('ownerItemId: $ownerItemId, ')
+          ..write('mappingItemId: $mappingItemId, ')
+          ..write('providerDomain: $providerDomain, ')
+          ..write('providerInstance: $providerInstance, ')
+          ..write('available: $available, ')
+          ..write('inLibrary: $inLibrary, ')
+          ..write('audioFormatJson: $audioFormatJson')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3305,6 +7866,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SearchHistoryTable searchHistory = $SearchHistoryTable(this);
   late final $DetailTrackCacheTable detailTrackCache =
       $DetailTrackCacheTable(this);
+  late final $ArtistsTable artists = $ArtistsTable(this);
+  late final $AlbumsTable albums = $AlbumsTable(this);
+  late final $TracksTable tracks = $TracksTable(this);
+  late final $PlaylistsTable playlists = $PlaylistsTable(this);
+  late final $PlaylistTracksTable playlistTracks = $PlaylistTracksTable(this);
+  late final $AudiobooksTable audiobooks = $AudiobooksTable(this);
+  late final $ChaptersTable chapters = $ChaptersTable(this);
+  late final $ProviderMappingsTable providerMappings =
+      $ProviderMappingsTable(this);
   late final Index idxRecentlyPlayedProfile = Index(
       'idx_recently_played_profile',
       'CREATE INDEX idx_recently_played_profile ON recently_played (profile_username)');
@@ -3321,6 +7891,26 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final Index idxCachedQueuePlayerPosition = Index(
       'idx_cached_queue_player_position',
       'CREATE INDEX idx_cached_queue_player_position ON cached_queue (player_id, position)');
+  late final Index idxArtistsFavorite = Index('idx_artists_favorite',
+      'CREATE INDEX idx_artists_favorite ON artists (favorite)');
+  late final Index idxAlbumsFavorite = Index('idx_albums_favorite',
+      'CREATE INDEX idx_albums_favorite ON albums (favorite)');
+  late final Index idxTracksAlbum = Index('idx_tracks_album',
+      'CREATE INDEX idx_tracks_album ON tracks (album_provider, album_item_id)');
+  late final Index idxTracksFavorite = Index('idx_tracks_favorite',
+      'CREATE INDEX idx_tracks_favorite ON tracks (favorite)');
+  late final Index idxPlaylistsFavorite = Index('idx_playlists_favorite',
+      'CREATE INDEX idx_playlists_favorite ON playlists (favorite)');
+  late final Index idxPlaylistTracksPlaylist = Index(
+      'idx_playlist_tracks_playlist',
+      'CREATE INDEX idx_playlist_tracks_playlist ON playlist_tracks (playlist_provider, playlist_item_id, position)');
+  late final Index idxAudiobooksFavorite = Index('idx_audiobooks_favorite',
+      'CREATE INDEX idx_audiobooks_favorite ON audiobooks (favorite)');
+  late final Index idxChaptersAudiobook = Index('idx_chapters_audiobook',
+      'CREATE INDEX idx_chapters_audiobook ON chapters (audiobook_provider, audiobook_item_id)');
+  late final Index idxProviderMappingsOwner = Index(
+      'idx_provider_mappings_owner',
+      'CREATE INDEX idx_provider_mappings_owner ON provider_mappings (owner_type, owner_provider, owner_item_id)');
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3336,12 +7926,29 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         homeRowCache,
         searchHistory,
         detailTrackCache,
+        artists,
+        albums,
+        tracks,
+        playlists,
+        playlistTracks,
+        audiobooks,
+        chapters,
+        providerMappings,
         idxRecentlyPlayedProfile,
         idxRecentlyPlayedProfilePlayed,
         idxLibraryCacheType,
         idxLibraryCacheTypeDeleted,
         idxCachedQueuePlayer,
-        idxCachedQueuePlayerPosition
+        idxCachedQueuePlayerPosition,
+        idxArtistsFavorite,
+        idxAlbumsFavorite,
+        idxTracksAlbum,
+        idxTracksFavorite,
+        idxPlaylistsFavorite,
+        idxPlaylistTracksPlaylist,
+        idxAudiobooksFavorite,
+        idxChaptersAudiobook,
+        idxProviderMappingsOwner
       ];
 }
 
@@ -5271,6 +9878,2097 @@ typedef $$DetailTrackCacheTableProcessedTableManager = ProcessedTableManager<
     ),
     DetailTrackCacheData,
     PrefetchHooks Function()>;
+typedef $$ArtistsTableCreateCompanionBuilder = ArtistsCompanion Function({
+  required String provider,
+  required String itemId,
+  required String name,
+  Value<String?> sortName,
+  Value<String?> uri,
+  Value<bool> favorite,
+  Value<bool> inLibrary,
+  Value<String?> metadataJson,
+  required DateTime lastSynced,
+  Value<int> rowid,
+});
+typedef $$ArtistsTableUpdateCompanionBuilder = ArtistsCompanion Function({
+  Value<String> provider,
+  Value<String> itemId,
+  Value<String> name,
+  Value<String?> sortName,
+  Value<String?> uri,
+  Value<bool> favorite,
+  Value<bool> inLibrary,
+  Value<String?> metadataJson,
+  Value<DateTime> lastSynced,
+  Value<int> rowid,
+});
+
+class $$ArtistsTableFilterComposer
+    extends Composer<_$AppDatabase, $ArtistsTable> {
+  $$ArtistsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get provider => $composableBuilder(
+      column: $table.provider, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get itemId => $composableBuilder(
+      column: $table.itemId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get sortName => $composableBuilder(
+      column: $table.sortName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get uri => $composableBuilder(
+      column: $table.uri, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get favorite => $composableBuilder(
+      column: $table.favorite, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get inLibrary => $composableBuilder(
+      column: $table.inLibrary, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get metadataJson => $composableBuilder(
+      column: $table.metadataJson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get lastSynced => $composableBuilder(
+      column: $table.lastSynced, builder: (column) => ColumnFilters(column));
+}
+
+class $$ArtistsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ArtistsTable> {
+  $$ArtistsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get provider => $composableBuilder(
+      column: $table.provider, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get itemId => $composableBuilder(
+      column: $table.itemId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get sortName => $composableBuilder(
+      column: $table.sortName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get uri => $composableBuilder(
+      column: $table.uri, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get favorite => $composableBuilder(
+      column: $table.favorite, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get inLibrary => $composableBuilder(
+      column: $table.inLibrary, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get metadataJson => $composableBuilder(
+      column: $table.metadataJson,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get lastSynced => $composableBuilder(
+      column: $table.lastSynced, builder: (column) => ColumnOrderings(column));
+}
+
+class $$ArtistsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ArtistsTable> {
+  $$ArtistsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get provider =>
+      $composableBuilder(column: $table.provider, builder: (column) => column);
+
+  GeneratedColumn<String> get itemId =>
+      $composableBuilder(column: $table.itemId, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get sortName =>
+      $composableBuilder(column: $table.sortName, builder: (column) => column);
+
+  GeneratedColumn<String> get uri =>
+      $composableBuilder(column: $table.uri, builder: (column) => column);
+
+  GeneratedColumn<bool> get favorite =>
+      $composableBuilder(column: $table.favorite, builder: (column) => column);
+
+  GeneratedColumn<bool> get inLibrary =>
+      $composableBuilder(column: $table.inLibrary, builder: (column) => column);
+
+  GeneratedColumn<String> get metadataJson => $composableBuilder(
+      column: $table.metadataJson, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastSynced => $composableBuilder(
+      column: $table.lastSynced, builder: (column) => column);
+}
+
+class $$ArtistsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ArtistsTable,
+    ArtistEntity,
+    $$ArtistsTableFilterComposer,
+    $$ArtistsTableOrderingComposer,
+    $$ArtistsTableAnnotationComposer,
+    $$ArtistsTableCreateCompanionBuilder,
+    $$ArtistsTableUpdateCompanionBuilder,
+    (ArtistEntity, BaseReferences<_$AppDatabase, $ArtistsTable, ArtistEntity>),
+    ArtistEntity,
+    PrefetchHooks Function()> {
+  $$ArtistsTableTableManager(_$AppDatabase db, $ArtistsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ArtistsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ArtistsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ArtistsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> provider = const Value.absent(),
+            Value<String> itemId = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String?> sortName = const Value.absent(),
+            Value<String?> uri = const Value.absent(),
+            Value<bool> favorite = const Value.absent(),
+            Value<bool> inLibrary = const Value.absent(),
+            Value<String?> metadataJson = const Value.absent(),
+            Value<DateTime> lastSynced = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ArtistsCompanion(
+            provider: provider,
+            itemId: itemId,
+            name: name,
+            sortName: sortName,
+            uri: uri,
+            favorite: favorite,
+            inLibrary: inLibrary,
+            metadataJson: metadataJson,
+            lastSynced: lastSynced,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String provider,
+            required String itemId,
+            required String name,
+            Value<String?> sortName = const Value.absent(),
+            Value<String?> uri = const Value.absent(),
+            Value<bool> favorite = const Value.absent(),
+            Value<bool> inLibrary = const Value.absent(),
+            Value<String?> metadataJson = const Value.absent(),
+            required DateTime lastSynced,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ArtistsCompanion.insert(
+            provider: provider,
+            itemId: itemId,
+            name: name,
+            sortName: sortName,
+            uri: uri,
+            favorite: favorite,
+            inLibrary: inLibrary,
+            metadataJson: metadataJson,
+            lastSynced: lastSynced,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$ArtistsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $ArtistsTable,
+    ArtistEntity,
+    $$ArtistsTableFilterComposer,
+    $$ArtistsTableOrderingComposer,
+    $$ArtistsTableAnnotationComposer,
+    $$ArtistsTableCreateCompanionBuilder,
+    $$ArtistsTableUpdateCompanionBuilder,
+    (ArtistEntity, BaseReferences<_$AppDatabase, $ArtistsTable, ArtistEntity>),
+    ArtistEntity,
+    PrefetchHooks Function()>;
+typedef $$AlbumsTableCreateCompanionBuilder = AlbumsCompanion Function({
+  required String provider,
+  required String itemId,
+  required String name,
+  Value<String?> sortName,
+  Value<String?> uri,
+  Value<String?> albumType,
+  Value<int?> year,
+  Value<String?> artistsJson,
+  Value<bool> favorite,
+  Value<bool> inLibrary,
+  Value<String?> metadataJson,
+  required DateTime lastSynced,
+  Value<int> rowid,
+});
+typedef $$AlbumsTableUpdateCompanionBuilder = AlbumsCompanion Function({
+  Value<String> provider,
+  Value<String> itemId,
+  Value<String> name,
+  Value<String?> sortName,
+  Value<String?> uri,
+  Value<String?> albumType,
+  Value<int?> year,
+  Value<String?> artistsJson,
+  Value<bool> favorite,
+  Value<bool> inLibrary,
+  Value<String?> metadataJson,
+  Value<DateTime> lastSynced,
+  Value<int> rowid,
+});
+
+class $$AlbumsTableFilterComposer
+    extends Composer<_$AppDatabase, $AlbumsTable> {
+  $$AlbumsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get provider => $composableBuilder(
+      column: $table.provider, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get itemId => $composableBuilder(
+      column: $table.itemId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get sortName => $composableBuilder(
+      column: $table.sortName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get uri => $composableBuilder(
+      column: $table.uri, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get albumType => $composableBuilder(
+      column: $table.albumType, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get year => $composableBuilder(
+      column: $table.year, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get artistsJson => $composableBuilder(
+      column: $table.artistsJson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get favorite => $composableBuilder(
+      column: $table.favorite, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get inLibrary => $composableBuilder(
+      column: $table.inLibrary, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get metadataJson => $composableBuilder(
+      column: $table.metadataJson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get lastSynced => $composableBuilder(
+      column: $table.lastSynced, builder: (column) => ColumnFilters(column));
+}
+
+class $$AlbumsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AlbumsTable> {
+  $$AlbumsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get provider => $composableBuilder(
+      column: $table.provider, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get itemId => $composableBuilder(
+      column: $table.itemId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get sortName => $composableBuilder(
+      column: $table.sortName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get uri => $composableBuilder(
+      column: $table.uri, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get albumType => $composableBuilder(
+      column: $table.albumType, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get year => $composableBuilder(
+      column: $table.year, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get artistsJson => $composableBuilder(
+      column: $table.artistsJson, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get favorite => $composableBuilder(
+      column: $table.favorite, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get inLibrary => $composableBuilder(
+      column: $table.inLibrary, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get metadataJson => $composableBuilder(
+      column: $table.metadataJson,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get lastSynced => $composableBuilder(
+      column: $table.lastSynced, builder: (column) => ColumnOrderings(column));
+}
+
+class $$AlbumsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AlbumsTable> {
+  $$AlbumsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get provider =>
+      $composableBuilder(column: $table.provider, builder: (column) => column);
+
+  GeneratedColumn<String> get itemId =>
+      $composableBuilder(column: $table.itemId, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get sortName =>
+      $composableBuilder(column: $table.sortName, builder: (column) => column);
+
+  GeneratedColumn<String> get uri =>
+      $composableBuilder(column: $table.uri, builder: (column) => column);
+
+  GeneratedColumn<String> get albumType =>
+      $composableBuilder(column: $table.albumType, builder: (column) => column);
+
+  GeneratedColumn<int> get year =>
+      $composableBuilder(column: $table.year, builder: (column) => column);
+
+  GeneratedColumn<String> get artistsJson => $composableBuilder(
+      column: $table.artistsJson, builder: (column) => column);
+
+  GeneratedColumn<bool> get favorite =>
+      $composableBuilder(column: $table.favorite, builder: (column) => column);
+
+  GeneratedColumn<bool> get inLibrary =>
+      $composableBuilder(column: $table.inLibrary, builder: (column) => column);
+
+  GeneratedColumn<String> get metadataJson => $composableBuilder(
+      column: $table.metadataJson, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastSynced => $composableBuilder(
+      column: $table.lastSynced, builder: (column) => column);
+}
+
+class $$AlbumsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $AlbumsTable,
+    AlbumEntity,
+    $$AlbumsTableFilterComposer,
+    $$AlbumsTableOrderingComposer,
+    $$AlbumsTableAnnotationComposer,
+    $$AlbumsTableCreateCompanionBuilder,
+    $$AlbumsTableUpdateCompanionBuilder,
+    (AlbumEntity, BaseReferences<_$AppDatabase, $AlbumsTable, AlbumEntity>),
+    AlbumEntity,
+    PrefetchHooks Function()> {
+  $$AlbumsTableTableManager(_$AppDatabase db, $AlbumsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AlbumsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AlbumsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AlbumsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> provider = const Value.absent(),
+            Value<String> itemId = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String?> sortName = const Value.absent(),
+            Value<String?> uri = const Value.absent(),
+            Value<String?> albumType = const Value.absent(),
+            Value<int?> year = const Value.absent(),
+            Value<String?> artistsJson = const Value.absent(),
+            Value<bool> favorite = const Value.absent(),
+            Value<bool> inLibrary = const Value.absent(),
+            Value<String?> metadataJson = const Value.absent(),
+            Value<DateTime> lastSynced = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              AlbumsCompanion(
+            provider: provider,
+            itemId: itemId,
+            name: name,
+            sortName: sortName,
+            uri: uri,
+            albumType: albumType,
+            year: year,
+            artistsJson: artistsJson,
+            favorite: favorite,
+            inLibrary: inLibrary,
+            metadataJson: metadataJson,
+            lastSynced: lastSynced,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String provider,
+            required String itemId,
+            required String name,
+            Value<String?> sortName = const Value.absent(),
+            Value<String?> uri = const Value.absent(),
+            Value<String?> albumType = const Value.absent(),
+            Value<int?> year = const Value.absent(),
+            Value<String?> artistsJson = const Value.absent(),
+            Value<bool> favorite = const Value.absent(),
+            Value<bool> inLibrary = const Value.absent(),
+            Value<String?> metadataJson = const Value.absent(),
+            required DateTime lastSynced,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              AlbumsCompanion.insert(
+            provider: provider,
+            itemId: itemId,
+            name: name,
+            sortName: sortName,
+            uri: uri,
+            albumType: albumType,
+            year: year,
+            artistsJson: artistsJson,
+            favorite: favorite,
+            inLibrary: inLibrary,
+            metadataJson: metadataJson,
+            lastSynced: lastSynced,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$AlbumsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $AlbumsTable,
+    AlbumEntity,
+    $$AlbumsTableFilterComposer,
+    $$AlbumsTableOrderingComposer,
+    $$AlbumsTableAnnotationComposer,
+    $$AlbumsTableCreateCompanionBuilder,
+    $$AlbumsTableUpdateCompanionBuilder,
+    (AlbumEntity, BaseReferences<_$AppDatabase, $AlbumsTable, AlbumEntity>),
+    AlbumEntity,
+    PrefetchHooks Function()>;
+typedef $$TracksTableCreateCompanionBuilder = TracksCompanion Function({
+  required String provider,
+  required String itemId,
+  required String name,
+  Value<String?> sortName,
+  Value<String?> uri,
+  Value<int?> durationSeconds,
+  Value<String?> artistsJson,
+  Value<String?> albumProvider,
+  Value<String?> albumItemId,
+  Value<int?> position,
+  Value<bool> favorite,
+  Value<bool> inLibrary,
+  Value<String?> metadataJson,
+  required DateTime lastSynced,
+  Value<int> rowid,
+});
+typedef $$TracksTableUpdateCompanionBuilder = TracksCompanion Function({
+  Value<String> provider,
+  Value<String> itemId,
+  Value<String> name,
+  Value<String?> sortName,
+  Value<String?> uri,
+  Value<int?> durationSeconds,
+  Value<String?> artistsJson,
+  Value<String?> albumProvider,
+  Value<String?> albumItemId,
+  Value<int?> position,
+  Value<bool> favorite,
+  Value<bool> inLibrary,
+  Value<String?> metadataJson,
+  Value<DateTime> lastSynced,
+  Value<int> rowid,
+});
+
+class $$TracksTableFilterComposer
+    extends Composer<_$AppDatabase, $TracksTable> {
+  $$TracksTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get provider => $composableBuilder(
+      column: $table.provider, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get itemId => $composableBuilder(
+      column: $table.itemId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get sortName => $composableBuilder(
+      column: $table.sortName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get uri => $composableBuilder(
+      column: $table.uri, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get durationSeconds => $composableBuilder(
+      column: $table.durationSeconds,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get artistsJson => $composableBuilder(
+      column: $table.artistsJson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get albumProvider => $composableBuilder(
+      column: $table.albumProvider, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get albumItemId => $composableBuilder(
+      column: $table.albumItemId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get position => $composableBuilder(
+      column: $table.position, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get favorite => $composableBuilder(
+      column: $table.favorite, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get inLibrary => $composableBuilder(
+      column: $table.inLibrary, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get metadataJson => $composableBuilder(
+      column: $table.metadataJson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get lastSynced => $composableBuilder(
+      column: $table.lastSynced, builder: (column) => ColumnFilters(column));
+}
+
+class $$TracksTableOrderingComposer
+    extends Composer<_$AppDatabase, $TracksTable> {
+  $$TracksTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get provider => $composableBuilder(
+      column: $table.provider, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get itemId => $composableBuilder(
+      column: $table.itemId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get sortName => $composableBuilder(
+      column: $table.sortName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get uri => $composableBuilder(
+      column: $table.uri, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get durationSeconds => $composableBuilder(
+      column: $table.durationSeconds,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get artistsJson => $composableBuilder(
+      column: $table.artistsJson, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get albumProvider => $composableBuilder(
+      column: $table.albumProvider,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get albumItemId => $composableBuilder(
+      column: $table.albumItemId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get position => $composableBuilder(
+      column: $table.position, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get favorite => $composableBuilder(
+      column: $table.favorite, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get inLibrary => $composableBuilder(
+      column: $table.inLibrary, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get metadataJson => $composableBuilder(
+      column: $table.metadataJson,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get lastSynced => $composableBuilder(
+      column: $table.lastSynced, builder: (column) => ColumnOrderings(column));
+}
+
+class $$TracksTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TracksTable> {
+  $$TracksTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get provider =>
+      $composableBuilder(column: $table.provider, builder: (column) => column);
+
+  GeneratedColumn<String> get itemId =>
+      $composableBuilder(column: $table.itemId, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get sortName =>
+      $composableBuilder(column: $table.sortName, builder: (column) => column);
+
+  GeneratedColumn<String> get uri =>
+      $composableBuilder(column: $table.uri, builder: (column) => column);
+
+  GeneratedColumn<int> get durationSeconds => $composableBuilder(
+      column: $table.durationSeconds, builder: (column) => column);
+
+  GeneratedColumn<String> get artistsJson => $composableBuilder(
+      column: $table.artistsJson, builder: (column) => column);
+
+  GeneratedColumn<String> get albumProvider => $composableBuilder(
+      column: $table.albumProvider, builder: (column) => column);
+
+  GeneratedColumn<String> get albumItemId => $composableBuilder(
+      column: $table.albumItemId, builder: (column) => column);
+
+  GeneratedColumn<int> get position =>
+      $composableBuilder(column: $table.position, builder: (column) => column);
+
+  GeneratedColumn<bool> get favorite =>
+      $composableBuilder(column: $table.favorite, builder: (column) => column);
+
+  GeneratedColumn<bool> get inLibrary =>
+      $composableBuilder(column: $table.inLibrary, builder: (column) => column);
+
+  GeneratedColumn<String> get metadataJson => $composableBuilder(
+      column: $table.metadataJson, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastSynced => $composableBuilder(
+      column: $table.lastSynced, builder: (column) => column);
+}
+
+class $$TracksTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $TracksTable,
+    TrackEntity,
+    $$TracksTableFilterComposer,
+    $$TracksTableOrderingComposer,
+    $$TracksTableAnnotationComposer,
+    $$TracksTableCreateCompanionBuilder,
+    $$TracksTableUpdateCompanionBuilder,
+    (TrackEntity, BaseReferences<_$AppDatabase, $TracksTable, TrackEntity>),
+    TrackEntity,
+    PrefetchHooks Function()> {
+  $$TracksTableTableManager(_$AppDatabase db, $TracksTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TracksTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TracksTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TracksTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> provider = const Value.absent(),
+            Value<String> itemId = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String?> sortName = const Value.absent(),
+            Value<String?> uri = const Value.absent(),
+            Value<int?> durationSeconds = const Value.absent(),
+            Value<String?> artistsJson = const Value.absent(),
+            Value<String?> albumProvider = const Value.absent(),
+            Value<String?> albumItemId = const Value.absent(),
+            Value<int?> position = const Value.absent(),
+            Value<bool> favorite = const Value.absent(),
+            Value<bool> inLibrary = const Value.absent(),
+            Value<String?> metadataJson = const Value.absent(),
+            Value<DateTime> lastSynced = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              TracksCompanion(
+            provider: provider,
+            itemId: itemId,
+            name: name,
+            sortName: sortName,
+            uri: uri,
+            durationSeconds: durationSeconds,
+            artistsJson: artistsJson,
+            albumProvider: albumProvider,
+            albumItemId: albumItemId,
+            position: position,
+            favorite: favorite,
+            inLibrary: inLibrary,
+            metadataJson: metadataJson,
+            lastSynced: lastSynced,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String provider,
+            required String itemId,
+            required String name,
+            Value<String?> sortName = const Value.absent(),
+            Value<String?> uri = const Value.absent(),
+            Value<int?> durationSeconds = const Value.absent(),
+            Value<String?> artistsJson = const Value.absent(),
+            Value<String?> albumProvider = const Value.absent(),
+            Value<String?> albumItemId = const Value.absent(),
+            Value<int?> position = const Value.absent(),
+            Value<bool> favorite = const Value.absent(),
+            Value<bool> inLibrary = const Value.absent(),
+            Value<String?> metadataJson = const Value.absent(),
+            required DateTime lastSynced,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              TracksCompanion.insert(
+            provider: provider,
+            itemId: itemId,
+            name: name,
+            sortName: sortName,
+            uri: uri,
+            durationSeconds: durationSeconds,
+            artistsJson: artistsJson,
+            albumProvider: albumProvider,
+            albumItemId: albumItemId,
+            position: position,
+            favorite: favorite,
+            inLibrary: inLibrary,
+            metadataJson: metadataJson,
+            lastSynced: lastSynced,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$TracksTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $TracksTable,
+    TrackEntity,
+    $$TracksTableFilterComposer,
+    $$TracksTableOrderingComposer,
+    $$TracksTableAnnotationComposer,
+    $$TracksTableCreateCompanionBuilder,
+    $$TracksTableUpdateCompanionBuilder,
+    (TrackEntity, BaseReferences<_$AppDatabase, $TracksTable, TrackEntity>),
+    TrackEntity,
+    PrefetchHooks Function()>;
+typedef $$PlaylistsTableCreateCompanionBuilder = PlaylistsCompanion Function({
+  required String provider,
+  required String itemId,
+  required String name,
+  Value<String?> sortName,
+  Value<String?> uri,
+  Value<String?> owner,
+  Value<bool?> isEditable,
+  Value<int?> trackCount,
+  Value<bool> favorite,
+  Value<bool> inLibrary,
+  Value<String?> metadataJson,
+  required DateTime lastSynced,
+  Value<int> rowid,
+});
+typedef $$PlaylistsTableUpdateCompanionBuilder = PlaylistsCompanion Function({
+  Value<String> provider,
+  Value<String> itemId,
+  Value<String> name,
+  Value<String?> sortName,
+  Value<String?> uri,
+  Value<String?> owner,
+  Value<bool?> isEditable,
+  Value<int?> trackCount,
+  Value<bool> favorite,
+  Value<bool> inLibrary,
+  Value<String?> metadataJson,
+  Value<DateTime> lastSynced,
+  Value<int> rowid,
+});
+
+class $$PlaylistsTableFilterComposer
+    extends Composer<_$AppDatabase, $PlaylistsTable> {
+  $$PlaylistsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get provider => $composableBuilder(
+      column: $table.provider, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get itemId => $composableBuilder(
+      column: $table.itemId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get sortName => $composableBuilder(
+      column: $table.sortName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get uri => $composableBuilder(
+      column: $table.uri, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get owner => $composableBuilder(
+      column: $table.owner, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isEditable => $composableBuilder(
+      column: $table.isEditable, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get trackCount => $composableBuilder(
+      column: $table.trackCount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get favorite => $composableBuilder(
+      column: $table.favorite, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get inLibrary => $composableBuilder(
+      column: $table.inLibrary, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get metadataJson => $composableBuilder(
+      column: $table.metadataJson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get lastSynced => $composableBuilder(
+      column: $table.lastSynced, builder: (column) => ColumnFilters(column));
+}
+
+class $$PlaylistsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PlaylistsTable> {
+  $$PlaylistsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get provider => $composableBuilder(
+      column: $table.provider, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get itemId => $composableBuilder(
+      column: $table.itemId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get sortName => $composableBuilder(
+      column: $table.sortName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get uri => $composableBuilder(
+      column: $table.uri, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get owner => $composableBuilder(
+      column: $table.owner, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isEditable => $composableBuilder(
+      column: $table.isEditable, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get trackCount => $composableBuilder(
+      column: $table.trackCount, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get favorite => $composableBuilder(
+      column: $table.favorite, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get inLibrary => $composableBuilder(
+      column: $table.inLibrary, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get metadataJson => $composableBuilder(
+      column: $table.metadataJson,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get lastSynced => $composableBuilder(
+      column: $table.lastSynced, builder: (column) => ColumnOrderings(column));
+}
+
+class $$PlaylistsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PlaylistsTable> {
+  $$PlaylistsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get provider =>
+      $composableBuilder(column: $table.provider, builder: (column) => column);
+
+  GeneratedColumn<String> get itemId =>
+      $composableBuilder(column: $table.itemId, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get sortName =>
+      $composableBuilder(column: $table.sortName, builder: (column) => column);
+
+  GeneratedColumn<String> get uri =>
+      $composableBuilder(column: $table.uri, builder: (column) => column);
+
+  GeneratedColumn<String> get owner =>
+      $composableBuilder(column: $table.owner, builder: (column) => column);
+
+  GeneratedColumn<bool> get isEditable => $composableBuilder(
+      column: $table.isEditable, builder: (column) => column);
+
+  GeneratedColumn<int> get trackCount => $composableBuilder(
+      column: $table.trackCount, builder: (column) => column);
+
+  GeneratedColumn<bool> get favorite =>
+      $composableBuilder(column: $table.favorite, builder: (column) => column);
+
+  GeneratedColumn<bool> get inLibrary =>
+      $composableBuilder(column: $table.inLibrary, builder: (column) => column);
+
+  GeneratedColumn<String> get metadataJson => $composableBuilder(
+      column: $table.metadataJson, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastSynced => $composableBuilder(
+      column: $table.lastSynced, builder: (column) => column);
+}
+
+class $$PlaylistsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $PlaylistsTable,
+    PlaylistEntity,
+    $$PlaylistsTableFilterComposer,
+    $$PlaylistsTableOrderingComposer,
+    $$PlaylistsTableAnnotationComposer,
+    $$PlaylistsTableCreateCompanionBuilder,
+    $$PlaylistsTableUpdateCompanionBuilder,
+    (
+      PlaylistEntity,
+      BaseReferences<_$AppDatabase, $PlaylistsTable, PlaylistEntity>
+    ),
+    PlaylistEntity,
+    PrefetchHooks Function()> {
+  $$PlaylistsTableTableManager(_$AppDatabase db, $PlaylistsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PlaylistsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PlaylistsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PlaylistsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> provider = const Value.absent(),
+            Value<String> itemId = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String?> sortName = const Value.absent(),
+            Value<String?> uri = const Value.absent(),
+            Value<String?> owner = const Value.absent(),
+            Value<bool?> isEditable = const Value.absent(),
+            Value<int?> trackCount = const Value.absent(),
+            Value<bool> favorite = const Value.absent(),
+            Value<bool> inLibrary = const Value.absent(),
+            Value<String?> metadataJson = const Value.absent(),
+            Value<DateTime> lastSynced = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              PlaylistsCompanion(
+            provider: provider,
+            itemId: itemId,
+            name: name,
+            sortName: sortName,
+            uri: uri,
+            owner: owner,
+            isEditable: isEditable,
+            trackCount: trackCount,
+            favorite: favorite,
+            inLibrary: inLibrary,
+            metadataJson: metadataJson,
+            lastSynced: lastSynced,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String provider,
+            required String itemId,
+            required String name,
+            Value<String?> sortName = const Value.absent(),
+            Value<String?> uri = const Value.absent(),
+            Value<String?> owner = const Value.absent(),
+            Value<bool?> isEditable = const Value.absent(),
+            Value<int?> trackCount = const Value.absent(),
+            Value<bool> favorite = const Value.absent(),
+            Value<bool> inLibrary = const Value.absent(),
+            Value<String?> metadataJson = const Value.absent(),
+            required DateTime lastSynced,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              PlaylistsCompanion.insert(
+            provider: provider,
+            itemId: itemId,
+            name: name,
+            sortName: sortName,
+            uri: uri,
+            owner: owner,
+            isEditable: isEditable,
+            trackCount: trackCount,
+            favorite: favorite,
+            inLibrary: inLibrary,
+            metadataJson: metadataJson,
+            lastSynced: lastSynced,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$PlaylistsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $PlaylistsTable,
+    PlaylistEntity,
+    $$PlaylistsTableFilterComposer,
+    $$PlaylistsTableOrderingComposer,
+    $$PlaylistsTableAnnotationComposer,
+    $$PlaylistsTableCreateCompanionBuilder,
+    $$PlaylistsTableUpdateCompanionBuilder,
+    (
+      PlaylistEntity,
+      BaseReferences<_$AppDatabase, $PlaylistsTable, PlaylistEntity>
+    ),
+    PlaylistEntity,
+    PrefetchHooks Function()>;
+typedef $$PlaylistTracksTableCreateCompanionBuilder = PlaylistTracksCompanion
+    Function({
+  Value<int> id,
+  required String playlistProvider,
+  required String playlistItemId,
+  required String trackProvider,
+  required String trackItemId,
+  required int position,
+});
+typedef $$PlaylistTracksTableUpdateCompanionBuilder = PlaylistTracksCompanion
+    Function({
+  Value<int> id,
+  Value<String> playlistProvider,
+  Value<String> playlistItemId,
+  Value<String> trackProvider,
+  Value<String> trackItemId,
+  Value<int> position,
+});
+
+class $$PlaylistTracksTableFilterComposer
+    extends Composer<_$AppDatabase, $PlaylistTracksTable> {
+  $$PlaylistTracksTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get playlistProvider => $composableBuilder(
+      column: $table.playlistProvider,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get playlistItemId => $composableBuilder(
+      column: $table.playlistItemId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get trackProvider => $composableBuilder(
+      column: $table.trackProvider, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get trackItemId => $composableBuilder(
+      column: $table.trackItemId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get position => $composableBuilder(
+      column: $table.position, builder: (column) => ColumnFilters(column));
+}
+
+class $$PlaylistTracksTableOrderingComposer
+    extends Composer<_$AppDatabase, $PlaylistTracksTable> {
+  $$PlaylistTracksTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get playlistProvider => $composableBuilder(
+      column: $table.playlistProvider,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get playlistItemId => $composableBuilder(
+      column: $table.playlistItemId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get trackProvider => $composableBuilder(
+      column: $table.trackProvider,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get trackItemId => $composableBuilder(
+      column: $table.trackItemId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get position => $composableBuilder(
+      column: $table.position, builder: (column) => ColumnOrderings(column));
+}
+
+class $$PlaylistTracksTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PlaylistTracksTable> {
+  $$PlaylistTracksTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get playlistProvider => $composableBuilder(
+      column: $table.playlistProvider, builder: (column) => column);
+
+  GeneratedColumn<String> get playlistItemId => $composableBuilder(
+      column: $table.playlistItemId, builder: (column) => column);
+
+  GeneratedColumn<String> get trackProvider => $composableBuilder(
+      column: $table.trackProvider, builder: (column) => column);
+
+  GeneratedColumn<String> get trackItemId => $composableBuilder(
+      column: $table.trackItemId, builder: (column) => column);
+
+  GeneratedColumn<int> get position =>
+      $composableBuilder(column: $table.position, builder: (column) => column);
+}
+
+class $$PlaylistTracksTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $PlaylistTracksTable,
+    PlaylistTrackEntity,
+    $$PlaylistTracksTableFilterComposer,
+    $$PlaylistTracksTableOrderingComposer,
+    $$PlaylistTracksTableAnnotationComposer,
+    $$PlaylistTracksTableCreateCompanionBuilder,
+    $$PlaylistTracksTableUpdateCompanionBuilder,
+    (
+      PlaylistTrackEntity,
+      BaseReferences<_$AppDatabase, $PlaylistTracksTable, PlaylistTrackEntity>
+    ),
+    PlaylistTrackEntity,
+    PrefetchHooks Function()> {
+  $$PlaylistTracksTableTableManager(
+      _$AppDatabase db, $PlaylistTracksTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PlaylistTracksTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PlaylistTracksTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PlaylistTracksTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> playlistProvider = const Value.absent(),
+            Value<String> playlistItemId = const Value.absent(),
+            Value<String> trackProvider = const Value.absent(),
+            Value<String> trackItemId = const Value.absent(),
+            Value<int> position = const Value.absent(),
+          }) =>
+              PlaylistTracksCompanion(
+            id: id,
+            playlistProvider: playlistProvider,
+            playlistItemId: playlistItemId,
+            trackProvider: trackProvider,
+            trackItemId: trackItemId,
+            position: position,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String playlistProvider,
+            required String playlistItemId,
+            required String trackProvider,
+            required String trackItemId,
+            required int position,
+          }) =>
+              PlaylistTracksCompanion.insert(
+            id: id,
+            playlistProvider: playlistProvider,
+            playlistItemId: playlistItemId,
+            trackProvider: trackProvider,
+            trackItemId: trackItemId,
+            position: position,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$PlaylistTracksTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $PlaylistTracksTable,
+    PlaylistTrackEntity,
+    $$PlaylistTracksTableFilterComposer,
+    $$PlaylistTracksTableOrderingComposer,
+    $$PlaylistTracksTableAnnotationComposer,
+    $$PlaylistTracksTableCreateCompanionBuilder,
+    $$PlaylistTracksTableUpdateCompanionBuilder,
+    (
+      PlaylistTrackEntity,
+      BaseReferences<_$AppDatabase, $PlaylistTracksTable, PlaylistTrackEntity>
+    ),
+    PlaylistTrackEntity,
+    PrefetchHooks Function()>;
+typedef $$AudiobooksTableCreateCompanionBuilder = AudiobooksCompanion Function({
+  required String provider,
+  required String itemId,
+  required String name,
+  Value<String?> sortName,
+  Value<String?> uri,
+  Value<String?> authorsJson,
+  Value<String?> narratorsJson,
+  Value<String?> publisher,
+  Value<String?> description,
+  Value<int?> year,
+  Value<int?> durationSeconds,
+  Value<int?> resumePositionMs,
+  Value<bool?> fullyPlayed,
+  Value<int?> browseOrder,
+  Value<bool> favorite,
+  Value<bool> inLibrary,
+  Value<String?> metadataJson,
+  required DateTime lastSynced,
+  Value<int> rowid,
+});
+typedef $$AudiobooksTableUpdateCompanionBuilder = AudiobooksCompanion Function({
+  Value<String> provider,
+  Value<String> itemId,
+  Value<String> name,
+  Value<String?> sortName,
+  Value<String?> uri,
+  Value<String?> authorsJson,
+  Value<String?> narratorsJson,
+  Value<String?> publisher,
+  Value<String?> description,
+  Value<int?> year,
+  Value<int?> durationSeconds,
+  Value<int?> resumePositionMs,
+  Value<bool?> fullyPlayed,
+  Value<int?> browseOrder,
+  Value<bool> favorite,
+  Value<bool> inLibrary,
+  Value<String?> metadataJson,
+  Value<DateTime> lastSynced,
+  Value<int> rowid,
+});
+
+class $$AudiobooksTableFilterComposer
+    extends Composer<_$AppDatabase, $AudiobooksTable> {
+  $$AudiobooksTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get provider => $composableBuilder(
+      column: $table.provider, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get itemId => $composableBuilder(
+      column: $table.itemId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get sortName => $composableBuilder(
+      column: $table.sortName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get uri => $composableBuilder(
+      column: $table.uri, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get authorsJson => $composableBuilder(
+      column: $table.authorsJson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get narratorsJson => $composableBuilder(
+      column: $table.narratorsJson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get publisher => $composableBuilder(
+      column: $table.publisher, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get year => $composableBuilder(
+      column: $table.year, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get durationSeconds => $composableBuilder(
+      column: $table.durationSeconds,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get resumePositionMs => $composableBuilder(
+      column: $table.resumePositionMs,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get fullyPlayed => $composableBuilder(
+      column: $table.fullyPlayed, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get browseOrder => $composableBuilder(
+      column: $table.browseOrder, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get favorite => $composableBuilder(
+      column: $table.favorite, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get inLibrary => $composableBuilder(
+      column: $table.inLibrary, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get metadataJson => $composableBuilder(
+      column: $table.metadataJson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get lastSynced => $composableBuilder(
+      column: $table.lastSynced, builder: (column) => ColumnFilters(column));
+}
+
+class $$AudiobooksTableOrderingComposer
+    extends Composer<_$AppDatabase, $AudiobooksTable> {
+  $$AudiobooksTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get provider => $composableBuilder(
+      column: $table.provider, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get itemId => $composableBuilder(
+      column: $table.itemId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get sortName => $composableBuilder(
+      column: $table.sortName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get uri => $composableBuilder(
+      column: $table.uri, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get authorsJson => $composableBuilder(
+      column: $table.authorsJson, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get narratorsJson => $composableBuilder(
+      column: $table.narratorsJson,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get publisher => $composableBuilder(
+      column: $table.publisher, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get year => $composableBuilder(
+      column: $table.year, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get durationSeconds => $composableBuilder(
+      column: $table.durationSeconds,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get resumePositionMs => $composableBuilder(
+      column: $table.resumePositionMs,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get fullyPlayed => $composableBuilder(
+      column: $table.fullyPlayed, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get browseOrder => $composableBuilder(
+      column: $table.browseOrder, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get favorite => $composableBuilder(
+      column: $table.favorite, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get inLibrary => $composableBuilder(
+      column: $table.inLibrary, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get metadataJson => $composableBuilder(
+      column: $table.metadataJson,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get lastSynced => $composableBuilder(
+      column: $table.lastSynced, builder: (column) => ColumnOrderings(column));
+}
+
+class $$AudiobooksTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AudiobooksTable> {
+  $$AudiobooksTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get provider =>
+      $composableBuilder(column: $table.provider, builder: (column) => column);
+
+  GeneratedColumn<String> get itemId =>
+      $composableBuilder(column: $table.itemId, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get sortName =>
+      $composableBuilder(column: $table.sortName, builder: (column) => column);
+
+  GeneratedColumn<String> get uri =>
+      $composableBuilder(column: $table.uri, builder: (column) => column);
+
+  GeneratedColumn<String> get authorsJson => $composableBuilder(
+      column: $table.authorsJson, builder: (column) => column);
+
+  GeneratedColumn<String> get narratorsJson => $composableBuilder(
+      column: $table.narratorsJson, builder: (column) => column);
+
+  GeneratedColumn<String> get publisher =>
+      $composableBuilder(column: $table.publisher, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => column);
+
+  GeneratedColumn<int> get year =>
+      $composableBuilder(column: $table.year, builder: (column) => column);
+
+  GeneratedColumn<int> get durationSeconds => $composableBuilder(
+      column: $table.durationSeconds, builder: (column) => column);
+
+  GeneratedColumn<int> get resumePositionMs => $composableBuilder(
+      column: $table.resumePositionMs, builder: (column) => column);
+
+  GeneratedColumn<bool> get fullyPlayed => $composableBuilder(
+      column: $table.fullyPlayed, builder: (column) => column);
+
+  GeneratedColumn<int> get browseOrder => $composableBuilder(
+      column: $table.browseOrder, builder: (column) => column);
+
+  GeneratedColumn<bool> get favorite =>
+      $composableBuilder(column: $table.favorite, builder: (column) => column);
+
+  GeneratedColumn<bool> get inLibrary =>
+      $composableBuilder(column: $table.inLibrary, builder: (column) => column);
+
+  GeneratedColumn<String> get metadataJson => $composableBuilder(
+      column: $table.metadataJson, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastSynced => $composableBuilder(
+      column: $table.lastSynced, builder: (column) => column);
+}
+
+class $$AudiobooksTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $AudiobooksTable,
+    AudiobookEntity,
+    $$AudiobooksTableFilterComposer,
+    $$AudiobooksTableOrderingComposer,
+    $$AudiobooksTableAnnotationComposer,
+    $$AudiobooksTableCreateCompanionBuilder,
+    $$AudiobooksTableUpdateCompanionBuilder,
+    (
+      AudiobookEntity,
+      BaseReferences<_$AppDatabase, $AudiobooksTable, AudiobookEntity>
+    ),
+    AudiobookEntity,
+    PrefetchHooks Function()> {
+  $$AudiobooksTableTableManager(_$AppDatabase db, $AudiobooksTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AudiobooksTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AudiobooksTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AudiobooksTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> provider = const Value.absent(),
+            Value<String> itemId = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String?> sortName = const Value.absent(),
+            Value<String?> uri = const Value.absent(),
+            Value<String?> authorsJson = const Value.absent(),
+            Value<String?> narratorsJson = const Value.absent(),
+            Value<String?> publisher = const Value.absent(),
+            Value<String?> description = const Value.absent(),
+            Value<int?> year = const Value.absent(),
+            Value<int?> durationSeconds = const Value.absent(),
+            Value<int?> resumePositionMs = const Value.absent(),
+            Value<bool?> fullyPlayed = const Value.absent(),
+            Value<int?> browseOrder = const Value.absent(),
+            Value<bool> favorite = const Value.absent(),
+            Value<bool> inLibrary = const Value.absent(),
+            Value<String?> metadataJson = const Value.absent(),
+            Value<DateTime> lastSynced = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              AudiobooksCompanion(
+            provider: provider,
+            itemId: itemId,
+            name: name,
+            sortName: sortName,
+            uri: uri,
+            authorsJson: authorsJson,
+            narratorsJson: narratorsJson,
+            publisher: publisher,
+            description: description,
+            year: year,
+            durationSeconds: durationSeconds,
+            resumePositionMs: resumePositionMs,
+            fullyPlayed: fullyPlayed,
+            browseOrder: browseOrder,
+            favorite: favorite,
+            inLibrary: inLibrary,
+            metadataJson: metadataJson,
+            lastSynced: lastSynced,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String provider,
+            required String itemId,
+            required String name,
+            Value<String?> sortName = const Value.absent(),
+            Value<String?> uri = const Value.absent(),
+            Value<String?> authorsJson = const Value.absent(),
+            Value<String?> narratorsJson = const Value.absent(),
+            Value<String?> publisher = const Value.absent(),
+            Value<String?> description = const Value.absent(),
+            Value<int?> year = const Value.absent(),
+            Value<int?> durationSeconds = const Value.absent(),
+            Value<int?> resumePositionMs = const Value.absent(),
+            Value<bool?> fullyPlayed = const Value.absent(),
+            Value<int?> browseOrder = const Value.absent(),
+            Value<bool> favorite = const Value.absent(),
+            Value<bool> inLibrary = const Value.absent(),
+            Value<String?> metadataJson = const Value.absent(),
+            required DateTime lastSynced,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              AudiobooksCompanion.insert(
+            provider: provider,
+            itemId: itemId,
+            name: name,
+            sortName: sortName,
+            uri: uri,
+            authorsJson: authorsJson,
+            narratorsJson: narratorsJson,
+            publisher: publisher,
+            description: description,
+            year: year,
+            durationSeconds: durationSeconds,
+            resumePositionMs: resumePositionMs,
+            fullyPlayed: fullyPlayed,
+            browseOrder: browseOrder,
+            favorite: favorite,
+            inLibrary: inLibrary,
+            metadataJson: metadataJson,
+            lastSynced: lastSynced,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$AudiobooksTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $AudiobooksTable,
+    AudiobookEntity,
+    $$AudiobooksTableFilterComposer,
+    $$AudiobooksTableOrderingComposer,
+    $$AudiobooksTableAnnotationComposer,
+    $$AudiobooksTableCreateCompanionBuilder,
+    $$AudiobooksTableUpdateCompanionBuilder,
+    (
+      AudiobookEntity,
+      BaseReferences<_$AppDatabase, $AudiobooksTable, AudiobookEntity>
+    ),
+    AudiobookEntity,
+    PrefetchHooks Function()>;
+typedef $$ChaptersTableCreateCompanionBuilder = ChaptersCompanion Function({
+  Value<int> id,
+  required String audiobookProvider,
+  required String audiobookItemId,
+  required int chapterNumber,
+  required int positionMs,
+  required String title,
+  Value<int?> durationMs,
+});
+typedef $$ChaptersTableUpdateCompanionBuilder = ChaptersCompanion Function({
+  Value<int> id,
+  Value<String> audiobookProvider,
+  Value<String> audiobookItemId,
+  Value<int> chapterNumber,
+  Value<int> positionMs,
+  Value<String> title,
+  Value<int?> durationMs,
+});
+
+class $$ChaptersTableFilterComposer
+    extends Composer<_$AppDatabase, $ChaptersTable> {
+  $$ChaptersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get audiobookProvider => $composableBuilder(
+      column: $table.audiobookProvider,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get audiobookItemId => $composableBuilder(
+      column: $table.audiobookItemId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get chapterNumber => $composableBuilder(
+      column: $table.chapterNumber, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get positionMs => $composableBuilder(
+      column: $table.positionMs, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get title => $composableBuilder(
+      column: $table.title, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get durationMs => $composableBuilder(
+      column: $table.durationMs, builder: (column) => ColumnFilters(column));
+}
+
+class $$ChaptersTableOrderingComposer
+    extends Composer<_$AppDatabase, $ChaptersTable> {
+  $$ChaptersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get audiobookProvider => $composableBuilder(
+      column: $table.audiobookProvider,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get audiobookItemId => $composableBuilder(
+      column: $table.audiobookItemId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get chapterNumber => $composableBuilder(
+      column: $table.chapterNumber,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get positionMs => $composableBuilder(
+      column: $table.positionMs, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get title => $composableBuilder(
+      column: $table.title, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get durationMs => $composableBuilder(
+      column: $table.durationMs, builder: (column) => ColumnOrderings(column));
+}
+
+class $$ChaptersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ChaptersTable> {
+  $$ChaptersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get audiobookProvider => $composableBuilder(
+      column: $table.audiobookProvider, builder: (column) => column);
+
+  GeneratedColumn<String> get audiobookItemId => $composableBuilder(
+      column: $table.audiobookItemId, builder: (column) => column);
+
+  GeneratedColumn<int> get chapterNumber => $composableBuilder(
+      column: $table.chapterNumber, builder: (column) => column);
+
+  GeneratedColumn<int> get positionMs => $composableBuilder(
+      column: $table.positionMs, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<int> get durationMs => $composableBuilder(
+      column: $table.durationMs, builder: (column) => column);
+}
+
+class $$ChaptersTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ChaptersTable,
+    ChapterEntity,
+    $$ChaptersTableFilterComposer,
+    $$ChaptersTableOrderingComposer,
+    $$ChaptersTableAnnotationComposer,
+    $$ChaptersTableCreateCompanionBuilder,
+    $$ChaptersTableUpdateCompanionBuilder,
+    (
+      ChapterEntity,
+      BaseReferences<_$AppDatabase, $ChaptersTable, ChapterEntity>
+    ),
+    ChapterEntity,
+    PrefetchHooks Function()> {
+  $$ChaptersTableTableManager(_$AppDatabase db, $ChaptersTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ChaptersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ChaptersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ChaptersTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> audiobookProvider = const Value.absent(),
+            Value<String> audiobookItemId = const Value.absent(),
+            Value<int> chapterNumber = const Value.absent(),
+            Value<int> positionMs = const Value.absent(),
+            Value<String> title = const Value.absent(),
+            Value<int?> durationMs = const Value.absent(),
+          }) =>
+              ChaptersCompanion(
+            id: id,
+            audiobookProvider: audiobookProvider,
+            audiobookItemId: audiobookItemId,
+            chapterNumber: chapterNumber,
+            positionMs: positionMs,
+            title: title,
+            durationMs: durationMs,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String audiobookProvider,
+            required String audiobookItemId,
+            required int chapterNumber,
+            required int positionMs,
+            required String title,
+            Value<int?> durationMs = const Value.absent(),
+          }) =>
+              ChaptersCompanion.insert(
+            id: id,
+            audiobookProvider: audiobookProvider,
+            audiobookItemId: audiobookItemId,
+            chapterNumber: chapterNumber,
+            positionMs: positionMs,
+            title: title,
+            durationMs: durationMs,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$ChaptersTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $ChaptersTable,
+    ChapterEntity,
+    $$ChaptersTableFilterComposer,
+    $$ChaptersTableOrderingComposer,
+    $$ChaptersTableAnnotationComposer,
+    $$ChaptersTableCreateCompanionBuilder,
+    $$ChaptersTableUpdateCompanionBuilder,
+    (
+      ChapterEntity,
+      BaseReferences<_$AppDatabase, $ChaptersTable, ChapterEntity>
+    ),
+    ChapterEntity,
+    PrefetchHooks Function()>;
+typedef $$ProviderMappingsTableCreateCompanionBuilder
+    = ProviderMappingsCompanion Function({
+  Value<int> id,
+  required String ownerType,
+  required String ownerProvider,
+  required String ownerItemId,
+  required String mappingItemId,
+  required String providerDomain,
+  required String providerInstance,
+  Value<bool> available,
+  Value<bool> inLibrary,
+  Value<String?> audioFormatJson,
+});
+typedef $$ProviderMappingsTableUpdateCompanionBuilder
+    = ProviderMappingsCompanion Function({
+  Value<int> id,
+  Value<String> ownerType,
+  Value<String> ownerProvider,
+  Value<String> ownerItemId,
+  Value<String> mappingItemId,
+  Value<String> providerDomain,
+  Value<String> providerInstance,
+  Value<bool> available,
+  Value<bool> inLibrary,
+  Value<String?> audioFormatJson,
+});
+
+class $$ProviderMappingsTableFilterComposer
+    extends Composer<_$AppDatabase, $ProviderMappingsTable> {
+  $$ProviderMappingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get ownerType => $composableBuilder(
+      column: $table.ownerType, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get ownerProvider => $composableBuilder(
+      column: $table.ownerProvider, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get ownerItemId => $composableBuilder(
+      column: $table.ownerItemId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get mappingItemId => $composableBuilder(
+      column: $table.mappingItemId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get providerDomain => $composableBuilder(
+      column: $table.providerDomain,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get providerInstance => $composableBuilder(
+      column: $table.providerInstance,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get available => $composableBuilder(
+      column: $table.available, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get inLibrary => $composableBuilder(
+      column: $table.inLibrary, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get audioFormatJson => $composableBuilder(
+      column: $table.audioFormatJson,
+      builder: (column) => ColumnFilters(column));
+}
+
+class $$ProviderMappingsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ProviderMappingsTable> {
+  $$ProviderMappingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get ownerType => $composableBuilder(
+      column: $table.ownerType, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get ownerProvider => $composableBuilder(
+      column: $table.ownerProvider,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get ownerItemId => $composableBuilder(
+      column: $table.ownerItemId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get mappingItemId => $composableBuilder(
+      column: $table.mappingItemId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get providerDomain => $composableBuilder(
+      column: $table.providerDomain,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get providerInstance => $composableBuilder(
+      column: $table.providerInstance,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get available => $composableBuilder(
+      column: $table.available, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get inLibrary => $composableBuilder(
+      column: $table.inLibrary, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get audioFormatJson => $composableBuilder(
+      column: $table.audioFormatJson,
+      builder: (column) => ColumnOrderings(column));
+}
+
+class $$ProviderMappingsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ProviderMappingsTable> {
+  $$ProviderMappingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get ownerType =>
+      $composableBuilder(column: $table.ownerType, builder: (column) => column);
+
+  GeneratedColumn<String> get ownerProvider => $composableBuilder(
+      column: $table.ownerProvider, builder: (column) => column);
+
+  GeneratedColumn<String> get ownerItemId => $composableBuilder(
+      column: $table.ownerItemId, builder: (column) => column);
+
+  GeneratedColumn<String> get mappingItemId => $composableBuilder(
+      column: $table.mappingItemId, builder: (column) => column);
+
+  GeneratedColumn<String> get providerDomain => $composableBuilder(
+      column: $table.providerDomain, builder: (column) => column);
+
+  GeneratedColumn<String> get providerInstance => $composableBuilder(
+      column: $table.providerInstance, builder: (column) => column);
+
+  GeneratedColumn<bool> get available =>
+      $composableBuilder(column: $table.available, builder: (column) => column);
+
+  GeneratedColumn<bool> get inLibrary =>
+      $composableBuilder(column: $table.inLibrary, builder: (column) => column);
+
+  GeneratedColumn<String> get audioFormatJson => $composableBuilder(
+      column: $table.audioFormatJson, builder: (column) => column);
+}
+
+class $$ProviderMappingsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ProviderMappingsTable,
+    ProviderMappingEntity,
+    $$ProviderMappingsTableFilterComposer,
+    $$ProviderMappingsTableOrderingComposer,
+    $$ProviderMappingsTableAnnotationComposer,
+    $$ProviderMappingsTableCreateCompanionBuilder,
+    $$ProviderMappingsTableUpdateCompanionBuilder,
+    (
+      ProviderMappingEntity,
+      BaseReferences<_$AppDatabase, $ProviderMappingsTable,
+          ProviderMappingEntity>
+    ),
+    ProviderMappingEntity,
+    PrefetchHooks Function()> {
+  $$ProviderMappingsTableTableManager(
+      _$AppDatabase db, $ProviderMappingsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ProviderMappingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ProviderMappingsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ProviderMappingsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> ownerType = const Value.absent(),
+            Value<String> ownerProvider = const Value.absent(),
+            Value<String> ownerItemId = const Value.absent(),
+            Value<String> mappingItemId = const Value.absent(),
+            Value<String> providerDomain = const Value.absent(),
+            Value<String> providerInstance = const Value.absent(),
+            Value<bool> available = const Value.absent(),
+            Value<bool> inLibrary = const Value.absent(),
+            Value<String?> audioFormatJson = const Value.absent(),
+          }) =>
+              ProviderMappingsCompanion(
+            id: id,
+            ownerType: ownerType,
+            ownerProvider: ownerProvider,
+            ownerItemId: ownerItemId,
+            mappingItemId: mappingItemId,
+            providerDomain: providerDomain,
+            providerInstance: providerInstance,
+            available: available,
+            inLibrary: inLibrary,
+            audioFormatJson: audioFormatJson,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String ownerType,
+            required String ownerProvider,
+            required String ownerItemId,
+            required String mappingItemId,
+            required String providerDomain,
+            required String providerInstance,
+            Value<bool> available = const Value.absent(),
+            Value<bool> inLibrary = const Value.absent(),
+            Value<String?> audioFormatJson = const Value.absent(),
+          }) =>
+              ProviderMappingsCompanion.insert(
+            id: id,
+            ownerType: ownerType,
+            ownerProvider: ownerProvider,
+            ownerItemId: ownerItemId,
+            mappingItemId: mappingItemId,
+            providerDomain: providerDomain,
+            providerInstance: providerInstance,
+            available: available,
+            inLibrary: inLibrary,
+            audioFormatJson: audioFormatJson,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$ProviderMappingsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $ProviderMappingsTable,
+    ProviderMappingEntity,
+    $$ProviderMappingsTableFilterComposer,
+    $$ProviderMappingsTableOrderingComposer,
+    $$ProviderMappingsTableAnnotationComposer,
+    $$ProviderMappingsTableCreateCompanionBuilder,
+    $$ProviderMappingsTableUpdateCompanionBuilder,
+    (
+      ProviderMappingEntity,
+      BaseReferences<_$AppDatabase, $ProviderMappingsTable,
+          ProviderMappingEntity>
+    ),
+    ProviderMappingEntity,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -5295,4 +11993,20 @@ class $AppDatabaseManager {
       $$SearchHistoryTableTableManager(_db, _db.searchHistory);
   $$DetailTrackCacheTableTableManager get detailTrackCache =>
       $$DetailTrackCacheTableTableManager(_db, _db.detailTrackCache);
+  $$ArtistsTableTableManager get artists =>
+      $$ArtistsTableTableManager(_db, _db.artists);
+  $$AlbumsTableTableManager get albums =>
+      $$AlbumsTableTableManager(_db, _db.albums);
+  $$TracksTableTableManager get tracks =>
+      $$TracksTableTableManager(_db, _db.tracks);
+  $$PlaylistsTableTableManager get playlists =>
+      $$PlaylistsTableTableManager(_db, _db.playlists);
+  $$PlaylistTracksTableTableManager get playlistTracks =>
+      $$PlaylistTracksTableTableManager(_db, _db.playlistTracks);
+  $$AudiobooksTableTableManager get audiobooks =>
+      $$AudiobooksTableTableManager(_db, _db.audiobooks);
+  $$ChaptersTableTableManager get chapters =>
+      $$ChaptersTableTableManager(_db, _db.chapters);
+  $$ProviderMappingsTableTableManager get providerMappings =>
+      $$ProviderMappingsTableTableManager(_db, _db.providerMappings);
 }

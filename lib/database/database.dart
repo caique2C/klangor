@@ -215,12 +215,199 @@ class DetailTrackCache extends Table {
   Set<Column> get primaryKey => {cacheKey};
 }
 
-@DriftDatabase(tables: [Profiles, RecentlyPlayed, LibraryCache, SyncMetadata, PlaybackState, CachedPlayers, CachedQueue, HomeRowCache, SearchHistory, DetailTrackCache])
+// ============================================================================
+// RELATIONAL LIBRARY SCHEMA
+// ============================================================================
+// Real typed tables with foreign keys, introduced alongside (not replacing
+// yet) the JSON-blob LibraryCache table above, so screens can cut over one
+// at a time - see LibraryRepository. Every item is keyed by (provider,
+// itemId), not itemId alone: MediaItem's own `==` operator treats identity
+// as (provider, itemId) (media_item.dart), but LibraryCache's
+// "${itemType}_$itemId" cache key does not include provider, so two
+// providers reusing the same id for the same item type would silently
+// collide there. This schema does not repeat that mistake.
+
+/// Library artists.
+@TableIndex(name: 'idx_artists_favorite', columns: {#favorite})
+@DataClassName('ArtistEntity')
+class Artists extends Table {
+  TextColumn get provider => text()();
+  TextColumn get itemId => text()();
+  TextColumn get name => text()();
+  TextColumn get sortName => text().nullable()();
+  TextColumn get uri => text().nullable()();
+  BoolColumn get favorite => boolean().withDefault(const Constant(false))();
+  BoolColumn get inLibrary => boolean().withDefault(const Constant(false))();
+  /// Anything not modeled as its own column (images, description, etc.)
+  TextColumn get metadataJson => text().nullable()();
+  DateTimeColumn get lastSynced => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {provider, itemId};
+}
+
+/// Library albums.
+@TableIndex(name: 'idx_albums_favorite', columns: {#favorite})
+@DataClassName('AlbumEntity')
+class Albums extends Table {
+  TextColumn get provider => text()();
+  TextColumn get itemId => text()();
+  TextColumn get name => text()();
+  TextColumn get sortName => text().nullable()();
+  TextColumn get uri => text().nullable()();
+  TextColumn get albumType => text().nullable()();
+  IntColumn get year => integer().nullable()();
+  /// Denormalized JSON list of {item_id, provider, name} - nothing today
+  /// queries "albums by artist X" via a join (the existing code matches by
+  /// artist name), so a many-to-many join table here would be
+  /// overengineering rather than architecture.
+  TextColumn get artistsJson => text().nullable()();
+  BoolColumn get favorite => boolean().withDefault(const Constant(false))();
+  BoolColumn get inLibrary => boolean().withDefault(const Constant(false))();
+  TextColumn get metadataJson => text().nullable()();
+  DateTimeColumn get lastSynced => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {provider, itemId};
+}
+
+/// Library tracks. Each track optionally belongs to one "home" album
+/// (albumProvider/albumItemId) - a real one-to-many relationship, unlike
+/// the denormalized artist list, because "this album's tracks in order" is
+/// an actual query this schema needs to answer efficiently.
+@TableIndex(name: 'idx_tracks_album', columns: {#albumProvider, #albumItemId})
+@TableIndex(name: 'idx_tracks_favorite', columns: {#favorite})
+@DataClassName('TrackEntity')
+class Tracks extends Table {
+  TextColumn get provider => text()();
+  TextColumn get itemId => text()();
+  TextColumn get name => text()();
+  TextColumn get sortName => text().nullable()();
+  TextColumn get uri => text().nullable()();
+  IntColumn get durationSeconds => integer().nullable()();
+  TextColumn get artistsJson => text().nullable()();
+  TextColumn get albumProvider => text().nullable()();
+  TextColumn get albumItemId => text().nullable()();
+  /// Position within the owning album (for ordered track listings).
+  IntColumn get position => integer().nullable()();
+  BoolColumn get favorite => boolean().withDefault(const Constant(false))();
+  BoolColumn get inLibrary => boolean().withDefault(const Constant(false))();
+  TextColumn get metadataJson => text().nullable()();
+  DateTimeColumn get lastSynced => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {provider, itemId};
+}
+
+/// Library playlists. Track membership/order lives in [PlaylistTracks], not
+/// here - a playlist's tracks are a many-to-many relationship with a
+/// position (a track can appear in many playlists, and playlist order
+/// matters), unlike a track's single "home" album above.
+@TableIndex(name: 'idx_playlists_favorite', columns: {#favorite})
+@DataClassName('PlaylistEntity')
+class Playlists extends Table {
+  TextColumn get provider => text()();
+  TextColumn get itemId => text()();
+  TextColumn get name => text()();
+  TextColumn get sortName => text().nullable()();
+  TextColumn get uri => text().nullable()();
+  TextColumn get owner => text().nullable()();
+  BoolColumn get isEditable => boolean().nullable()();
+  IntColumn get trackCount => integer().nullable()();
+  BoolColumn get favorite => boolean().withDefault(const Constant(false))();
+  BoolColumn get inLibrary => boolean().withDefault(const Constant(false))();
+  TextColumn get metadataJson => text().nullable()();
+  DateTimeColumn get lastSynced => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {provider, itemId};
+}
+
+/// Ordered playlist membership - the many-to-many join between [Playlists]
+/// and [Tracks], with an explicit position since playlist order matters and
+/// a track can appear in multiple (or repeat within one) playlist.
+@TableIndex(name: 'idx_playlist_tracks_playlist', columns: {#playlistProvider, #playlistItemId, #position})
+@DataClassName('PlaylistTrackEntity')
+class PlaylistTracks extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get playlistProvider => text()();
+  TextColumn get playlistItemId => text()();
+  TextColumn get trackProvider => text()();
+  TextColumn get trackItemId => text()();
+  IntColumn get position => integer()();
+}
+
+/// Library audiobooks.
+@TableIndex(name: 'idx_audiobooks_favorite', columns: {#favorite})
+@DataClassName('AudiobookEntity')
+class Audiobooks extends Table {
+  TextColumn get provider => text()();
+  TextColumn get itemId => text()();
+  TextColumn get name => text()();
+  TextColumn get sortName => text().nullable()();
+  TextColumn get uri => text().nullable()();
+  TextColumn get authorsJson => text().nullable()();
+  TextColumn get narratorsJson => text().nullable()();
+  TextColumn get publisher => text().nullable()();
+  TextColumn get description => text().nullable()();
+  IntColumn get year => integer().nullable()();
+  IntColumn get durationSeconds => integer().nullable()();
+  IntColumn get resumePositionMs => integer().nullable()();
+  BoolColumn get fullyPlayed => boolean().nullable()();
+  IntColumn get browseOrder => integer().nullable()();
+  BoolColumn get favorite => boolean().withDefault(const Constant(false))();
+  BoolColumn get inLibrary => boolean().withDefault(const Constant(false))();
+  TextColumn get metadataJson => text().nullable()();
+  DateTimeColumn get lastSynced => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {provider, itemId};
+}
+
+/// Chapters belonging to an [Audiobooks] row.
+@TableIndex(name: 'idx_chapters_audiobook', columns: {#audiobookProvider, #audiobookItemId})
+@DataClassName('ChapterEntity')
+class Chapters extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get audiobookProvider => text()();
+  TextColumn get audiobookItemId => text()();
+  IntColumn get chapterNumber => integer()();
+  IntColumn get positionMs => integer()();
+  TextColumn get title => text()();
+  IntColumn get durationMs => integer().nullable()();
+}
+
+/// A single item's mapping to a specific provider instance (a track can be
+/// available via several - e.g. library + a streaming provider - and
+/// picking the right one matters for playback and future downloads, so this
+/// is a real join table rather than a JSON column like the denormalized
+/// artist lists above).
+@TableIndex(name: 'idx_provider_mappings_owner', columns: {#ownerType, #ownerProvider, #ownerItemId})
+@DataClassName('ProviderMappingEntity')
+class ProviderMappings extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  /// 'artist' | 'album' | 'track' | 'playlist' | 'audiobook'
+  TextColumn get ownerType => text()();
+  TextColumn get ownerProvider => text()();
+  TextColumn get ownerItemId => text()();
+  TextColumn get mappingItemId => text()();
+  TextColumn get providerDomain => text()();
+  TextColumn get providerInstance => text()();
+  BoolColumn get available => boolean().withDefault(const Constant(true))();
+  BoolColumn get inLibrary => boolean().withDefault(const Constant(true))();
+  TextColumn get audioFormatJson => text().nullable()();
+}
+
+@DriftDatabase(tables: [
+  Profiles, RecentlyPlayed, LibraryCache, SyncMetadata, PlaybackState, CachedPlayers,
+  CachedQueue, HomeRowCache, SearchHistory, DetailTrackCache,
+  Artists, Albums, Tracks, Playlists, PlaylistTracks, Audiobooks, Chapters, ProviderMappings,
+])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration {
@@ -262,6 +449,17 @@ class AppDatabase extends _$AppDatabase {
         // Migration from v6 to v7: Add detail track cache table
         if (from < 7) {
           await m.createTable(detailTrackCache);
+        }
+        // Migration from v7 to v8: Add relational library schema
+        if (from < 8) {
+          await m.createTable(artists);
+          await m.createTable(albums);
+          await m.createTable(tracks);
+          await m.createTable(playlists);
+          await m.createTable(playlistTracks);
+          await m.createTable(audiobooks);
+          await m.createTable(chapters);
+          await m.createTable(providerMappings);
         }
       },
     );
