@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import '../providers/music_assistant_provider.dart';
+import '../repositories/player_repository.dart';
 import '../services/debug_logger.dart';
 import '../services/settings_service.dart';
 
@@ -25,7 +26,7 @@ class _VolumeControlState extends State<VolumeControl> {
   double? _pendingVolume;
   double? _systemVolume;
   StreamSubscription? _volumeListener;
-  String? _localPlayerId;
+  RawPlayerId? _localPlayerId;
   bool _isLocalPlayer = false;
   bool _isDragging = false;
 
@@ -182,7 +183,7 @@ class _VolumeControlState extends State<VolumeControl> {
       return const SizedBox.shrink();
     }
 
-    _isLocalPlayer = _localPlayerId != null && player.playerId == _localPlayerId;
+    _isLocalPlayer = _localPlayerId != null && PlayerRepository.idsMatchRaw(player.playerId, _localPlayerId!);
 
     // Use pending volume during drag or button tap to prevent stale state issues
     final currentVolume = (_isDragging || _showButtonIndicator)

@@ -2,6 +2,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'device_id_service.dart';
 import 'secure_storage_service.dart';
+import '../repositories/player_repository.dart';
 
 class SettingsService {
   // Cached SharedPreferences instance for performance
@@ -285,10 +286,18 @@ class SettingsService {
     await SecureStorageService.setPassword(password);
   }
 
-  // Get built-in player ID (persistent UUID for this device)
-  static Future<String?> getBuiltinPlayerId() async {
+  // Get built-in player ID (persistent UUID for this device).
+  //
+  // Returns a RawPlayerId, not a String: this value may not match the id
+  // Music Assistant is currently using for the same player (it wraps
+  // Sendspin-registered players behind a different live id in some
+  // versions). Comparing it directly against a live Player.playerId was
+  // the cause of a recurring bug this session - see RawPlayerId's doc
+  // comment. Always go through PlayerRepository.idsMatchRaw/resolveRaw.
+  static Future<RawPlayerId?> getBuiltinPlayerId() async {
     final prefs = await _getPrefs();
-    return prefs.getString(_keyBuiltinPlayerId);
+    final raw = prefs.getString(_keyBuiltinPlayerId);
+    return raw != null ? RawPlayerId(raw) : null;
   }
 
   // Set built-in player ID

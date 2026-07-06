@@ -15,6 +15,7 @@ import '../widgets/hires_badge.dart';
 import '../widgets/media_context_menu.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/design_tokens.dart';
+import '../repositories/library_repository.dart';
 
 class PlaylistDetailsScreen extends StatefulWidget {
   final Playlist playlist;
@@ -105,17 +106,19 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> with Sing
 
   Future<void> _loadTracks() async {
     final maProvider = context.read<MusicAssistantProvider>();
-    final cacheKey = '${_provider}_$_itemId';
 
-    // 1. Show cached data immediately (if available)
-    final cachedTracks = maProvider.getCachedPlaylistTracks(cacheKey);
-    if (cachedTracks != null && cachedTracks.isNotEmpty) {
-      if (mounted) {
-        setState(() {
-          _tracks = cachedTracks;
-          _isLoading = false;
-        });
-      }
+    // 1. Show persisted library data immediately (works fully offline).
+    List<Track>? repoTracks;
+    try {
+      repoTracks = await LibraryRepository.instance.getPlaylistTracks(_provider, _itemId);
+    } catch (e) {
+      _logger.log('Error loading playlist tracks from repository: $e');
+    }
+    if (repoTracks != null && repoTracks.isNotEmpty && mounted) {
+      setState(() {
+        _tracks = repoTracks!;
+        _isLoading = false;
+      });
     } else {
       setState(() => _isLoading = true);
     }
@@ -125,7 +128,7 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> with Sing
       final freshTracks = await maProvider.getPlaylistTracksWithCache(
         _provider,
         _itemId,
-        forceRefresh: cachedTracks != null,
+        forceRefresh: repoTracks != null && repoTracks.isNotEmpty,
       );
 
       // 3. Update if we got different data

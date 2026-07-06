@@ -12,6 +12,31 @@ import '../settings_service.dart';
 import '../sync_service.dart';
 import '../../providers/music_assistant_provider.dart';
 import '../../models/media_item.dart' as ma;
+import '../../repositories/library_repository.dart';
+
+/// Whether `_broadcastState`'s local `just_audio`-engine-driven playback
+/// state should be skipped in favor of whatever the provider already pushed.
+///
+/// In remote mode, playback state is managed by `setRemotePlaybackState`.
+/// When [currentMediaItem] is set, notification state is managed by the
+/// provider via `updateLocalModeNotification`/`setRemotePlaybackState` -
+/// don't let the idle local `just_audio` player overwrite it (it would send
+/// `processingState: idle`, which deactivates the media session and causes
+/// artwork to flash). Extracted as a pure function specifically so this
+/// invariant has a unit test - `MassivAudioHandler` itself can't reasonably
+/// be unit-tested (it eagerly touches platform channels/`just_audio` on
+/// construction), so the underlying logic needs to be independently
+/// verifiable. Do not restructure this without care: a previous attempt to
+/// prefer the local engine's position over the provider's for local
+/// playback caused real bugs (see `music_assistant_provider.dart`'s comment
+/// near `_updateNotificationPosition`), which is exactly the class of
+/// regression this guard exists to prevent.
+bool shouldSkipLocalEngineBroadcast({
+  required bool isRemoteMode,
+  required MediaItem? currentMediaItem,
+}) {
+  return isRemoteMode || currentMediaItem != null;
+}
 
 /// Custom AudioHandler for Ensemble that provides full control over
 /// notification actions and metadata updates.
@@ -177,12 +202,12 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
 
   /// Broadcast the current playback state to the system
   void _broadcastState(PlaybackEvent event) {
-    // In remote mode, playback state is managed by setRemotePlaybackState.
-    // When _currentMediaItem is set, notification is managed by the provider
-    // via updateLocalModeNotification/setRemotePlaybackState — don't let the
-    // idle just_audio player overwrite it (it would send processingState=idle
-    // which deactivates the media session and causes artwork to flash).
-    if (_isRemoteMode || _currentMediaItem != null) return;
+    if (shouldSkipLocalEngineBroadcast(
+      isRemoteMode: _isRemoteMode,
+      currentMediaItem: _currentMediaItem,
+    )) {
+      return;
+    }
 
     final playing = _player.playing;
 
@@ -305,8 +330,9 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
             _logger.log('AndroidAuto: toggleFavorite: no currentTrack');
             return;
           }
-          _logger.log('AndroidAuto: toggleFavorite: track=${track.name}, favorite=${_isFavorite}, provider=${track.provider}');
-          if (_isFavorite) {
+          final isFavorite = track.favorite == true;
+          _logger.log('AndroidAuto: toggleFavorite: track=${track.name}, favorite=$isFavorite, provider=${track.provider}');
+          if (isFavorite) {
             int? libraryItemId;
             if (track.provider == 'library') {
               libraryItemId = int.tryParse(track.itemId);
@@ -329,7 +355,11 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
             await provider.addToFavorites(
               mediaType: 'track', itemId: track.itemId, provider: track.provider);
           }
-          _isFavorite = !_isFavorite;
+          // No local bool to flip: MusicAssistantProvider._currentTrack is
+          // updated synchronously inside addToFavorites/removeFromFavorites,
+          // so _favoriteControl() reading it live below already reflects
+          // this the next time icons are rebuilt (see _refreshPlaybackState
+          // right after this switch).
         case 'startRadio':
           final track = provider.currentTrack;
           if (track == null) {
@@ -423,16 +453,13 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   }) async {
     _clearErrorState();
     _isRemoteMode = true;
-    // Sync favorite state only when track changes
-    final trackId = '${item.id}';
-    if (trackId != _lastTrackId) {
-      _lastTrackId = trackId;
-      _isFavorite = _autoProvider?.currentTrack?.favorite == true;
-    }
     // Only activate audio session for the builtin player (local PCM playback).
     // Remote MA players manage their own audio — claiming focus on the phone
     // would pause them when another app (e.g. YouTube) plays.
-    final builtinId = await SettingsService.getBuiltinPlayerId();
+    final rawBuiltinId = await SettingsService.getBuiltinPlayerId();
+    final builtinId = rawBuiltinId != null && _autoProvider != null
+        ? _autoProvider!.resolvePlayerId(rawBuiltinId)
+        : rawBuiltinId;
     final selectedId = _autoProvider?.selectedPlayer?.playerId;
     _isBuiltinPlayerActive = builtinId != null && selectedId == builtinId;
     if (playing && _isBuiltinPlayerActive) {
@@ -631,8 +658,13 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   }
 
   MediaControl _favoriteControl() {
+    // Read live rather than caching: MusicAssistantProvider._currentTrack is
+    // now kept in sync on every favorite toggle (see _updateLocalFavoriteStatus/
+    // _updateLocalFavoriteStatusByLibraryId), so there's no drift risk here -
+    // unlike shuffle/repeat below, which do need a cache (see their comment).
+    final isFavorite = _autoProvider?.currentTrack?.favorite == true;
     return MediaControl.custom(
-      androidIcon: _isFavorite ? 'drawable/ic_auto_favorite' : 'drawable/ic_auto_favorite_off',
+      androidIcon: isFavorite ? 'drawable/ic_auto_favorite' : 'drawable/ic_auto_favorite_off',
       label: 'Favourite',
       name: 'toggleFavorite',
     );
@@ -667,11 +699,16 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     _repeatControl(),
   ];
 
-  // Local state tracking for icon updates (synced after each action)
+  // Shuffle/repeat live on the queue, which (unlike the current track) has no
+  // synchronous getter on MusicAssistantProvider - reading it live here would
+  // mean an async fetch (provider.getQueue) on every icon rebuild. So, unlike
+  // favorite state above, this is a deliberate last-known-value cache, kept
+  // in sync opportunistically wherever the queue is fetched anyway
+  // (toggleShuffle/cycleRepeat actions, _refreshQueueAfterDelay). It can go
+  // briefly stale between those refresh points - a narrow, cosmetic,
+  // AA-icon-only risk, not a playback-correctness one.
   bool _shuffleOn = false;
-  bool _isFavorite = false;
   String _repeatMode = 'off';
-  String? _lastTrackId;
 
   // Whether the currently selected player is the builtin (local PCM) player
   bool _isBuiltinPlayerActive = false;
@@ -717,7 +754,8 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       }
       _refreshPlaybackState();
       // Auto-select builtin player so playback goes to the phone
-      final playerId = await SettingsService.getBuiltinPlayerId();
+      final rawPlayerId = await SettingsService.getBuiltinPlayerId();
+      final playerId = rawPlayerId != null ? provider.resolvePlayerId(rawPlayerId) : null;
       if (playerId != null && provider.selectedPlayer?.playerId != playerId) {
         final builtinPlayer = provider.availablePlayersUnfiltered
             .where((p) => p.playerId == playerId)
@@ -859,11 +897,16 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       _refreshPlaybackState();
     }
 
-    final playerId = await SettingsService.getBuiltinPlayerId();
-    if (playerId == null) {
+    final rawPlayerId = await SettingsService.getBuiltinPlayerId();
+    if (rawPlayerId == null) {
       _logger.log('AndroidAuto: no builtin player ID — cannot play');
       return;
     }
+    // Resolve to whatever id Music Assistant actually expects for queue
+    // commands right now (newer MA versions wrap Sendspin players behind a
+    // "up"-prefixed universal_player id) — using the raw stored id here
+    // fails with "Queue ... is not available".
+    final playerId = provider.resolvePlayerId(rawPlayerId);
 
     // Auto-switch to the builtin (local) player when AA triggers playback
     if (provider.selectedPlayer?.playerId != playerId) {
@@ -1119,11 +1162,12 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     final provider = _autoProvider;
     if (provider == null || query.trim().isEmpty) return;
 
-    final playerId = await SettingsService.getBuiltinPlayerId();
-    if (playerId == null) {
+    final rawPlayerId = await SettingsService.getBuiltinPlayerId();
+    if (rawPlayerId == null) {
       _logger.log('AndroidAuto: playFromSearch: no builtin player');
       return;
     }
+    final playerId = provider.resolvePlayerId(rawPlayerId);
 
     _logger.log('AndroidAuto: playFromSearch "$query"');
     _clearErrorState();
@@ -1448,11 +1492,14 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   }
 
   Future<List<MediaItem>> _autoBuildPlaylistList(MusicAssistantProvider provider) async {
-    var playlists = SyncService.instance.cachedPlaylists;
+    var playlists = await LibraryRepository.instance.getAllPlaylists();
     if (playlists.isEmpty) {
-      _logger.log('AndroidAuto: cachedPlaylists empty, loading from cache');
-      await SyncService.instance.loadFromCache();
+      _logger.log('AndroidAuto: repository playlists empty, falling back to SyncService cache');
       playlists = SyncService.instance.cachedPlaylists;
+      if (playlists.isEmpty) {
+        await SyncService.instance.loadFromCache();
+        playlists = SyncService.instance.cachedPlaylists;
+      }
     }
     _logger.log('AndroidAuto: Playlists: ${playlists.length}');
     return playlists.map((p) => MediaItem(
@@ -1466,8 +1513,10 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
 
   Future<List<MediaItem>> _autoBuildPlaylistTracks(
       MusicAssistantProvider provider, String plProvider, String plItemId) async {
-    final tracks =
-        await provider.getPlaylistTracksWithCache(plProvider, plItemId);
+    var tracks = await LibraryRepository.instance.getPlaylistTracks(plProvider, plItemId);
+    if (tracks.isEmpty) {
+      tracks = await provider.getPlaylistTracksWithCache(plProvider, plItemId);
+    }
     final ctxKey = 'plist|$plProvider|$plItemId';
     _cacheTrackList(ctxKey, tracks);
     final items = tracks.map((t) => _autoTrackItem(provider, t, ctxKey)).toList();
@@ -1476,11 +1525,14 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   }
 
   Future<List<MediaItem>> _autoBuildArtistList(MusicAssistantProvider provider) async {
-    var artists = SyncService.instance.cachedArtists;
+    var artists = await LibraryRepository.instance.getAllArtists();
     if (artists.isEmpty) {
-      _logger.log('AndroidAuto: cachedArtists empty, loading from cache');
-      await SyncService.instance.loadFromCache();
+      _logger.log('AndroidAuto: repository artists empty, falling back to SyncService cache');
       artists = SyncService.instance.cachedArtists;
+      if (artists.isEmpty) {
+        await SyncService.instance.loadFromCache();
+        artists = SyncService.instance.cachedArtists;
+      }
     }
     _logger.log('AndroidAuto: Artists: ${artists.length}');
     return artists.map((a) => MediaItem(
@@ -1493,7 +1545,10 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
 
   Future<List<MediaItem>> _autoBuildArtistAlbums(
       MusicAssistantProvider provider, String artistName) async {
-    var albums = await provider.getArtistAlbumsWithCache(artistName);
+    var albums = await LibraryRepository.instance.getArtistAlbums(artistName);
+    if (albums.isEmpty) {
+      albums = await provider.getArtistAlbumsWithCache(artistName);
+    }
     if (albums.isEmpty) {
       // Fallback to library if API unavailable
       albums = provider.getArtistAlbumsFromLibrary(artistName);
@@ -1523,11 +1578,14 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   }
 
   Future<List<MediaItem>> _autoBuildAlbumList(MusicAssistantProvider provider) async {
-    var albums = SyncService.instance.cachedAlbums;
+    var albums = await LibraryRepository.instance.getAllAlbums();
     if (albums.isEmpty) {
-      _logger.log('AndroidAuto: cachedAlbums empty, loading from cache');
-      await SyncService.instance.loadFromCache();
+      _logger.log('AndroidAuto: repository albums empty, falling back to SyncService cache');
       albums = SyncService.instance.cachedAlbums;
+      if (albums.isEmpty) {
+        await SyncService.instance.loadFromCache();
+        albums = SyncService.instance.cachedAlbums;
+      }
     }
     _logger.log('AndroidAuto: Albums: ${albums.length}');
     return albums.map((a) => MediaItem(
@@ -1541,8 +1599,10 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
 
   Future<List<MediaItem>> _autoBuildAlbumTracks(
       MusicAssistantProvider provider, String alProvider, String alItemId) async {
-    final tracks =
-        await provider.getAlbumTracksWithCache(alProvider, alItemId);
+    var tracks = await LibraryRepository.instance.getAlbumTracks(alProvider, alItemId);
+    if (tracks.isEmpty) {
+      tracks = await provider.getAlbumTracksWithCache(alProvider, alItemId);
+    }
     _logger.log('AndroidAuto: Album $alProvider/$alItemId tracks: ${tracks.length}');
     final ctxKey = 'album|$alProvider|$alItemId';
     _cacheTrackList(ctxKey, tracks);

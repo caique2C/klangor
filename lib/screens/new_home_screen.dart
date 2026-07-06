@@ -705,7 +705,8 @@ class _NewHomeScreenState extends State<NewHomeScreen> with AutomaticKeepAliveCl
         return PlaylistRow(
           key: const ValueKey('favorite-playlists'),
           title: S.of(context)!.favoritePlaylists,
-          loadPlaylists: () => provider.getFavoritePlaylists(),
+          loadPlaylists: () => provider.getFavoritePlaylistsWithCache(),
+          getCachedPlaylists: () => provider.getCachedFavoritePlaylists(),
           heroTagSuffix: 'home',
           rowHeight: rowHeight,
         );

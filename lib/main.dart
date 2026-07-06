@@ -20,6 +20,7 @@ import 'services/auth/auth_manager.dart';
 import 'services/debug_logger.dart';
 import 'services/hardware_volume_service.dart';
 import 'services/music_assistant_api.dart' show MAConnectionState;
+import 'repositories/player_repository.dart';
 import 'theme/theme_provider.dart';
 import 'theme/app_theme.dart';
 import 'theme/system_theme_helper.dart';
@@ -136,7 +137,7 @@ class _MusicAssistantAppState extends State<MusicAssistantApp> with WidgetsBindi
   StreamSubscription? _volumeDownSub;
   StreamSubscription? _absoluteVolumeSub;
   String? _lastSelectedPlayerId;
-  String? _builtinPlayerId;
+  RawPlayerId? _builtinPlayerId;
 
   // Volume step size (percentage points per button press)
   static const int _volumeStep = 5;
@@ -191,7 +192,8 @@ class _MusicAssistantAppState extends State<MusicAssistantApp> with WidgetsBindi
   Future<void> _updateVolumeInterception() async {
     final player = _musicProvider.selectedPlayer;
     final isBuiltinPlayer = _builtinPlayerId != null &&
-        player?.playerId == _builtinPlayerId;
+        player != null &&
+        PlayerRepository.idsMatchRaw(player.playerId, _builtinPlayerId!);
     await _hardwareVolumeService.setIntercepting(!isBuiltinPlayer);
 
     // Start/stop volume observer for lockscreen volume changes.
@@ -238,7 +240,7 @@ class _MusicAssistantAppState extends State<MusicAssistantApp> with WidgetsBindi
     if (player == null) return;
 
     // Don't route to builtin player - that's handled by the system directly
-    if (_builtinPlayerId != null && player.playerId == _builtinPlayerId) return;
+    if (_builtinPlayerId != null && PlayerRepository.idsMatchRaw(player.playerId, _builtinPlayerId!)) return;
 
     try {
       await _musicProvider.setVolume(player.playerId, volume.clamp(0, 100));

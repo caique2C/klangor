@@ -312,8 +312,14 @@ class MusicAssistantAPI {
       if (eventType != null) {
         // Get the object_id (player_id for player events)
         final objectId = data['object_id'] as String?;
-        final eventData = data['data'] as Map<String, dynamic>? ?? {};
-
+        // Some events (e.g. lightweight value-only updates) carry a bare
+        // scalar in 'data' instead of an object - don't crash parsing every
+        // such event, just treat it as no extra payload.
+        final rawEventData = data['data'];
+        final eventData = rawEventData is Map<String, dynamic> ? rawEventData : <String, dynamic>{};
+        if (rawEventData != null && rawEventData is! Map<String, dynamic>) {
+          _logger.log('⚠️ Event "$eventType" data was ${rawEventData.runtimeType}, not an object - ignoring payload');
+        }
 
         // Include object_id in event data so listeners can filter by player
         final enrichedData = {

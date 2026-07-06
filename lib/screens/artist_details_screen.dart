@@ -21,6 +21,7 @@ import '../theme/design_tokens.dart';
 import '../services/library_status_service.dart';
 import '../widgets/library_status_builder.dart';
 import '../services/image_prefetch_service.dart';
+import '../repositories/library_repository.dart';
 
 class ArtistDetailsScreen extends StatefulWidget {
   final Artist artist;
@@ -709,40 +710,30 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> with LibraryS
   Future<void> _loadArtistAlbums() async {
     final provider = context.read<MusicAssistantProvider>();
 
-    // 1. Show cached data immediately (if available)
-    final cachedAlbums = provider.getCachedArtistAlbums(widget.artist.name);
-    if (cachedAlbums != null && cachedAlbums.isNotEmpty) {
-      final libraryAlbums = cachedAlbums.where((a) => a.inLibrary).toList();
-      final providerOnlyAlbums = cachedAlbums.where((a) => !a.inLibrary).toList();
-
-      if (mounted) {
-        setState(() {
-          _albums = libraryAlbums;
-          _providerAlbums = providerOnlyAlbums;
-          _sortAlbums();
-          _isLoading = false;
-        });
-      }
-    } else {
-      // No cache yet - show library albums from memory instantly (no API call)
-      final memoryAlbums = provider.getArtistAlbumsFromLibrary(widget.artist.name);
-      if (memoryAlbums.isNotEmpty && mounted) {
-        final libraryAlbums = memoryAlbums.where((a) => a.inLibrary).toList();
-        final providerOnlyAlbums = memoryAlbums.where((a) => !a.inLibrary).toList();
-        setState(() {
-          _albums = libraryAlbums;
-          _providerAlbums = providerOnlyAlbums;
-          _sortAlbums();
-          _isLoading = false;
-        });
-      }
+    // 1. Show persisted library data immediately (works fully offline; this
+    // is what used to be two separate, partially-overlapping caches here).
+    List<Album>? repoAlbums;
+    try {
+      repoAlbums = await LibraryRepository.instance.getArtistAlbums(widget.artist.name);
+    } catch (e) {
+      _logger.log('Error loading artist albums from repository: $e');
+    }
+    if (repoAlbums != null && repoAlbums.isNotEmpty && mounted) {
+      final libraryAlbums = repoAlbums.where((a) => a.inLibrary).toList();
+      final providerOnlyAlbums = repoAlbums.where((a) => !a.inLibrary).toList();
+      setState(() {
+        _albums = libraryAlbums;
+        _providerAlbums = providerOnlyAlbums;
+        _sortAlbums();
+        _isLoading = false;
+      });
     }
 
     // 2. Fetch fresh data in background (silent refresh)
     try {
       final allAlbums = await provider.getArtistAlbumsWithCache(
         widget.artist.name,
-        forceRefresh: cachedAlbums != null,
+        forceRefresh: repoAlbums != null && repoAlbums.isNotEmpty,
       );
 
       if (mounted && allAlbums.isNotEmpty) {

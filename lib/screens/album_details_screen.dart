@@ -21,6 +21,7 @@ import '../widgets/library_status_builder.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/design_tokens.dart';
 import 'artist_details_screen.dart';
+import '../repositories/library_repository.dart';
 
 class AlbumDetailsScreen extends StatefulWidget {
   final Album album;
@@ -555,17 +556,22 @@ class _AlbumDetailsScreenState extends State<AlbumDetailsScreen> with SingleTick
 
   Future<void> _loadTracks() async {
     final provider = context.read<MusicAssistantProvider>();
-    final cacheKey = '${widget.album.provider}_${widget.album.itemId}';
 
-    // 1. Show cached data immediately (if available)
-    final cachedTracks = provider.getCachedAlbumTracks(cacheKey);
-    if (cachedTracks != null && cachedTracks.isNotEmpty) {
-      if (mounted) {
-        setState(() {
-          _tracks = cachedTracks;
-          _isLoading = false;
-        });
-      }
+    // 1. Show persisted library data immediately (works fully offline).
+    List<Track>? repoTracks;
+    try {
+      repoTracks = await LibraryRepository.instance.getAlbumTracks(
+        widget.album.provider,
+        widget.album.itemId,
+      );
+    } catch (e) {
+      _logger.log('Error loading album tracks from repository: $e');
+    }
+    if (repoTracks != null && repoTracks.isNotEmpty && mounted) {
+      setState(() {
+        _tracks = repoTracks!;
+        _isLoading = false;
+      });
     }
 
     // 2. Fetch fresh data in background (silent refresh)
@@ -573,7 +579,7 @@ class _AlbumDetailsScreenState extends State<AlbumDetailsScreen> with SingleTick
       final freshTracks = await provider.getAlbumTracksWithCache(
         widget.album.provider,
         widget.album.itemId,
-        forceRefresh: cachedTracks != null, // Force refresh if we had cache
+        forceRefresh: repoTracks != null && repoTracks.isNotEmpty,
         album: widget.album,
       );
 

@@ -23,6 +23,7 @@ import '../services/settings_service.dart';
 import '../services/image_prefetch_service.dart';
 import '../services/debug_logger.dart';
 import '../services/sync_service.dart';
+import '../repositories/library_repository.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/design_tokens.dart';
 import 'album_details_screen.dart';
@@ -950,6 +951,28 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
     final maProvider = context.read<MusicAssistantProvider>();
     final syncService = SyncService.instance;
     final enabledProviders = maProvider.enabledProviderIds.toSet();
+
+    // Show persisted library data immediately (works fully offline) while
+    // the network fetch below - which also applies server-side sort order -
+    // runs in the background. Only on first load: later calls (pull-to-
+    // refresh, favorites toggle) already have something to show.
+    if (_playlists.isEmpty) {
+      try {
+        var repoPlaylists = await LibraryRepository.instance.getAllPlaylists();
+        if (favoriteOnly == true) {
+          repoPlaylists = repoPlaylists.where((p) => p.favorite == true).toList();
+        }
+        if (repoPlaylists.isNotEmpty && mounted) {
+          setState(() {
+            _playlists = repoPlaylists;
+            _sortPlaylists();
+            _isLoadingPlaylists = false;
+          });
+        }
+      } catch (e) {
+        // Silent failure - fall through to the network fetch below.
+      }
+    }
 
     // Fetch playlists with sort order from server
     final serverPlaylists = await maProvider.getPlaylists(

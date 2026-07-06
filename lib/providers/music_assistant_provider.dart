@@ -30,6 +30,9 @@ import '../services/image_prefetch_service.dart';
 import '../constants/timings.dart';
 import '../services/database_service.dart';
 import '../services/library_status_service.dart';
+import '../repositories/player_repository.dart';
+import '../repositories/library_repository.dart';
+import '../services/audio/playback_notification_bridge.dart';
 import '../main.dart' show audioHandler;
 
 /// Main provider that coordinates connection, player, and library state.
@@ -61,6 +64,7 @@ class MusicAssistantProvider with ChangeNotifier {
   List<Album> _albums = [];
   List<Track> _tracks = [];
   List<Track> _cachedFavoriteTracks = []; // Cached for instant display before full library loads
+  List<Playlist> _cachedFavoritePlaylists = []; // Cached for instant display before network refresh
   List<Audiobook> _audiobooks = [];
   final Map<String, List<Audiobook>> _seriesAudiobooksCache = {};
   List<MediaItem> _radioStations = [];
@@ -72,6 +76,11 @@ class MusicAssistantProvider with ChangeNotifier {
   // Player state
   Player? _selectedPlayer;
   List<Player> _availablePlayers = [];
+  // Single owner of player-id resolution - see PlayerRepository doc comment.
+  late final PlayerRepository _playerRepository = PlayerRepository(() => _availablePlayers);
+  // Single seam for pushing playback state to the OS/Android Auto - see
+  // PlaybackNotificationBridge doc comment.
+  late final PlaybackNotificationBridge _notificationBridge = PlaybackNotificationBridge(audioHandler);
   bool _selectPlayerInProgress = false; // Reentrancy guard for selectPlayer()
   Map<String, String> _castToSendspinIdMap = {}; // Maps regular Cast IDs to Sendspin IDs for grouping
 
@@ -942,7 +951,7 @@ class MusicAssistantProvider with ChangeNotifier {
           final builtinId = await SettingsService.getBuiltinPlayerId();
           if (builtinId != null) {
             _selectedPlayer = players.cast<Player?>().firstWhere(
-              (p) => p!.playerId == builtinId,
+              (p) => PlayerRepository.idsMatchRaw(p!.playerId, builtinId),
               orElse: () => null,
             );
             if (_selectedPlayer != null) {
@@ -1651,6 +1660,30 @@ class MusicAssistantProvider with ChangeNotifier {
         );
         updated = true;
       }
+      // Also sync the currently-playing track, if it's the one being toggled.
+      // Without this, `currentTrack.favorite` never reflects a toggle made
+      // while a track is playing - UI code that needs instant feedback for
+      // the current track (expandable_player.dart, the Android Auto favorite
+      // icon) previously had to reinvent its own optimistic-bool workaround
+      // for this instead of just reading `currentTrack.favorite` live.
+      if (_currentTrack != null && _currentTrack!.itemId == itemId) {
+        final track = _currentTrack!;
+        _currentTrack = Track(
+          itemId: track.itemId,
+          provider: track.provider,
+          name: track.name,
+          artists: track.artists,
+          album: track.album,
+          duration: track.duration,
+          position: track.position,
+          sortName: track.sortName,
+          uri: track.uri,
+          providerMappings: track.providerMappings,
+          metadata: track.metadata,
+          favorite: isFavorite,
+        );
+        updated = true;
+      }
     }
 
     if (updated) {
@@ -1722,6 +1755,30 @@ class MusicAssistantProvider with ChangeNotifier {
           uri: track.uri,
           providerMappings: track.providerMappings,
           metadata: track.metadata,
+          favorite: isFavorite,
+        );
+        updated = true;
+      }
+      // Also sync the currently-playing track - see matching comment in
+      // _updateLocalFavoriteStatus above.
+      final current = _currentTrack;
+      if (current != null &&
+          (current.provider == 'library' && current.itemId == libraryIdStr ||
+              current.providerMappings?.any((m) =>
+                      m.providerInstance == 'library' && m.itemId == libraryIdStr) ==
+                  true)) {
+        _currentTrack = Track(
+          itemId: current.itemId,
+          provider: current.provider,
+          name: current.name,
+          artists: current.artists,
+          album: current.album,
+          duration: current.duration,
+          position: current.position,
+          sortName: current.sortName,
+          uri: current.uri,
+          providerMappings: current.providerMappings,
+          metadata: current.metadata,
           favorite: isFavorite,
         );
         updated = true;
@@ -2052,7 +2109,7 @@ class MusicAssistantProvider with ChangeNotifier {
             final builtinId = await SettingsService.getBuiltinPlayerId();
             if (builtinId != null) {
               _selectedPlayer = _availablePlayers.cast<Player?>().firstWhere(
-                (p) => p!.playerId == builtinId,
+                (p) => PlayerRepository.idsMatchRaw(p!.playerId, builtinId),
                 orElse: () => null,
               );
             }
@@ -2141,7 +2198,8 @@ class MusicAssistantProvider with ChangeNotifier {
       _cancelIdleServiceTimer();
     };
     audioHandler.onAAConnected = () async {
-      final playerId = await SettingsService.getBuiltinPlayerId();
+      final rawPlayerId = await SettingsService.getBuiltinPlayerId();
+      final playerId = rawPlayerId != null ? resolvePlayerId(rawPlayerId) : null;
       if (playerId != null && _selectedPlayer?.playerId != playerId) {
         final builtinPlayer = _availablePlayers
             .where((p) => p.playerId == playerId)
@@ -2153,10 +2211,10 @@ class MusicAssistantProvider with ChangeNotifier {
       }
     };
     audioHandler.onAADisconnected = () async {
-      final builtinPlayerId = await SettingsService.getBuiltinPlayerId();
-      if (builtinPlayerId != null) {
+      final rawBuiltinPlayerId = await SettingsService.getBuiltinPlayerId();
+      if (rawBuiltinPlayerId != null) {
         _logger.log('🎵 AA disconnected: pausing builtin player');
-        pausePlayer(builtinPlayerId);
+        pausePlayer(resolvePlayerId(rawBuiltinPlayerId));
       }
     };
 
@@ -2650,7 +2708,7 @@ class MusicAssistantProvider with ChangeNotifier {
         duration: track.duration,
         artUri: _contentArtUri(trackArtworkUrl),
       );
-      audioHandler.updateLocalModeNotification(
+      _notificationBridge.updateLocalModeNotification(
         item: mediaItem,
         playing: true,
         duration: track.duration,
@@ -2666,7 +2724,7 @@ class MusicAssistantProvider with ChangeNotifier {
         artUri: _contentArtUri(artworkUrl),
         duration: durationSecs != null ? Duration(seconds: durationSecs) : null,
       );
-      audioHandler.updateLocalModeNotification(
+      _notificationBridge.updateLocalModeNotification(
         item: mediaItem,
         playing: true,
         duration: mediaItem.duration,
@@ -2710,7 +2768,7 @@ class MusicAssistantProvider with ChangeNotifier {
         duration: track.duration,
         artUri: _contentArtUri(artworkUrl),
       );
-      audioHandler.updateLocalModeNotification(
+      _notificationBridge.updateLocalModeNotification(
         item: mediaItem,
         playing: false,
         duration: track.duration,
@@ -2726,7 +2784,7 @@ class MusicAssistantProvider with ChangeNotifier {
         artUri: _contentArtUri(metadata?.artworkUrl),
         duration: metadata?.duration,
       );
-      audioHandler.updateLocalModeNotification(
+      _notificationBridge.updateLocalModeNotification(
         item: mediaItem,
         playing: false,
         duration: mediaItem.duration,
@@ -2752,8 +2810,9 @@ class MusicAssistantProvider with ChangeNotifier {
     // Don't try to report state if not authenticated - avoids spamming errors
     if (_api!.currentConnectionState != MAConnectionState.authenticated) return;
 
-    final playerId = await SettingsService.getBuiltinPlayerId();
-    if (playerId == null) return;
+    final rawPlayerId = await SettingsService.getBuiltinPlayerId();
+    if (rawPlayerId == null) return;
+    final playerId = resolvePlayerId(rawPlayerId);
 
     final isPlaying = _localPlayer.isPlaying;
     final position = _localPlayer.position.inSeconds;
@@ -2796,7 +2855,7 @@ class MusicAssistantProvider with ChangeNotifier {
       final eventPlayerId = event['player_id'] as String?;
       final myPlayerId = await SettingsService.getBuiltinPlayerId();
 
-      if (eventPlayerId != null && myPlayerId != null && eventPlayerId != myPlayerId) {
+      if (eventPlayerId != null && myPlayerId != null && !PlayerRepository.idsMatchRaw(eventPlayerId, myPlayerId)) {
         _logger.log('🚫 Ignoring event for different player: $eventPlayerId (my player: $myPlayerId)');
         return;
       }
@@ -3258,7 +3317,7 @@ class MusicAssistantProvider with ChangeNotifier {
       final builtinPlayerId = await SettingsService.getBuiltinPlayerId();
       if (builtinPlayerId == null) return;
 
-      if (playerId != builtinPlayerId) return;
+      if (!PlayerRepository.idsMatchRaw(playerId, builtinPlayerId)) return;
 
       if (currentMedia == null) return;
 
@@ -3681,6 +3740,36 @@ class MusicAssistantProvider with ChangeNotifier {
     }
   }
 
+  /// Get cached favorite playlists for instant display (before background refresh)
+  List<Playlist>? getCachedFavoritePlaylists() => _cachedFavoritePlaylists;
+
+  /// Get favorite playlists with a repository-backed instant path.
+  ///
+  /// Unlike [getFavoritePlaylists] (which always hits the API), this checks
+  /// the relational schema first - fast and works offline, kept reasonably
+  /// fresh by the periodic background sync (`upsertPlaylist` runs for every
+  /// playlist on every sync). The network fetch below remains the source of
+  /// truth for a toggle made moments ago in this same session.
+  Future<List<Playlist>> getFavoritePlaylistsWithCache() async {
+    try {
+      final repoPlaylists = await LibraryRepository.instance.getAllPlaylists();
+      final repoFavorites = repoPlaylists.where((p) => p.favorite == true).toList();
+      if (repoFavorites.isNotEmpty) _cachedFavoritePlaylists = repoFavorites;
+    } catch (e) {
+      _logger.log('⚠️ Failed to load favorite playlists from repository: $e');
+    }
+
+    if (_api == null) return _cachedFavoritePlaylists;
+    try {
+      final fresh = await getPlaylists(favoriteOnly: true);
+      if (fresh.isNotEmpty) _cachedFavoritePlaylists = fresh;
+      return fresh;
+    } catch (e) {
+      _logger.log('❌ Failed to fetch favorite playlists: $e');
+      return _cachedFavoritePlaylists;
+    }
+  }
+
   /// Get favorite radio stations from the library
   Future<List<MediaItem>> getFavoriteRadioStations() async {
     if (_api == null) return [];
@@ -3844,7 +3933,10 @@ class MusicAssistantProvider with ChangeNotifier {
     // Try database fallback before hitting API
     if (!forceRefresh) {
       final dbTracks = await _cacheService.getAlbumTracksWithDbFallback(cacheKey);
-      if (dbTracks != null) return dbTracks;
+      if (dbTracks != null) {
+        if (dbTracks.isNotEmpty) _writeAlbumTracksToLibraryRepository(provider, itemId, dbTracks);
+        return dbTracks;
+      }
     }
 
     if (_api == null) return _cacheService.getCachedAlbumTracks(cacheKey) ?? [];
@@ -3870,6 +3962,7 @@ class MusicAssistantProvider with ChangeNotifier {
       final tracks = await _api!.getAlbumTracks(fetchProvider, fetchItemId);
       if (tracks.isNotEmpty) {
         _cacheService.setCachedAlbumTracks(cacheKey, tracks);
+        _writeAlbumTracksToLibraryRepository(provider, itemId, tracks);
       }
       return tracks;
     } catch (e) {
@@ -3889,7 +3982,10 @@ class MusicAssistantProvider with ChangeNotifier {
     // Try database fallback before hitting API
     if (!forceRefresh) {
       final dbTracks = await _cacheService.getPlaylistTracksWithDbFallback(cacheKey);
-      if (dbTracks != null) return dbTracks;
+      if (dbTracks != null) {
+        if (dbTracks.isNotEmpty) _writePlaylistTracksToLibraryRepository(provider, itemId, dbTracks);
+        return dbTracks;
+      }
     }
 
     if (_api == null) return _cacheService.getCachedPlaylistTracks(cacheKey) ?? [];
@@ -3899,12 +3995,48 @@ class MusicAssistantProvider with ChangeNotifier {
       final tracks = await _api!.getPlaylistTracks(provider, itemId);
       if (tracks.isNotEmpty) {
         _cacheService.setCachedPlaylistTracks(cacheKey, tracks);
+        _writePlaylistTracksToLibraryRepository(provider, itemId, tracks);
       }
       return tracks;
     } catch (e) {
       _logger.log('❌ Failed to fetch playlist tracks: $e');
       return _cacheService.getCachedPlaylistTracks(cacheKey) ?? [];
     }
+  }
+
+  /// Fire-and-forget persistence of freshly-fetched album tracks into the
+  /// relational schema, so the next visit to this album can be served
+  /// instantly (and offline) via [LibraryRepository.getAlbumTracks] instead
+  /// of only through [_cacheService]'s in-memory/TTL cache. Isolated in its
+  /// own try/catch so a persistence failure never surfaces as a track-load
+  /// failure to the screen.
+  void _writeAlbumTracksToLibraryRepository(String provider, String itemId, List<Track> tracks) {
+    () async {
+      try {
+        for (var i = 0; i < tracks.length; i++) {
+          await LibraryRepository.instance.upsertTrack(
+            tracks[i],
+            albumProvider: provider,
+            albumItemId: itemId,
+            position: i,
+          );
+        }
+      } catch (e) {
+        _logger.log('⚠️ Failed to persist album tracks to relational schema: $e');
+      }
+    }();
+  }
+
+  /// Fire-and-forget persistence of freshly-fetched playlist tracks into the
+  /// relational schema - see [_writeAlbumTracksToLibraryRepository].
+  void _writePlaylistTracksToLibraryRepository(String provider, String itemId, List<Track> tracks) {
+    () async {
+      try {
+        await LibraryRepository.instance.setPlaylistTracks(provider, itemId, tracks);
+      } catch (e) {
+        _logger.log('⚠️ Failed to persist playlist tracks to relational schema: $e');
+      }
+    }();
   }
 
   Future<Audiobook?> getAudiobookDetailsWithCache(String provider, String itemId, {bool forceRefresh = false}) async {
@@ -4162,19 +4294,22 @@ class MusicAssistantProvider with ChangeNotifier {
     return await getPlayers();
   }
 
+  /// Returns the resolved live player id (not the raw stored one) - see
+  /// [resolvePlayerId].
   Future<String?> getCurrentPlayerId() async {
-    return await SettingsService.getBuiltinPlayerId();
+    final raw = await SettingsService.getBuiltinPlayerId();
+    return raw != null ? resolvePlayerId(raw) : null;
   }
 
   /// Sort players list based on smart sort setting
   /// Can be called synchronously with pre-fetched settings for cached players
-  void _sortPlayersSync(List<Player> players, bool smartSort, String? builtinPlayerId) {
+  void _sortPlayersSync(List<Player> players, bool smartSort, RawPlayerId? builtinPlayerId) {
     if (smartSort) {
       // Smart sort: local player first, then playing, then on, then off
       players.sort((a, b) {
         // Local player always first
-        final aIsLocal = builtinPlayerId != null && a.playerId == builtinPlayerId;
-        final bIsLocal = builtinPlayerId != null && b.playerId == builtinPlayerId;
+        final aIsLocal = builtinPlayerId != null && PlayerRepository.idsMatchRaw(a.playerId, builtinPlayerId);
+        final bIsLocal = builtinPlayerId != null && PlayerRepository.idsMatchRaw(b.playerId, builtinPlayerId);
         if (aIsLocal && !bIsLocal) return -1;
         if (bIsLocal && !aIsLocal) return 1;
 
@@ -4252,7 +4387,7 @@ class MusicAssistantProvider with ChangeNotifier {
         }
 
         if (player.playerId.startsWith('ensemble_')) {
-          if (builtinPlayerId == null || player.playerId != builtinPlayerId) {
+          if (builtinPlayerId == null || !PlayerRepository.idsMatchRaw(player.playerId, builtinPlayerId)) {
             _logger.log('🚫 Filtering out other device\'s player: ${player.name}');
             filteredCount++;
             return false;
@@ -4260,7 +4395,7 @@ class MusicAssistantProvider with ChangeNotifier {
         }
 
         if (!player.available) {
-          if (builtinPlayerId != null && player.playerId == builtinPlayerId) {
+          if (builtinPlayerId != null && PlayerRepository.idsMatchRaw(player.playerId, builtinPlayerId)) {
             return true;
           }
           filteredCount++;
@@ -4482,11 +4617,7 @@ class MusicAssistantProvider with ChangeNotifier {
 
         // Priority 2: Local player (default fallback)
         // Try available first, then accept unavailable (Sendspin may still be registering)
-        // Newer Music Assistant versions wrap Sendspin-registered players behind a
-        // 'universal_player' entry with id "up" + lowercase(original id) — match that too.
-        bool matchesBuiltin(Player p, String builtinId) =>
-            p.playerId == builtinId ||
-            p.playerId.toLowerCase() == 'up${builtinId.toLowerCase()}';
+        bool matchesBuiltin(Player p, RawPlayerId builtinId) => PlayerRepository.idsMatchRaw(p.playerId, builtinId);
 
         if (playerToSelect == null && builtinPlayerId != null) {
           playerToSelect = _availablePlayers.cast<Player?>().firstWhere(
@@ -4576,9 +4707,9 @@ class MusicAssistantProvider with ChangeNotifier {
 
     // Switch audio handler mode based on player type
     final builtinPlayerId = await SettingsService.getBuiltinPlayerId();
-    final isBuiltinPlayer = builtinPlayerId != null && player.playerId == builtinPlayerId;
+    final isBuiltinPlayer = builtinPlayerId != null && PlayerRepository.idsMatchRaw(player.playerId, builtinPlayerId);
     if (isBuiltinPlayer) {
-      audioHandler.setLocalMode();
+      _notificationBridge.setLocalMode();
       // Update notification for builtin player using local mode method (keeps pause working)
       if (_currentTrack != null && (player.state == 'playing' || player.state == 'paused')) {
         final track = _currentTrack!;
@@ -4594,7 +4725,7 @@ class MusicAssistantProvider with ChangeNotifier {
           artUri: _contentArtUri(artworkUrl),
         );
         // Position comes from actual player in updateLocalModeNotification
-        audioHandler.updateLocalModeNotification(
+        _notificationBridge.updateLocalModeNotification(
           item: mediaItem,
           playing: player.state == 'playing',
           duration: track.duration,
@@ -4606,7 +4737,7 @@ class MusicAssistantProvider with ChangeNotifier {
           title: player.name,
           artist: 'Loading...',
         );
-        audioHandler.updateLocalModeNotification(
+        _notificationBridge.updateLocalModeNotification(
           item: mediaItem,
           playing: player.state == 'playing',
         );
@@ -4625,7 +4756,7 @@ class MusicAssistantProvider with ChangeNotifier {
           duration: track.duration,
           artUri: _contentArtUri(artworkUrl),
         );
-        audioHandler.updateLocalModeNotification(
+        _notificationBridge.updateLocalModeNotification(
           item: mediaItem,
           playing: false,
           duration: track.duration,
@@ -4633,7 +4764,7 @@ class MusicAssistantProvider with ChangeNotifier {
         _startIdleServiceTimer();
       } else {
         // Builtin player is idle with no track - clear notification
-        audioHandler.clearRemotePlaybackState();
+        _notificationBridge.clearRemotePlaybackState();
         _startIdleServiceTimer();
       }
     } else {
@@ -4656,7 +4787,7 @@ class MusicAssistantProvider with ChangeNotifier {
         // Use position tracker for consistent position
         final position = _positionTracker.currentPosition;
         _cancelIdleServiceTimer();
-        audioHandler.setRemotePlaybackState(
+        _notificationBridge.setRemotePlaybackState(
           item: mediaItem,
           playing: player.state == 'playing',
           position: position,
@@ -4672,7 +4803,7 @@ class MusicAssistantProvider with ChangeNotifier {
         );
         final position = _positionTracker.currentPosition;
         _cancelIdleServiceTimer();
-        audioHandler.setRemotePlaybackState(
+        _notificationBridge.setRemotePlaybackState(
           item: mediaItem,
           playing: player.state == 'playing',
           position: position,
@@ -4681,7 +4812,7 @@ class MusicAssistantProvider with ChangeNotifier {
       } else {
         // Player is idle - clear the notification to prevent stale metadata
         // from previous player showing (fixes issue #42)
-        audioHandler.clearRemotePlaybackState();
+        _notificationBridge.clearRemotePlaybackState();
         _startIdleServiceTimer();
       }
     }
@@ -4840,14 +4971,14 @@ class MusicAssistantProvider with ChangeNotifier {
     // conflicting mediaItem.add() calls with _updatePlayerState()
     final isBuiltinPlayer = _sendspinConnected && _pcmAudioPlayer != null;
     if (isBuiltinPlayer) {
-      audioHandler.updateLocalModeNotification(
+      _notificationBridge.updateLocalModeNotification(
         item: mediaItem,
         playing: isPlaying,
         duration: track.duration,
         position: position,
       );
     } else {
-      audioHandler.setRemotePlaybackState(
+      _notificationBridge.setRemotePlaybackState(
         item: mediaItem,
         playing: isPlaying,
         position: position,
@@ -5039,7 +5170,7 @@ class MusicAssistantProvider with ChangeNotifier {
     _logger.debug('⏱️ Starting idle service timer (${_idleServiceTimeout.inMinutes} min)');
     _idleServiceTimer = Timer(_idleServiceTimeout, () {
       _logger.log('⏱️ Idle service timeout reached - stopping foreground service');
-      audioHandler.stopService();
+      _notificationBridge.stopForegroundService();
     });
   }
 
@@ -5198,7 +5329,7 @@ class MusicAssistantProvider with ChangeNotifier {
           stateChanged = true;
         }
         // Clear notification for external source
-        audioHandler.clearRemotePlaybackState();
+        _notificationBridge.clearRemotePlaybackState();
         _startIdleServiceTimer();
         if (stateChanged) {
           notifyListeners();
@@ -5269,7 +5400,7 @@ class MusicAssistantProvider with ChangeNotifier {
 
       if (queue != null && queue.currentItem != null) {
         if (queue.currentIndex != null) {
-          audioHandler.updateQueueIndex(queue.currentIndex!);
+          _notificationBridge.updateQueueIndex(queue.currentIndex!);
         }
 
         final queueTrack = queue.currentItem!.track;
@@ -5363,7 +5494,7 @@ class MusicAssistantProvider with ChangeNotifier {
         final track = _currentTrack!;
         final artworkUrl = _api?.getImageUrl(track, size: 512);
         final builtinPlayerId = await SettingsService.getBuiltinPlayerId();
-        final isBuiltinPlayer = builtinPlayerId != null && _selectedPlayer!.playerId == builtinPlayerId;
+        final isBuiltinPlayer = builtinPlayerId != null && PlayerRepository.idsMatchRaw(_selectedPlayer!.playerId, builtinPlayerId);
 
         if (isBuiltinPlayer) {
           // Local playback - use local mode notification (keeps pause working)
@@ -5378,7 +5509,7 @@ class MusicAssistantProvider with ChangeNotifier {
             artUri: _contentArtUri(artworkUrl),
           );
           // Position comes from actual player in updateLocalModeNotification
-          audioHandler.updateLocalModeNotification(
+          _notificationBridge.updateLocalModeNotification(
             item: mediaItem,
             playing: _selectedPlayer!.state == 'playing',
             duration: track.duration,
@@ -5399,7 +5530,7 @@ class MusicAssistantProvider with ChangeNotifier {
           // Use position tracker for consistent position (single source of truth)
           final position = _positionTracker.currentPosition;
           _cancelIdleServiceTimer();
-          audioHandler.setRemotePlaybackState(
+          _notificationBridge.setRemotePlaybackState(
             item: mediaItem,
             playing: _selectedPlayer!.state == 'playing',
             position: position,
@@ -5409,7 +5540,7 @@ class MusicAssistantProvider with ChangeNotifier {
       } else {
         // No queue data available from API
         final builtinPlayerId = await SettingsService.getBuiltinPlayerId();
-        final isBuiltinPlayer = builtinPlayerId != null && _selectedPlayer!.playerId == builtinPlayerId;
+        final isBuiltinPlayer = builtinPlayerId != null && PlayerRepository.idsMatchRaw(_selectedPlayer!.playerId, builtinPlayerId);
 
         // For builtin player, try to preserve cached track data since queue API doesn't return it
         // The cached track was set in selectPlayer() and contains valid data
@@ -5440,14 +5571,14 @@ class MusicAssistantProvider with ChangeNotifier {
           );
           if (isBuiltinPlayer) {
             // Position comes from actual player in updateLocalModeNotification
-            audioHandler.updateLocalModeNotification(
+            _notificationBridge.updateLocalModeNotification(
               item: mediaItem,
               playing: _selectedPlayer!.state == 'playing',
             );
           } else {
             final position = _positionTracker.currentPosition;
             _cancelIdleServiceTimer();
-            audioHandler.setRemotePlaybackState(
+            _notificationBridge.setRemotePlaybackState(
               item: mediaItem,
               playing: _selectedPlayer!.state == 'playing',
               position: position,
@@ -5465,12 +5596,12 @@ class MusicAssistantProvider with ChangeNotifier {
             artUri: _contentArtUri(_api?.getImageUrl(track, size: 512)),
             duration: track.duration,
           );
-          audioHandler.updateLocalModeNotification(
+          _notificationBridge.updateLocalModeNotification(
             item: mediaItem,
             playing: _selectedPlayer!.state == 'playing',
           );
         } else if (_selectedPlayer!.state != 'playing' && _selectedPlayer!.state != 'paused') {
-          audioHandler.clearRemotePlaybackState();
+          _notificationBridge.clearRemotePlaybackState();
           _startIdleServiceTimer();
           _positionTracker.clear();
         }
@@ -5506,7 +5637,7 @@ class MusicAssistantProvider with ChangeNotifier {
       // Sendspin PCM streaming has ~5s buffering delay on resume.
       // For audiobooks, seek back to compensate so the user doesn't miss narration.
       final builtinPlayerId = await SettingsService.getBuiltinPlayerId();
-      if (builtinPlayerId != null && playerId == builtinPlayerId && _sendspinConnected && isPlayingAudiobook) {
+      if (builtinPlayerId != null && PlayerRepository.idsMatchRaw(playerId, builtinPlayerId) && _sendspinConnected && isPlayingAudiobook) {
         final pos = _positionTracker.currentPosition.inSeconds;
         if (pos > 10) {
           _logger.log('📚 Seeking back 10s to compensate for Sendspin buffering');
@@ -5608,29 +5739,32 @@ class MusicAssistantProvider with ChangeNotifier {
 
     final syncService = SyncService.instance;
 
-    // Listen for sync completion to update our lists
-    void onSyncComplete() {
-      if (syncService.status == SyncStatus.completed) {
-        _albums = syncService.cachedAlbums;
-        _artists = syncService.cachedArtists;
-        _audiobooks = syncService.cachedAudiobooks;
-        if (syncService.cachedPodcasts.isNotEmpty) {
-          _podcasts = syncService.cachedPodcasts;
-        }
-        _logger.log('🔄 Updated library from background sync: ${_albums.length} albums, ${_artists.length} artists, ${_audiobooks.length} audiobooks, ${_podcasts.length} podcasts');
-        _syncLibraryStatusToService();
-        notifyListeners();
-        _prefetchAlbumImages();
-        _prefetchArtistImages();
-        audioHandler.invalidateAutoChildren(const [
-          'cat|artists', 'cat|albums', 'cat|playlists', 'cat|home',
-        ]);
-      }
-      syncService.removeListener(onSyncComplete);
-    }
-
-    syncService.addListener(onSyncComplete);
+    // syncFromApi() is awaited directly below, so its final status can just
+    // be read afterward - no listener needed. (A previous version used a
+    // one-shot listener that unsubscribed itself on the *first* notification,
+    // which is always the initial `syncing` transition fired partway through
+    // syncFromApi() - meaning it always missed the later `completed`
+    // notification and silently dropped the prefetch calls below on every
+    // sync. It also leaked a listener whenever the cache-is-fresh early
+    // return in SyncService skipped notifying entirely.)
     await syncService.syncFromApi(_api!, providerInstanceIds: providerIdsForApiCalls);
+
+    if (syncService.status == SyncStatus.completed) {
+      _albums = syncService.cachedAlbums;
+      _artists = syncService.cachedArtists;
+      _audiobooks = syncService.cachedAudiobooks;
+      if (syncService.cachedPodcasts.isNotEmpty) {
+        _podcasts = syncService.cachedPodcasts;
+      }
+      _logger.log('🔄 Updated library from background sync: ${_albums.length} albums, ${_artists.length} artists, ${_audiobooks.length} audiobooks, ${_podcasts.length} podcasts');
+      _syncLibraryStatusToService();
+      notifyListeners();
+      _prefetchAlbumImages();
+      _prefetchArtistImages();
+      audioHandler.invalidateAutoChildren(const [
+        'cat|artists', 'cat|albums', 'cat|playlists', 'cat|home',
+      ]);
+    }
   }
 
   /// Prefetch album and audiobook images in background after sync
@@ -6068,6 +6202,14 @@ class MusicAssistantProvider with ChangeNotifier {
   /// produce poor/unrelated results (e.g. text-matching track titles).
   bool artistSupportsRadio(Artist artist) => _api?.artistSupportsRadio(artist) ?? false;
 
+  /// Resolve a stored/raw player id (e.g. from [SettingsService.getBuiltinPlayerId])
+  /// to whatever id Music Assistant is actually using for that player right
+  /// now. Sending playback commands (player_queues/play_media, getQueue, etc.)
+  /// with the raw id fails with "Queue ... is not available" once the server
+  /// has wrapped it behind a universal_player id — this must be resolved
+  /// before every such command, not just when selecting/displaying the player.
+  String resolvePlayerId(RawPlayerId rawId) => _playerRepository.resolveRawId(rawId);
+
   /// Play a shuffled mix of tracks from every album this artist is credited
   /// as album artist on. Unlike [playArtistRadio], this only ever plays music
   /// actually by the artist — no server-side "similar tracks" guesswork.
@@ -6118,7 +6260,7 @@ class MusicAssistantProvider with ChangeNotifier {
       // Get builtin player ID - this is cached so should be fast
       final builtinPlayerId = await SettingsService.getBuiltinPlayerId();
 
-      if (builtinPlayerId != null && playerId == builtinPlayerId && _sendspinConnected) {
+      if (builtinPlayerId != null && PlayerRepository.idsMatchRaw(playerId, builtinPlayerId) && _sendspinConnected) {
         _logger.log('⏸️ Non-blocking local pause for builtin player');
 
         // CRITICAL: Don't await these - they can block the UI thread
@@ -6220,7 +6362,7 @@ class MusicAssistantProvider with ChangeNotifier {
     try {
       // Optimistic local stop for builtin player on skip - non-blocking
       final builtinPlayerId = await SettingsService.getBuiltinPlayerId();
-      if (builtinPlayerId != null && playerId == builtinPlayerId && _sendspinConnected) {
+      if (builtinPlayerId != null && PlayerRepository.idsMatchRaw(playerId, builtinPlayerId) && _sendspinConnected) {
         _logger.log('⏭️ Non-blocking local stop for skip on builtin player');
         // Stop current audio immediately - fire and forget, but log errors
         unawaited((_pcmAudioPlayer?.pause() ?? Future.value()).catchError(
@@ -6239,7 +6381,7 @@ class MusicAssistantProvider with ChangeNotifier {
     try {
       // Optimistic local stop for builtin player on previous - non-blocking
       final builtinPlayerId = await SettingsService.getBuiltinPlayerId();
-      if (builtinPlayerId != null && playerId == builtinPlayerId && _sendspinConnected) {
+      if (builtinPlayerId != null && PlayerRepository.idsMatchRaw(playerId, builtinPlayerId) && _sendspinConnected) {
         _logger.log('⏮️ Non-blocking local stop for previous on builtin player');
         // Stop current audio immediately - fire and forget, but log errors
         unawaited((_pcmAudioPlayer?.pause() ?? Future.value()).catchError(
@@ -6552,7 +6694,7 @@ class MusicAssistantProvider with ChangeNotifier {
       _logger.log('🔋 togglePower called for playerId: $playerId');
 
       final localPlayerId = await SettingsService.getBuiltinPlayerId();
-      final isLocalPlayer = localPlayerId != null && playerId == localPlayerId;
+      final isLocalPlayer = localPlayerId != null && PlayerRepository.idsMatchRaw(playerId, localPlayerId);
 
       _logger.log('🔋 Is local builtin player: $isLocalPlayer');
 
@@ -6653,7 +6795,7 @@ class MusicAssistantProvider with ChangeNotifier {
       }
 
       final builtinPlayerId = await SettingsService.getBuiltinPlayerId();
-      if (builtinPlayerId != null && playerId == builtinPlayerId) {
+      if (builtinPlayerId != null && PlayerRepository.idsMatchRaw(playerId, builtinPlayerId)) {
         _localPlayerVolume = volumeLevel;
         FlutterVolumeController.setVolume(volumeLevel / 100.0);
       }

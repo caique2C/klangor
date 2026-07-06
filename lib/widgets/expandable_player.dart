@@ -3099,8 +3099,13 @@ class ExpandablePlayerState extends State<ExpandablePlayer>
                           opacity: expandedElementsOpacity,
                           child: _buildSecondaryButton(
                             icon: Icons.shuffle_rounded,
-                            color: _queue?.shuffle == true ? primaryColor : textColor50,
-                            onPressed: _isLoadingQueue ? null : _toggleShuffle,
+                            // Temporarily disabled: the toggle reaches the server
+                            // correctly (confirmed via player_queues/get round-trips),
+                            // but this icon doesn't reflect the resulting state, making
+                            // it look broken. Disabled rather than shipped misleading
+                            // until that display bug is fixed.
+                            color: textColor50,
+                            onPressed: null,
                           ),
                         ) : null,
                       ),
@@ -3147,11 +3152,10 @@ class ExpandablePlayerState extends State<ExpandablePlayer>
                         child: t > 0.3 ? Opacity(
                           opacity: expandedElementsOpacity,
                           child: _buildSecondaryButton(
-                            icon: _queue?.repeatMode == 'one' ? Icons.repeat_one_rounded : Icons.repeat_rounded,
-                            color: _queue?.repeatMode != null && _queue!.repeatMode != 'off'
-                                ? primaryColor
-                                : textColor50,
-                            onPressed: _isLoadingQueue ? null : _cycleRepeat,
+                            icon: Icons.repeat_rounded,
+                            // Temporarily disabled - see shuffle button comment above.
+                            color: textColor50,
+                            onPressed: null,
                           ),
                         ) : null,
                       ),
