@@ -12,15 +12,27 @@ if (localPropertiesFile.exists()) {
     }
 }
 
-def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
-if (flutterVersionCode == null) {
-    flutterVersionCode = '1'
-}
-
 def flutterVersionName = localProperties.getProperty('flutter.versionName')
 if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
+
+// versionCode is derived from the version name (pubspec.yaml's plain "X.Y.Z",
+// no "+build" suffix needed/used) rather than tracked as a separately
+// incremented number - one less thing to remember to bump per release, and
+// it's mathematically guaranteed to keep increasing as long as the version
+// name itself does. Supports an optional non-numeric suffix per component
+// (e.g. "3-beta") by taking only the leading digits.
+def parseVersionComponent(String component) {
+    def match = (component =~ /\d+/)
+    return match ? match[0].toInteger() : 0
+}
+
+def versionParts = flutterVersionName.tokenize('.')
+def versionMajor = versionParts.size() > 0 ? parseVersionComponent(versionParts[0]) : 0
+def versionMinor = versionParts.size() > 1 ? parseVersionComponent(versionParts[1]) : 0
+def versionPatch = versionParts.size() > 2 ? parseVersionComponent(versionParts[2]) : 0
+def computedVersionCode = versionMajor * 10000 + versionMinor * 100 + versionPatch
 
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file('key.properties')
@@ -61,7 +73,7 @@ android {
         applicationId "com.klangor.app"
         minSdkVersion flutter.minSdkVersion
         targetSdk 35
-        versionCode flutterVersionCode.toInteger()
+        versionCode computedVersionCode
         versionName flutterVersionName
     }
 
