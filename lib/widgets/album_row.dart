@@ -106,7 +106,6 @@ class _AlbumRowState extends State<AlbumRow> with AutomaticKeepAliveClientMixin 
           context,
         ).catchError((_) {
           // Silently ignore precache errors
-          return false;
         });
       }
     }

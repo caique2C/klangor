@@ -106,7 +106,6 @@ class _ArtistRowState extends State<ArtistRow> with AutomaticKeepAliveClientMixi
           context,
         ).catchError((_) {
           // Silently ignore precache errors
-          return false;
         });
       }
     }

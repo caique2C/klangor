@@ -6391,9 +6391,10 @@ class MusicAssistantProvider with ChangeNotifier {
 
         // CRITICAL: Don't await these - they can block the UI thread
         // Use unawaited to make them fire-and-forget, but log errors
-        unawaited((_pcmAudioPlayer?.pause() ?? Future.value()).catchError(
-          (e) => _logger.log('⚠️ PCM pause error (non-blocking): $e'),
-        ));
+        unawaited((_pcmAudioPlayer?.pause() ?? Future.value(false)).catchError((e) {
+          _logger.log('⚠️ PCM pause error (non-blocking): $e');
+          return false;
+        }));
 
         // Don't pause just_audio for Sendspin mode - it's not being used for audio output
         // and calling pause() on it can cause blocking issues
@@ -6499,9 +6500,10 @@ class MusicAssistantProvider with ChangeNotifier {
         // Stop current audio immediately - fire and forget, but log errors.
         // Not user-initiated: the next track's stream/start follows shortly -
         // see PcmAudioPlayer.pause doc comment.
-        unawaited((_pcmAudioPlayer?.pause(isUserInitiated: false) ?? Future.value()).catchError(
-          (e) => _logger.log('⚠️ PCM pause error on next (non-blocking): $e'),
-        ));
+        unawaited((_pcmAudioPlayer?.pause(isUserInitiated: false) ?? Future.value(false)).catchError((e) {
+          _logger.log('⚠️ PCM pause error on next (non-blocking): $e');
+          return false;
+        }));
         // Don't stop just_audio - not used for Sendspin audio output
       }
       await _api?.nextTrack(playerId);
@@ -6520,9 +6522,10 @@ class MusicAssistantProvider with ChangeNotifier {
         // Stop current audio immediately - fire and forget, but log errors.
         // Not user-initiated: the next track's stream/start follows shortly -
         // see PcmAudioPlayer.pause doc comment.
-        unawaited((_pcmAudioPlayer?.pause(isUserInitiated: false) ?? Future.value()).catchError(
-          (e) => _logger.log('⚠️ PCM pause error on previous (non-blocking): $e'),
-        ));
+        unawaited((_pcmAudioPlayer?.pause(isUserInitiated: false) ?? Future.value(false)).catchError((e) {
+          _logger.log('⚠️ PCM pause error on previous (non-blocking): $e');
+          return false;
+        }));
         // Don't stop just_audio - not used for Sendspin audio output
       }
       await _api?.previousTrack(playerId);

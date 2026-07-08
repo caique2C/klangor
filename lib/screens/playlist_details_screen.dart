@@ -288,6 +288,7 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> with Sing
           itemId: actualItemId,
         ).catchError((e) {
           if (mounted) setState(() => _isInLibrary = !newState);
+          return false;
         });
       } else {
         int? libraryItemId;
@@ -318,6 +319,7 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> with Sing
           libraryItemId: libraryItemId,
         ).catchError((e) {
           if (mounted) setState(() => _isInLibrary = !newState);
+          return false;
         });
       }
     } catch (e) {

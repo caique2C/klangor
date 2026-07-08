@@ -92,7 +92,6 @@ class _PodcastRowState extends State<PodcastRow> with AutomaticKeepAliveClientMi
           context,
         ).catchError((_) {
           // Silently ignore precache errors
-          return false;
         });
       }
     }

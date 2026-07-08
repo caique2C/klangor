@@ -90,7 +90,6 @@ class _DiscoveryRowState extends State<DiscoveryRow> with AutomaticKeepAliveClie
           context,
         ).catchError((_) {
           // Silently ignore precache errors
-          return false;
         });
       }
     }

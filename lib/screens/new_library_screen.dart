@@ -3733,7 +3733,6 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
           context,
         ).catchError((_) {
           // Silently ignore precache errors
-          return false;
         });
       }
     }

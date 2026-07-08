@@ -2146,6 +2146,7 @@ class SearchScreenState extends State<SearchScreen> {
           );
         }
       }
+      return false;
     });
   }
 
@@ -2205,6 +2206,7 @@ class SearchScreenState extends State<SearchScreen> {
           );
         }
       }
+      return false;
     });
   }
 

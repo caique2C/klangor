@@ -232,6 +232,7 @@ class _PodcastDetailScreenState extends State<PodcastDetailScreen> {
               _isInLibrary = !newState;
             });
           }
+          return false;
         });
       } else {
         // Remove from library
@@ -279,6 +280,7 @@ class _PodcastDetailScreenState extends State<PodcastDetailScreen> {
               _isInLibrary = !newState;
             });
           }
+          return false;
         });
       }
     } catch (e) {

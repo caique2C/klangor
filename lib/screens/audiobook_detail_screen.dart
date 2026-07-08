@@ -285,6 +285,7 @@ class _AudiobookDetailScreenState extends State<AudiobookDetailScreen> {
           itemId: actualItemId,
         ).catchError((e) {
           if (mounted) setState(() => _isInLibrary = !newState);
+          return false;
         });
       } else {
         int? libraryItemId;
@@ -315,6 +316,7 @@ class _AudiobookDetailScreenState extends State<AudiobookDetailScreen> {
           libraryItemId: libraryItemId,
         ).catchError((e) {
           if (mounted) setState(() => _isInLibrary = !newState);
+          return false;
         });
       }
     } catch (e) {
