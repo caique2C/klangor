@@ -228,7 +228,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   final width = MediaQuery.of(context).size.width * 0.5;
                   return Center(
                     child: Image.asset(
-                      'assets/images/ensemble_icon_transparent.png',
+                      'assets/images/klangor_icon_transparent.png',
                       width: width,
                       fit: BoxFit.contain,
                     ),

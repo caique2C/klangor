@@ -110,7 +110,7 @@ class MusicAssistantProvider with ChangeNotifier {
   static const _idleServiceTimeout = Duration(minutes: 30);
 
   // Artwork content:// URI helper for Android Auto compatibility
-  static const _artworkAuthority = 'com.collotsspot.ensemble.artwork';
+  static const _artworkAuthority = 'com.klangor.app.artwork';
   static Uri? _contentArtUri(String? httpUrl) {
     if (httpUrl == null) return null;
     final encoded = base64Url.encode(utf8.encode(httpUrl));
@@ -176,7 +176,7 @@ class MusicAssistantProvider with ChangeNotifier {
   // Empty list means all players are allowed
   List<String> _playerFilter = [];
 
-  // User-controlled music provider filter (local settings in Ensemble)
+  // User-controlled music provider filter (local settings in Klangor)
   // Empty list means all providers are enabled (no filtering)
   List<String> _enabledProviderIds = [];
 
@@ -2637,7 +2637,7 @@ class MusicAssistantProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Called when the user changes the local player volume from within Ensemble.
+  /// Called when the user changes the local player volume from within Klangor.
   /// Updates [_localPlayerVolume] so the periodic state report reflects the real
   /// volume, and applies the same gain to the PCM stream.
   void updateLocalPlayerVolume(int volumeLevel) {
@@ -4411,7 +4411,7 @@ class MusicAssistantProvider with ChangeNotifier {
           return false;
         }
 
-        if (player.playerId.startsWith('ensemble_')) {
+        if (player.playerId.startsWith('klangor_')) {
           if (builtinPlayerId == null || !PlayerRepository.idsMatchRaw(player.playerId, builtinPlayerId)) {
             _logger.log('🚫 Filtering out other device\'s player: ${player.name}');
             filteredCount++;
@@ -4891,7 +4891,7 @@ class MusicAssistantProvider with ChangeNotifier {
       p.available && (
         p.state == 'playing' ||
         p.state == 'paused' ||
-        p.playerId.startsWith('ensemble_')  // Always include builtin player
+        p.playerId.startsWith('klangor_')  // Always include builtin player
       )
     ).toList();
 
@@ -4928,7 +4928,7 @@ class MusicAssistantProvider with ChangeNotifier {
 
     // Check if this is a builtin/local player
     final playerId = _selectedPlayer!.playerId;
-    if (playerId.startsWith('ensemble_')) {
+    if (playerId.startsWith('klangor_')) {
       // This is a local player ID, but we need to check if it's using Sendspin PCM
       // Sendspin PCM needs the timer because flutter_pcm_sound doesn't broadcast position
       // just_audio (non-Sendspin) handles position automatically via native events

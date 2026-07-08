@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ensemble/services/image_service.dart';
+import 'package:klangor/services/image_service.dart';
 
 void main() {
   group('ImageService.hashUrl', () {

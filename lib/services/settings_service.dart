@@ -343,7 +343,7 @@ class SettingsService {
 
     // Fallback to stored local player name or default
     final prefs = await _getPrefs();
-    return prefs.getString(_keyLocalPlayerName) ?? 'Ensemble';
+    return prefs.getString(_keyLocalPlayerName) ?? 'Klangor';
   }
 
   static Future<void> setLocalPlayerName(String name) => _setString(_keyLocalPlayerName, name);

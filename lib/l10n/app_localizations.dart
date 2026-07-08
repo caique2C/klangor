@@ -104,7 +104,7 @@ abstract class S {
   /// The application title
   ///
   /// In en, this message translates to:
-  /// **'Ensemble'**
+  /// **'Klangor'**
   String get appTitle;
 
   /// Connection status when connecting
@@ -1679,11 +1679,11 @@ abstract class S {
   /// **'No Series Found'**
   String get noSeriesFound;
 
-  /// No description provided for @ensembleBugReport.
+  /// No description provided for @appBugReport.
   ///
   /// In en, this message translates to:
-  /// **'Ensemble Bug Report'**
-  String get ensembleBugReport;
+  /// **'Klangor Bug Report'**
+  String get appBugReport;
 
   /// No description provided for @byOwner.
   ///
@@ -1988,8 +1988,8 @@ abstract class S {
   /// Welcome message title for onboarding
   ///
   /// In en, this message translates to:
-  /// **'Welcome to Ensemble'**
-  String get welcomeToEnsemble;
+  /// **'Welcome to Klangor'**
+  String get welcomeToApp;
 
   /// Welcome message body explaining how to select players
   ///
@@ -2243,11 +2243,11 @@ abstract class S {
   /// **'Support Development'**
   String get supportDevelopment;
 
-  /// Description about Ensemble being unofficial
+  /// Description about the app being unofficial
   ///
   /// In en, this message translates to:
-  /// **'Ensemble is an unofficial, community-built client. Consider supporting its development.'**
-  String get ensembleIsUnofficial;
+  /// **'Klangor is an unofficial, community-built client. Consider supporting its development.'**
+  String get appIsUnofficial;
 
   /// GitHub Sponsors button label
   ///
@@ -2261,11 +2261,11 @@ abstract class S {
   /// **'Buy me a Ko-fi'**
   String get buyMeAKoFi;
 
-  /// About Ensemble section
+  /// About the app section
   ///
   /// In en, this message translates to:
-  /// **'About Ensemble'**
-  String get aboutEnsemble;
+  /// **'About Klangor'**
+  String get aboutApp;
 
   /// Version label
   ///

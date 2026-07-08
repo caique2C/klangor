@@ -14,7 +14,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
     <application
-        android:label="Ensemble"
+        android:label="Klangor"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:appCategory="audio"
@@ -56,7 +56,7 @@
 
         <provider
             android:name=".ArtworkContentProvider"
-            android:authorities="com.collotsspot.ensemble.artwork"
+            android:authorities="com.klangor.app.artwork"
             android:exported="true"
             android:grantUriPermissions="true" />
 

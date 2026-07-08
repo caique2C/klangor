@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ensemble/services/retry_helper.dart';
+import 'package:klangor/services/retry_helper.dart';
 
 void main() {
   group('RetryHelper.retry', () {

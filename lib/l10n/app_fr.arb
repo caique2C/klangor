@@ -1,7 +1,7 @@
 {
   "@@locale": "fr",
 
-  "appTitle": "Ensemble",
+  "appTitle": "Klangor",
   "@appTitle": {
     "description": "The application title"
   },
@@ -1146,7 +1146,7 @@
   "chooseAudiobookLibraries": "Choisir quelles bibliothèques Audiobookshelf inclure",
   "unknownLibrary": "Bibliothèque inconnue",
   "noSeriesFound": "Aucune série trouvee",
-  "ensembleBugReport": "Rapport de bogue Ensemble",
+  "appBugReport": "Rapport de bogue Klangor",
   "byOwner": "Par {owner}",
   "@byOwner": {
     "placeholders": {
@@ -1368,8 +1368,8 @@
     "description": "First-time hint for selecting a player in device selector"
   },
 
-  "welcomeToEnsemble": "Bienvenue dans Ensemble",
-  "@welcomeToEnsemble": {
+  "welcomeToApp": "Bienvenue dans Klangor",
+  "@welcomeToApp": {
     "description": "Welcome message title for onboarding"
   },
 
@@ -1410,10 +1410,10 @@
 
   "aboutAndSupport": "À propos et Support",
   "supportDevelopment": "Soutenir le Développement",
-  "ensembleIsUnofficial": "Ensemble est un client non officiel créé par la communauté. Envisagez de soutenir son développement.",
+  "appIsUnofficial": "Klangor est un client non officiel créé par la communauté. Envisagez de soutenir son développement.",
   "sponsorOnGitHub": "Sponsoriser sur GitHub",
   "buyMeAKoFi": "Offrez-moi un Ko-fi",
-  "aboutEnsemble": "À propos d'Ensemble",
+  "aboutApp": "À propos de Klangor",
   "version": "Version",
   "visitGitHubRepo": "Visiter le Dépôt GitHub",
   "reportABug": "Signaler un Bug"

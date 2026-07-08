@@ -57,7 +57,7 @@ class DeviceIdService {
   }
 
   /// Get or generate a unique player ID for this device
-  /// Format: ensemble_{username}_{deviceId} or ensemble_{deviceId}
+  /// Format: klangor_{username}_{deviceId} or klangor_{deviceId}
   ///
   /// Key behaviors:
   /// - Uses stable device ID that survives storage wipes
@@ -75,8 +75,8 @@ class DeviceIdService {
         : stableDeviceId;
 
     final expectedId = maUsername != null && maUsername.isNotEmpty
-        ? 'ensemble_${maUsername}_$deviceIdSuffix'
-        : 'ensemble_$deviceIdSuffix';
+        ? 'klangor_${maUsername}_$deviceIdSuffix'
+        : 'klangor_$deviceIdSuffix';
 
     // Check if we already have the correct ID
     final existingId = prefs.getString(_keyLocalPlayerId);

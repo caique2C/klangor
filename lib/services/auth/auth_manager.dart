@@ -82,7 +82,7 @@ class AuthManager {
         body: jsonEncode({
           'command': 'auth/create_token',
           'args': {
-            'name': 'Ensemble Mobile App',
+            'name': 'Klangor Mobile App',
           },
         }),
       ).timeout(const Duration(seconds: 10));

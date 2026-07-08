@@ -1,8 +1,8 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ensemble/database/database.dart';
-import 'package:ensemble/models/media_item.dart';
-import 'package:ensemble/repositories/library_repository.dart';
+import 'package:klangor/database/database.dart';
+import 'package:klangor/models/media_item.dart';
+import 'package:klangor/repositories/library_repository.dart';
 
 void main() {
   late AppDatabase db;

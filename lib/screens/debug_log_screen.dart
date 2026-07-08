@@ -59,7 +59,7 @@ class _DebugLogScreenState extends State<DebugLogScreen> {
 
       await Share.share(
         report,
-        subject: S.of(context)!.ensembleBugReport,
+        subject: S.of(context)!.appBugReport,
       );
     } finally {
       if (mounted) {
@@ -106,8 +106,8 @@ class _DebugLogScreenState extends State<DebugLogScreen> {
                 final player = allPlayers[index];
                 final id = player.playerId.toLowerCase();
 
-                // Detect ghost players: ensemble_*, massiv_*, ma_* prefixes
-                final isAppPlayer = id.startsWith('ensemble_') ||
+                // Detect ghost players: klangor_*, massiv_*, ma_* prefixes
+                final isAppPlayer = id.startsWith('klangor_') ||
                                     id.startsWith('massiv_') ||
                                     id.startsWith('ma_');
                 final isCurrentPlayer = player.playerId == currentPlayerId;

@@ -9,7 +9,7 @@ class SDe extends S {
   SDe([String locale = 'de']) : super(locale);
 
   @override
-  String get appTitle => 'Ensemble';
+  String get appTitle => 'Klangor';
 
   @override
   String get connecting => 'Verbinde...';
@@ -885,7 +885,7 @@ class SDe extends S {
   String get noSeriesFound => 'Keine Serien gefunden';
 
   @override
-  String get ensembleBugReport => 'Ensemble Fehlerbericht';
+  String get appBugReport => 'Klangor Fehlerbericht';
 
   @override
   String byOwner(String owner) {
@@ -1063,7 +1063,7 @@ class SDe extends S {
   String get selectPlayerHint => 'Choose a player, or dismiss by swiping down';
 
   @override
-  String get welcomeToEnsemble => 'Welcome to Ensemble';
+  String get welcomeToApp => 'Welcome to Klangor';
 
   @override
   String get welcomeMessage =>
@@ -1219,8 +1219,8 @@ class SDe extends S {
   String get supportDevelopment => 'Entwicklung unterstützen';
 
   @override
-  String get ensembleIsUnofficial =>
-      'Ensemble ist ein inoffizieller, von der Community erstellter Client. Erwäge, die Entwicklung zu unterstützen.';
+  String get appIsUnofficial =>
+      'Klangor ist ein inoffizieller, von der Community erstellter Client. Erwäge, die Entwicklung zu unterstützen.';
 
   @override
   String get sponsorOnGitHub => 'Auf GitHub sponsoren';
@@ -1229,7 +1229,7 @@ class SDe extends S {
   String get buyMeAKoFi => 'Kauf mir einen Ko-fi';
 
   @override
-  String get aboutEnsemble => 'Über Ensemble';
+  String get aboutApp => 'Über Klangor';
 
   @override
   String get version => 'Version';

@@ -9,7 +9,7 @@ class SEs extends S {
   SEs([String locale = 'es']) : super(locale);
 
   @override
-  String get appTitle => 'Ensemble';
+  String get appTitle => 'Klangor';
 
   @override
   String get connecting => 'Conectando...';
@@ -893,7 +893,7 @@ class SEs extends S {
   String get noSeriesFound => 'No se encontraron series';
 
   @override
-  String get ensembleBugReport => 'Informe de errores de Ensemble';
+  String get appBugReport => 'Informe de errores de Klangor';
 
   @override
   String byOwner(String owner) {
@@ -1071,7 +1071,7 @@ class SEs extends S {
   String get selectPlayerHint => 'Choose a player, or dismiss by swiping down';
 
   @override
-  String get welcomeToEnsemble => 'Welcome to Ensemble';
+  String get welcomeToApp => 'Welcome to Klangor';
 
   @override
   String get welcomeMessage =>
@@ -1227,8 +1227,8 @@ class SEs extends S {
   String get supportDevelopment => 'Apoyar el Desarrollo';
 
   @override
-  String get ensembleIsUnofficial =>
-      'Ensemble es un cliente no oficial creado por la comunidad. Considera apoyar su desarrollo.';
+  String get appIsUnofficial =>
+      'Klangor es un cliente no oficial creado por la comunidad. Considera apoyar su desarrollo.';
 
   @override
   String get sponsorOnGitHub => 'Patrocina en GitHub';
@@ -1237,7 +1237,7 @@ class SEs extends S {
   String get buyMeAKoFi => 'Cómprame un Ko-fi';
 
   @override
-  String get aboutEnsemble => 'Acerca de Ensemble';
+  String get aboutApp => 'Acerca de Klangor';
 
   @override
   String get version => 'Versión';

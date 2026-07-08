@@ -1,6 +1,6 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ensemble/services/audio/massiv_audio_handler.dart';
+import 'package:klangor/services/audio/massiv_audio_handler.dart';
 
 void main() {
   group('shouldSkipLocalEngineBroadcast', () {

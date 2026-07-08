@@ -1,7 +1,7 @@
 {
   "@@locale": "en",
 
-  "appTitle": "Ensemble",
+  "appTitle": "Klangor",
   "@appTitle": {
     "description": "The application title"
   },
@@ -1195,7 +1195,7 @@
   "libraryRefreshing": "Refreshing library...",
   "cannotDisableLastProvider": "Cannot disable the last provider",
   "noSeriesFound": "No Series Found",
-  "ensembleBugReport": "Ensemble Bug Report",
+  "appBugReport": "Klangor Bug Report",
   "byOwner": "By {owner}",
   "@byOwner": {
     "placeholders": {
@@ -1462,8 +1462,8 @@
     "description": "First-time hint for selecting a player in device selector"
   },
 
-  "welcomeToEnsemble": "Welcome to Ensemble",
-  "@welcomeToEnsemble": {
+  "welcomeToApp": "Welcome to Klangor",
+  "@welcomeToApp": {
     "description": "Welcome message title for onboarding"
   },
 
@@ -1735,9 +1735,9 @@
     "description": "Support development section"
   },
 
-  "ensembleIsUnofficial": "Ensemble is an unofficial, community-built client. Consider supporting its development.",
-  "@ensembleIsUnofficial": {
-    "description": "Description about Ensemble being unofficial"
+  "appIsUnofficial": "Klangor is an unofficial, community-built client. Consider supporting its development.",
+  "@appIsUnofficial": {
+    "description": "Description about the app being unofficial"
   },
 
   "sponsorOnGitHub": "Sponsor on GitHub",
@@ -1750,9 +1750,9 @@
     "description": "Ko-fi donation button label"
   },
 
-  "aboutEnsemble": "About Ensemble",
-  "@aboutEnsemble": {
-    "description": "About Ensemble section"
+  "aboutApp": "About Klangor",
+  "@aboutApp": {
+    "description": "About the app section"
   },
 
   "version": "Version",

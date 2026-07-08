@@ -65,8 +65,8 @@ void main() {
       audioHandler = await AudioService.init(
         builder: () => MassivAudioHandler(authManager: authManager),
         config: const AudioServiceConfig(
-          androidNotificationChannelId: 'io.github.collotsspot.massiv.audio',
-          androidNotificationChannelName: 'Ensemble Audio',
+          androidNotificationChannelId: 'com.klangor.app.audio',
+          androidNotificationChannelName: 'Klangor Audio',
           androidNotificationOngoing: false,  // Must be false when androidStopForegroundOnPause is false
           androidNotificationIcon: 'drawable/ic_notification',
           androidShowNotificationBadge: false,
@@ -353,7 +353,7 @@ class _MusicAssistantAppState extends State<MusicAssistantApp> with WidgetsBindi
                 darkColorScheme: darkColorScheme,
                 child: MaterialApp(
                   navigatorKey: navigationProvider.navigatorKey,
-                  title: 'Ensemble',
+                  title: 'Klangor',
                   debugShowCheckedModeBanner: false,
                   // Localization
                   localizationsDelegates: const [

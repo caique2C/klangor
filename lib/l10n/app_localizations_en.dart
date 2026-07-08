@@ -9,7 +9,7 @@ class SEn extends S {
   SEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'Ensemble';
+  String get appTitle => 'Klangor';
 
   @override
   String get connecting => 'Connecting...';
@@ -876,7 +876,7 @@ class SEn extends S {
   String get noSeriesFound => 'No Series Found';
 
   @override
-  String get ensembleBugReport => 'Ensemble Bug Report';
+  String get appBugReport => 'Klangor Bug Report';
 
   @override
   String byOwner(String owner) {
@@ -1054,7 +1054,7 @@ class SEn extends S {
   String get selectPlayerHint => 'Choose a player, or dismiss by swiping down';
 
   @override
-  String get welcomeToEnsemble => 'Welcome to Ensemble';
+  String get welcomeToApp => 'Welcome to Klangor';
 
   @override
   String get welcomeMessage =>
@@ -1210,8 +1210,8 @@ class SEn extends S {
   String get supportDevelopment => 'Support Development';
 
   @override
-  String get ensembleIsUnofficial =>
-      'Ensemble is an unofficial, community-built client. Consider supporting its development.';
+  String get appIsUnofficial =>
+      'Klangor is an unofficial, community-built client. Consider supporting its development.';
 
   @override
   String get sponsorOnGitHub => 'Sponsor on GitHub';
@@ -1220,7 +1220,7 @@ class SEn extends S {
   String get buyMeAKoFi => 'Buy me a Ko-fi';
 
   @override
-  String get aboutEnsemble => 'About Ensemble';
+  String get aboutApp => 'About Klangor';
 
   @override
   String get version => 'Version';

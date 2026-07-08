@@ -275,7 +275,7 @@ class MiniPlayerContent extends StatelessWidget {
   /// Get appropriate icon based on player name
   static IconData _getPlayerIcon(String playerName) {
     final nameLower = playerName.toLowerCase();
-    if (nameLower.contains('phone') || nameLower.contains('ensemble') || nameLower.contains('mobile')) {
+    if (nameLower.contains('phone') || nameLower.contains('klangor') || nameLower.contains('mobile')) {
       return Icons.phone_android_rounded;
     } else if (nameLower.contains('group') || nameLower.contains('sync') || nameLower.contains('all')) {
       return Icons.speaker_group_rounded;

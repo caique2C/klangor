@@ -9,7 +9,7 @@ class SFr extends S {
   SFr([String locale = 'fr']) : super(locale);
 
   @override
-  String get appTitle => 'Ensemble';
+  String get appTitle => 'Klangor';
 
   @override
   String get connecting => 'Connexion...';
@@ -899,7 +899,7 @@ class SFr extends S {
   String get noSeriesFound => 'Aucune série trouvee';
 
   @override
-  String get ensembleBugReport => 'Rapport de bogue Ensemble';
+  String get appBugReport => 'Rapport de bogue Klangor';
 
   @override
   String byOwner(String owner) {
@@ -1080,7 +1080,7 @@ class SFr extends S {
       'Choisissez un lecteur ou fermez en balayant vers le bas';
 
   @override
-  String get welcomeToEnsemble => 'Bienvenue dans Ensemble';
+  String get welcomeToApp => 'Bienvenue dans Klangor';
 
   @override
   String get welcomeMessage =>
@@ -1236,8 +1236,8 @@ class SFr extends S {
   String get supportDevelopment => 'Soutenir le Développement';
 
   @override
-  String get ensembleIsUnofficial =>
-      'Ensemble est un client non officiel créé par la communauté. Envisagez de soutenir son développement.';
+  String get appIsUnofficial =>
+      'Klangor est un client non officiel créé par la communauté. Envisagez de soutenir son développement.';
 
   @override
   String get sponsorOnGitHub => 'Sponsoriser sur GitHub';
@@ -1246,7 +1246,7 @@ class SFr extends S {
   String get buyMeAKoFi => 'Offrez-moi un Ko-fi';
 
   @override
-  String get aboutEnsemble => 'À propos d\'Ensemble';
+  String get aboutApp => 'À propos de Klangor';
 
   @override
   String get version => 'Version';

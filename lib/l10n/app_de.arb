@@ -1,7 +1,7 @@
 {
   "@@locale": "de",
 
-  "appTitle": "Ensemble",
+  "appTitle": "Klangor",
   "connecting": "Verbinde...",
   "connected": "Verbunden",
   "disconnected": "Getrennt",
@@ -259,7 +259,7 @@
   "chooseAudiobookLibraries": "Wähle welche Audiobookshelf-Bibliotheken einbezogen werden",
   "unknownLibrary": "Unbekannte Bibliothek",
   "noSeriesFound": "Keine Serien gefunden",
-  "ensembleBugReport": "Ensemble Fehlerbericht",
+  "appBugReport": "Klangor Fehlerbericht",
   "byOwner": "Von {owner}",
   "noSeriesAvailable": "Keine Serien in deiner Hörbuch-Bibliothek verfügbar.\nZiehe zum Aktualisieren.",
   "pullToLoadSeries": "Ziehe nach unten um Serien\nvon Music Assistant zu laden",
@@ -301,10 +301,10 @@
 
   "aboutAndSupport": "Über & Unterstützung",
   "supportDevelopment": "Entwicklung unterstützen",
-  "ensembleIsUnofficial": "Ensemble ist ein inoffizieller, von der Community erstellter Client. Erwäge, die Entwicklung zu unterstützen.",
+  "appIsUnofficial": "Klangor ist ein inoffizieller, von der Community erstellter Client. Erwäge, die Entwicklung zu unterstützen.",
   "sponsorOnGitHub": "Auf GitHub sponsoren",
   "buyMeAKoFi": "Kauf mir einen Ko-fi",
-  "aboutEnsemble": "Über Ensemble",
+  "aboutApp": "Über Klangor",
   "version": "Version",
   "visitGitHubRepo": "GitHub-Repository besuchen",
   "reportABug": "Einen Fehler melden"

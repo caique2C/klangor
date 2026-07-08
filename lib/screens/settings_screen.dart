@@ -493,23 +493,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // Use color filter to make logo dark in light theme
             Padding(
               padding: const EdgeInsets.only(top: 8.0, bottom: 48.0),
-              child: Theme.of(context).brightness == Brightness.light
-                  ? ColorFiltered(
-                      colorFilter: const ColorFilter.mode(
-                        Color(0xFF1a1a1a), // Dark color for light theme
-                        BlendMode.srcIn,
-                      ),
-                      child: Image.asset(
-                        'assets/images/ensemble_icon_transparent.png',
-                        width: MediaQuery.of(context).size.width * 0.5,
-                        fit: BoxFit.contain,
-                      ),
-                    )
-                  : Image.asset(
-                      'assets/images/ensemble_icon_transparent.png',
-                      width: MediaQuery.of(context).size.width * 0.5,
-                      fit: BoxFit.contain,
-                    ),
+              child: Image.asset(
+                'assets/images/klangor_icon_transparent.png',
+                width: MediaQuery.of(context).size.width * 0.5,
+                fit: BoxFit.contain,
+              ),
             ),
 
             // Connection status box - centered with border radius like theme boxes
@@ -1282,7 +1270,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             const SizedBox(height: 16),
 
-            // About Ensemble card
+            // About Klangor card
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
@@ -1294,7 +1282,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    S.of(context)!.aboutEnsemble,
+                    S.of(context)!.aboutApp,
                     style: textTheme.titleSmall?.copyWith(
                       color: colorScheme.onBackground,
                       fontWeight: FontWeight.bold,
@@ -1323,13 +1311,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _LinkButton(
                     icon: Icons.code_rounded,
                     label: S.of(context)!.visitGitHubRepo,
-                    onTap: () => _launchUrl('https://github.com/CollotsSpot/Ensemble'),
+                    onTap: () => _launchUrl('https://github.com/caique2C/klangor'),
                   ),
                   const SizedBox(height: 8),
                   _LinkButton(
                     icon: Icons.bug_report_outlined,
                     label: S.of(context)!.reportABug,
-                    onTap: () => _launchUrl('https://github.com/CollotsSpot/Ensemble/issues'),
+                    onTap: () => _launchUrl('https://github.com/caique2C/klangor/issues'),
                   ),
                 ],
               ),

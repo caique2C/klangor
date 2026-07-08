@@ -38,7 +38,7 @@ bool shouldSkipLocalEngineBroadcast({
   return isRemoteMode || currentMediaItem != null;
 }
 
-/// Custom AudioHandler for Ensemble that provides full control over
+/// Custom AudioHandler for Klangor that provides full control over
 /// notification actions and metadata updates.
 class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   final AudioPlayer _player = AudioPlayer();
@@ -99,7 +99,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   DateTime? aaDisconnectedAt;
 
   // Android Auto method channel (Dart ↔ Native)
-  static const _aaChannel = MethodChannel('com.collotsspot.ensemble/android_auto');
+  static const _aaChannel = MethodChannel('com.klangor.app/android_auto');
 
   // Custom control for switching players
   static final _switchPlayerControl = MediaControl.custom(
@@ -408,7 +408,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     ));
   }
 
-  // --- Custom methods for Ensemble ---
+  // --- Custom methods for Klangor ---
 
   /// Play a URL with the given metadata
   Future<void> playUrl(String url, MediaItem item, {Map<String, String>? headers}) async {
@@ -629,7 +629,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   };
 
   // Icon URIs for category items
-  static const _iconPkg = 'com.collotsspot.ensemble';
+  static const _iconPkg = 'com.klangor.app';
   static final _iconHome = Uri.parse('android.resource://$_iconPkg/drawable/ic_auto_home');
   static final _iconMusic = Uri.parse('android.resource://$_iconPkg/drawable/ic_auto_music');
   static final _iconBook = Uri.parse('android.resource://$_iconPkg/drawable/ic_auto_book');
@@ -1798,7 +1798,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     );
   }
 
-  static const _artworkAuthority = 'com.collotsspot.ensemble.artwork';
+  static const _artworkAuthority = 'com.klangor.app.artwork';
 
   Uri? _autoArtUri(MusicAssistantProvider provider, ma.MediaItem item) {
     final url = provider.getImageUrl(item, size: 256);

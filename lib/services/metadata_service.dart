@@ -247,7 +247,7 @@ class MetadataService {
       final response = await http.get(
         uri,
         headers: {
-          'User-Agent': 'Ensemble Music Player (https://github.com/ensemble-app)',
+          'User-Agent': 'Klangor Music Player (https://github.com/caique2C/klangor)',
         },
       ).timeout(const Duration(seconds: 5));
 

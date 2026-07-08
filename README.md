@@ -1,11 +1,7 @@
 <div align="center">
-  <img src="assets/images/ensemble_logo.png" alt="Ensemble Logo" height="200">
+  <img src="assets/images/klangor_logo.png" alt="Klangor Logo" height="200">
 
-  [![GitHub release](https://img.shields.io/badge/Release-v3.0.4-blue?style=for-the-badge&logo=github)](https://github.com/CollotsSpot/Ensemble/releases)
-  [![GitHub Downloads](https://img.shields.io/github/downloads/CollotsSpot/Ensemble/latest/total?style=for-the-badge&logo=android&label=APK%20Downloads&color=green)](https://github.com/CollotsSpot/Ensemble/releases/latest)
-  [![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
-  [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-GitHub-EA4AAA?style=for-the-badge&logo=GitHub%20Sponsors&logoColor=white)](https://github.com/sponsors/CollotsSpot)
-  [![Ko-fi](https://img.shields.io/badge/Ko--fi-FF5E5B?style=for-the-badge&logo=Ko-fi&logoColor=white)](https://ko-fi.com/collotsspot)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg?style=for-the-badge)](LICENSE)
 
 ---
 
@@ -15,21 +11,97 @@
 
 ---
 
-## Disclaimer
+## What is Klangor?
 
-**Ensemble is an unofficial, community-built mobile client for Music Assistant. It is not affiliated with, endorsed by, or supported by the Music Assistant project or its developers.**
+Klangor is a personal fork of [Ensemble](https://github.com/CollotsSpot/Ensemble) by
+[CollotsSpot](https://github.com/CollotsSpot). Ensemble is where all of the original design,
+feature set, and UI came from — this fork exists because a series of bug-hunting sessions
+turned into a substantial rewrite of the app's internals (see below), well beyond the size of
+change that fits into a normal pull request. Klangor is not published or supported anywhere
+beyond this repository; it is not affiliated with, endorsed by, or a replacement for Ensemble.
 
-This application was built with AI-assisted development using **Claude Code** and **Gemini CLI**.
+**This application was built with AI-assisted development using Claude Code**, continuing the
+same development approach the original Ensemble project used.
 
 ---
 
-## Also See
+## Disclaimer
 
-**[Ensemble TV](https://github.com/CollotsSpot/ensemble-tv)** - A simple Android TV client for Music Assistant that displays what's currently playing on your TV with remote control support.
+**Klangor is an unofficial, community-built mobile client for Music Assistant. It is not
+affiliated with, endorsed by, or supported by the Music Assistant project, nor by the Ensemble
+project it was forked from.**
+
+---
+
+## Relationship to Ensemble — why a fork instead of pull requests
+
+The commits on top of Ensemble fall into two groups:
+
+1. **A long series of targeted bug fixes**, mostly around Android Auto (cold-start caching,
+   disconnect detection, shuffle/repeat sync, artwork loading, reconnect races). These would
+   have been reasonable individual PRs.
+2. **A small number of much larger commits** that rework shared internals: a relational
+   database schema replacing a JSON-blob cache, a repository layer sitting in front of it, a
+   type-safe player-identity wrapper replacing an ad-hoc string comparison that had been
+   independently re-fixed at close to 20 call sites, a single notification/Android-Auto state
+   bridge replacing ~30 scattered call sites, and a from-scratch test suite (the project had
+   none before). These touch the same handful of shared files repeatedly and depend on each
+   other — they aren't safely separable into small, independently reviewable PRs, and
+   bundling a rewrite of this scope into someone else's project via pull requests isn't
+   realistic or fair to ask a maintainer to review. Maintaining it as an independent fork was
+   the pragmatic option.
+
+None of this reflects a problem with Ensemble as a project — it reflects the natural result of
+debugging real, hard-to-reproduce issues (race conditions, cache inconsistency) far enough that
+the fix stops being local and starts being structural.
+
+---
+
+## What changed vs. Ensemble (high level)
+
+### Re-architected
+
+- **Relational library database (Drift schema v8)** — the previous cache was a single JSON-blob
+  key/value table with no foreign keys or joins, and a cache key that didn't include the
+  provider (a collision risk with multiple providers). Replaced with typed `Artists` / `Albums`
+  / `Tracks` / `Playlists` / `PlaylistTracks` / `Audiobooks` / `Chapters` /
+  `ProviderMappings` tables and a `LibraryRepository` that screens, artist/album/playlist detail
+  pages, and Android Auto's browse tree now read from directly.
+- **Player-identity handling (`PlayerRepository` / `RawPlayerId`)** — the app compares a
+  locally-stored "raw" player ID against Music Assistant's live, resolved player IDs in many
+  places; a subtle mismatch bug here had been fixed independently at nearly 20 call sites over
+  time. Replaced with an opaque `RawPlayerId` wrapper that only `PlayerRepository` can resolve,
+  so the bug class can no longer reappear at a new call site by accident.
+- **`PlaybackNotificationBridge`** — centralizes what used to be ~30 scattered direct calls from
+  the app's data layer into the OS media notification / Android Auto surface, into one seam.
+- **Unified image cache (`ImageService`)** — the Flutter UI and the native Android Auto artwork
+  provider used to fetch and cache artwork completely independently, and went stale
+  independently. Both sides now share one on-disk cache directory and hashing convention.
+- **Track-tap playback reliability** — fixed three stacked race conditions (a stream-generation
+  race between the old and new track, an overloaded "user paused" flag, and a server-side
+  `play_media` race) that made tapping a track in an album/playlist unreliable.
+
+### Also changed
+
+- **Android Auto**: extensive stabilization pass — reliable disconnect detection, cold-start
+  artwork/list caching, shuffle/repeat state sync, a "Smart Shuffle" mode, voice search, and a
+  dedicated `ArtworkContentProvider` for car-head-unit artwork.
+- **Test suite added** — the project previously had no automated tests; added unit/widget tests
+  for the database, both repositories, the audio handler, image service, and error/retry
+  helpers.
+- **Icon package**: consolidated on `material_symbols_icons`, dropping the older
+  `material_design_icons_flutter` dependency.
+- Full rebrand: app name, Android `applicationId`/package (`com.klangor.app`), notification
+  channel/method-channel identifiers, launcher icons, and the internal builtin-player ID prefix.
+
+For the detailed, commit-by-commit reasoning behind each of these, see the `my-fixes` branch's
+commit messages — they're written as design-decision records, not changelogs.
 
 ---
 
 ## Features
+
+Klangor currently has the same feature set as the Ensemble version it was forked from:
 
 ### Local Playback
 - **Stream to Your Phone** - Play music from your Music Assistant library directly on your mobile device via Sendspin protocol
@@ -105,27 +177,6 @@ This application was built with AI-assisted development using **Claude Code** an
 - **Adaptive Colors** - Album artwork-based color schemes
 - **Light/Dark Mode** - System-aware or manual theme selection
 
-## Screenshots
-
-<div align="center">
-  <img src="assets/screenshots/1.png?v=4" alt="Screenshot 1" width="150">
-  <img src="assets/screenshots/2.png?v=4" alt="Screenshot 2" width="150">
-  <img src="assets/screenshots/3.png?v=4" alt="Screenshot 3" width="150">
-  <img src="assets/screenshots/4.png?v=4" alt="Screenshot 4" width="150">
-  <img src="assets/screenshots/5.png?v=4" alt="Screenshot 5" width="150">
-  <img src="assets/screenshots/6.png?v=4" alt="Screenshot 6" width="150">
-  <img src="assets/screenshots/7.png?v=4" alt="Screenshot 7" width="150">
-  <img src="assets/screenshots/8.png?v=4" alt="Screenshot 8" width="150">
-  <img src="assets/screenshots/9.png?v=4" alt="Screenshot 9" width="150">
-  <img src="assets/screenshots/10.png?v=4" alt="Screenshot 10" width="150">
-  <img src="assets/screenshots/11.png?v=4" alt="Screenshot 11" width="150">
-  <img src="assets/screenshots/12.png?v=4" alt="Screenshot 12" width="150">
-</div>
-
-## Download
-
-Download the latest release from the [Releases page](https://github.com/CollotsSpot/Ensemble/releases).
-
 ## Setup
 
 1. Launch the app
@@ -150,14 +201,14 @@ If you run Music Assistant as a Home Assistant add-on:
 
 ### Android Auto
 
-Since Ensemble is not installed from the Play Store, you need to enable unknown sources in Android Auto:
+Since Klangor is not installed from the Play Store, you need to enable unknown sources in Android Auto:
 
 1. Open **Android Auto** settings on your phone
 2. Tap the **Version** number at the bottom 10 times to enable developer mode
 3. Tap the three-dot menu and open **Developer settings**
 4. Enable **Unknown sources**
 5. Connect your phone to your car via USB or wirelessly
-6. Ensemble will appear in Android Auto's app list
+6. Klangor will appear in Android Auto's app list
 
 ### Remote Access
 
@@ -170,16 +221,14 @@ For access outside your home network, you'll need to expose Music Assistant thro
 - Android device (Android 5.0+)
 - Audiobookshelf provider configured in Music Assistant (for audiobook features)
 
-## Sponsors
+## Credits
 
-A huge thank you to my sponsors! 💖
-
-<a href="https://github.com/pcsokonay"><img src="https://github.com/pcsokonay.png" width="60px" alt="pcsokonay" /></a>
-<a href="https://github.com/githubchb"><img src="https://github.com/githubchb.png" width="60px" alt="githubchb" /></a>
+- **[Ensemble](https://github.com/CollotsSpot/Ensemble)** by [Chris Laycock / CollotsSpot](https://github.com/CollotsSpot) — the original project this fork is based on. All core design, feature set, and most of the UI originate there. If you don't need this fork's specific fixes, use upstream Ensemble instead, and consider supporting its author.
 
 ## License
 
-MIT License
+MIT License — see [LICENSE](LICENSE). Retains the original Ensemble copyright per the terms of
+the MIT license it was released under, plus a copyright notice for this fork's changes.
 
 ---
 
@@ -196,8 +245,8 @@ MIT License
 
 1. Clone the repository
 ```bash
-git clone https://github.com/CollotsSpot/Ensemble.git
-cd Ensemble
+git clone https://github.com/caique2C/klangor.git
+cd klangor
 ```
 
 2. Install dependencies
@@ -205,12 +254,18 @@ cd Ensemble
 flutter pub get
 ```
 
-3. Generate launcher icons
+3. Generate localizations and Drift database code
+```bash
+flutter gen-l10n
+dart run build_runner build --delete-conflicting-outputs
+```
+
+4. Generate launcher icons
 ```bash
 flutter pub run flutter_launcher_icons
 ```
 
-4. Build APK
+5. Build APK
 ```bash
 flutter build apk --release
 ```
@@ -226,7 +281,8 @@ The APK will be available at `build/app/outputs/flutter-apk/app-release.apk`
 - **audio_service** - Background playback and media notifications
 - **web_socket_channel** - WebSocket communication with Music Assistant
 - **provider** - State management
-- **cached_network_image** - Image caching
+- **drift** - Relational local database (library cache)
+- **cached_network_image** / custom `ImageService` - Image caching, shared with Android Auto
 - **shared_preferences** - Local settings storage
 
 </details>

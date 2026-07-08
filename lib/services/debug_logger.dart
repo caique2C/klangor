@@ -179,7 +179,7 @@ class DebugLogger {
     final buffer = StringBuffer();
 
     buffer.writeln('═══════════════════════════════════════');
-    buffer.writeln('ENSEMBLE BUG REPORT');
+    buffer.writeln('Klangor Bug Report');
     buffer.writeln('Generated: ${DateTime.now().toIso8601String()}');
     buffer.writeln('═══════════════════════════════════════');
     buffer.writeln();

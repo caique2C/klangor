@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ensemble/services/error_handler.dart';
+import 'package:klangor/services/error_handler.dart';
 
 void main() {
   group('ErrorHandler.handleError', () {
@@ -28,7 +28,7 @@ void main() {
     });
 
     test('classifies queue/player errors as retryable playback errors', () {
-      final info = ErrorHandler.handleError(Exception('Queue ensemble_player is not available'));
+      final info = ErrorHandler.handleError(Exception('Queue klangor_player is not available'));
       expect(info.type, ErrorType.playback);
       expect(info.canRetry, isTrue);
     });

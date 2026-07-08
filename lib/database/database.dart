@@ -466,7 +466,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   static QueryExecutor _openConnection() {
-    return driftDatabase(name: 'ensemble_db');
+    return driftDatabase(name: 'klangor_db');
   }
 
   // ============================================

@@ -29,7 +29,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace "com.collotsspot.ensemble"
+    namespace "com.klangor.app"
     compileSdk 36
     ndkVersion flutter.ndkVersion
 
@@ -58,7 +58,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.collotsspot.ensemble"
+        applicationId "com.klangor.app"
         minSdkVersion flutter.minSdkVersion
         targetSdk 35
         versionCode flutterVersionCode.toInteger()

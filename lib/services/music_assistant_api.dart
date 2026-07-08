@@ -2974,9 +2974,9 @@ class MusicAssistantAPI {
       _logger.log('Ghost adoption: Searching for "$expectedName1" or "$expectedName2"');
 
       // Find players that match the name pattern
-      // Prioritize: 1) ensemble_ + unavailable, 2) ensemble_ + available, 3) other unavailable
+      // Prioritize: 1) klangor_ + unavailable, 2) klangor_ + available, 3) other unavailable
       // Key insight: When app disconnects cleanly, player may still show as "available"
-      // So we must also adopt available ensemble_ players to prevent ghost accumulation
+      // So we must also adopt available klangor_ players to prevent ghost accumulation
       Player? matchedPlayer;
       int matchPriority = 0; // Higher = better match
 
@@ -2987,11 +2987,11 @@ class MusicAssistantAPI {
                          player.name.toLowerCase() == expectedName2.toLowerCase();
 
         if (nameMatch) {
-          final isEnsemblePlayer = player.playerId.startsWith('ensemble_');
+          final isKlangorPlayer = player.playerId.startsWith('klangor_');
           final isUnavailable = !player.available;
 
-          // Priority scoring: ensemble prefix (2 points) + unavailable (1 point)
-          final priority = (isEnsemblePlayer ? 2 : 0) + (isUnavailable ? 1 : 0);
+          // Priority scoring: klangor prefix (2 points) + unavailable (1 point)
+          final priority = (isKlangorPlayer ? 2 : 0) + (isUnavailable ? 1 : 0);
 
           _logger.log('Ghost adoption: Found "${player.name}" (${player.playerId}) '
                      'available=${player.available} priority=$priority');
@@ -3000,7 +3000,7 @@ class MusicAssistantAPI {
             matchedPlayer = player;
             matchPriority = priority;
 
-            // Perfect match: ensemble_ and unavailable
+            // Perfect match: klangor_ and unavailable
             if (priority == 3) {
               break;
             }
@@ -3614,7 +3614,7 @@ class MusicAssistantAPI {
 
   /// Create a long-lived token for persistent authentication
   /// Must be authenticated first
-  Future<String?> createLongLivedToken({String name = 'Ensemble Mobile App'}) async {
+  Future<String?> createLongLivedToken({String name = 'Klangor Mobile App'}) async {
     if (!_isAuthenticated) {
       _logger.log('Cannot create token - not authenticated');
       return null;
