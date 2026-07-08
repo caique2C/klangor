@@ -1,4 +1,4 @@
-package com.collotsspot.ensemble
+package com.klangor.app
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -22,9 +22,9 @@ import io.flutter.plugin.common.MethodChannel
 // Extend AudioServiceActivity instead of FlutterActivity to support audio_service package
 // while also intercepting volume button events
 class MainActivity: AudioServiceActivity() {
-    private val TAG = "EnsembleVolume"
-    private val CHANNEL = "com.collotsspot.ensemble/volume_buttons"
-    private val AA_CHANNEL = "com.collotsspot.ensemble/android_auto"
+    private val TAG = "KlangorVolume"
+    private val CHANNEL = "com.klangor.app/volume_buttons"
+    private val AA_CHANNEL = "com.klangor.app/android_auto"
     private var methodChannel: MethodChannel? = null
     private var aaChannel: MethodChannel? = null
     private var carModeReceiver: BroadcastReceiver? = null

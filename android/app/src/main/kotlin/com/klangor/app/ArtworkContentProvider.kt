@@ -1,4 +1,4 @@
-package com.collotsspot.ensemble
+package com.klangor.app
 
 import android.content.ContentProvider
 import android.content.ContentValues
@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap
  * This provider accepts a base64url-encoded HTTP URL in the path, downloads the
  * image (with disk caching), and returns a ParcelFileDescriptor.
  *
- * URI format: content://com.collotsspot.ensemble.artwork/{base64url_encoded_http_url}
+ * URI format: content://com.klangor.app.artwork/{base64url_encoded_http_url}
  *
  * Android Auto walks its whole category tree right after connecting (artists,
  * albums, playlists, podcasts, radio, etc. all at once), so this provider can see
@@ -40,7 +40,7 @@ import java.util.concurrent.ConcurrentHashMap
 class ArtworkContentProvider : ContentProvider() {
 
     companion object {
-        private const val TAG = "EnsembleArtwork"
+        private const val TAG = "KlangorArtwork"
         private const val CONNECT_TIMEOUT_MS = 3000
         private const val READ_TIMEOUT_MS = 5000
         // Don't retry a URL that just failed - avoids repeating a slow/failing
