@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/app_localizations.dart';
@@ -136,6 +137,15 @@ class _MusicAssistantAppState extends State<MusicAssistantApp> with WidgetsBindi
   StreamSubscription? _volumeUpSub;
   StreamSubscription? _volumeDownSub;
   StreamSubscription? _absoluteVolumeSub;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
+  // Tracks the last known connectivity so the reconnect check only fires on
+  // the none -> has-connectivity transition (regained network), not on
+  // every connectivity event (e.g. wifi -> mobile data while already online).
+  // Starts false (pessimistic) rather than assuming connectivity at launch -
+  // checkAndReconnect() is cheap/idempotent when already connected, so the
+  // worst case for a wrong guess here is one redundant verification pass,
+  // not a wrong guess silently skipping a real reconnect need.
+  bool _hadConnectivity = false;
   String? _lastSelectedPlayerId;
   RawPlayerId? _builtinPlayerId;
 
@@ -151,6 +161,7 @@ class _MusicAssistantAppState extends State<MusicAssistantApp> with WidgetsBindi
     audioHandler.setProvider(_musicProvider);
     WidgetsBinding.instance.addObserver(this);
     _initHardwareVolumeControl();
+    _initConnectivityWatcher();
     // Listen to player selection changes to toggle volume interception
     _musicProvider.addListener(_onProviderChanged);
   }
@@ -176,6 +187,22 @@ class _MusicAssistantAppState extends State<MusicAssistantApp> with WidgetsBindi
     } catch (e, stack) {
       _logger.error('Hardware volume init failed', context: 'VolumeInit', error: e, stackTrace: stack);
     }
+  }
+
+  /// Reconnect promptly when the network comes back, instead of relying on
+  /// the background reconnect backoff loop or waiting for the user to
+  /// foreground the app. Only fires on the none -> connected transition.
+  void _initConnectivityWatcher() {
+    _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
+      final hasConnectivity = results.any((r) => r != ConnectivityResult.none);
+      if (hasConnectivity && !_hadConnectivity) {
+        _logger.log('📶 Network connectivity restored - checking WebSocket connection...');
+        _musicProvider.checkAndReconnect().catchError((e) {
+          _logger.log('⚠️ checkAndReconnect (connectivity restored) failed: $e');
+        });
+      }
+      _hadConnectivity = hasConnectivity;
+    });
   }
 
   /// Called when provider state changes - check if selected player changed
@@ -255,6 +282,7 @@ class _MusicAssistantAppState extends State<MusicAssistantApp> with WidgetsBindi
     _volumeUpSub?.cancel();
     _volumeDownSub?.cancel();
     _absoluteVolumeSub?.cancel();
+    _connectivitySub?.cancel();
     _hardwareVolumeService.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
