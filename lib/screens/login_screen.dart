@@ -123,13 +123,34 @@ class _LoginScreenState extends State<LoginScreen> {
       // Authenticate with MA
       _logger.log('Authenticating with Music Assistant...');
 
-      // Check if we have a stored MA token first
-      final storedToken = await SettingsService.getMaAuthToken();
-      bool authSuccess = false;
+      // connectToServer() already tries stored-token (then stored-credentials)
+      // authentication automatically via its own connection-state listener -
+      // the same path that silently reconnects on app resume. Give that a
+      // brief window to finish before trying our own stored-token/typed-
+      // credentials login below. Without this, re-attempting here while the
+      // provider's own attempt is still in flight (or has just succeeded)
+      // hits guards in authenticateWithToken()/loginWithCredentials() that
+      // reject an already-connected/authenticated state - surfacing a bogus
+      // "login failed" error even though the app is actually connected
+      // underneath (confirmed live: logs showed a fully successful connect
+      // + Sendspin session immediately followed by this screen reporting
+      // failure).
+      bool authSuccess = provider.isConnected;
+      for (int i = 0; i < 6 && !authSuccess; i++) {
+        await Future.delayed(const Duration(milliseconds: 250));
+        authSuccess = provider.isConnected;
+      }
 
-      if (storedToken != null && provider.api != null) {
-        _logger.log('Trying stored MA token...');
-        authSuccess = await provider.api!.authenticateWithToken(storedToken);
+      // Check if we have a stored MA token first (only reached if the
+      // provider's own automatic attempt above didn't already succeed -
+      // e.g. no/invalid stored token, or stored credentials that don't
+      // match what was just typed into this form)
+      if (!authSuccess) {
+        final storedToken = await SettingsService.getMaAuthToken();
+        if (storedToken != null && provider.api != null) {
+          _logger.log('Trying stored MA token...');
+          authSuccess = await provider.api!.authenticateWithToken(storedToken);
+        }
       }
 
       if (!authSuccess) {
