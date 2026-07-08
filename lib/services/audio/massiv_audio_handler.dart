@@ -1491,14 +1491,22 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   }
 
   Future<List<MediaItem>> _autoBuildArtistList(MusicAssistantProvider provider) async {
-    var artists = await LibraryRepository.instance.getAllArtists();
+    // Prefer SyncService's in-memory cache - it's what the main Library
+    // screen reads from, and gets a full, correctly-filtered replace on
+    // every sync (so it respects the "only artists with albums" setting).
+    // LibraryRepository's relational table is only ever upserted, never
+    // pruned, so artists synced before that filter was ever turned on (or
+    // while it was off) stick around there forever - reading it first (the
+    // old order) showed Android Auto a stale, unfiltered list even when the
+    // main UI was correctly filtered.
+    var artists = SyncService.instance.cachedArtists;
     if (artists.isEmpty) {
-      _logger.log('AndroidAuto: repository artists empty, falling back to SyncService cache');
+      await SyncService.instance.loadFromCache();
       artists = SyncService.instance.cachedArtists;
-      if (artists.isEmpty) {
-        await SyncService.instance.loadFromCache();
-        artists = SyncService.instance.cachedArtists;
-      }
+    }
+    if (artists.isEmpty) {
+      _logger.log('AndroidAuto: SyncService cache empty, falling back to LibraryRepository');
+      artists = await LibraryRepository.instance.getAllArtists();
     }
     _logger.log('AndroidAuto: Artists: ${artists.length}');
     return artists.map((a) => MediaItem(
