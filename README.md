@@ -91,11 +91,17 @@ the fix stops being local and starts being structural.
   helpers.
 - **Icon package**: consolidated on `material_symbols_icons`, dropping the older
   `material_design_icons_flutter` dependency.
+- **Connection resilience**: the WebSocket and local-playback (Sendspin) connections now retry
+  with exponential backoff instead of giving up after one failed attempt, and reconnect
+  promptly when network connectivity is restored rather than waiting for the app to be
+  foregrounded. A pass over error-handling call sites also fixed 16 places where a mismatched
+  handler return type could mask the real underlying error.
 - Full rebrand: app name, Android `applicationId`/package (`com.klangor.app`), notification
   channel/method-channel identifiers, launcher icons, and the internal builtin-player ID prefix.
 
-For the detailed, commit-by-commit reasoning behind each of these, see the `my-fixes` branch's
-commit messages — they're written as design-decision records, not changelogs.
+For the detailed, commit-by-commit reasoning behind each of these, see the
+[Releases page](https://github.com/caique2C/klangor/releases) or the commit history — they're
+written as design-decision records, not changelogs.
 
 ---
 
@@ -135,6 +141,7 @@ Klangor currently has the same feature set as the Ensemble version it was forked
 - **Podcasts** - Browse podcasts, view episodes with descriptions and publish dates
 - **Audiobooks** - Browse by title, series, or author with progress tracking
 - **Favorites Filter** - Toggle to show only your favorite items
+- **Album Type Filter** - Show/hide albums by type (Album, Single, EP, Compilation, Live, Soundtrack)
 - **Providers Filter** - Toggle to show only specific provider items
 - **Letter Scrollbar** - Fast navigation through long lists
 - **Provider Icons** - Provider icons on library covers
