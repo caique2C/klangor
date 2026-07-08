@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/services.dart';
@@ -360,17 +359,6 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
           // so _favoriteControl() reading it live below already reflects
           // this the next time icons are rebuilt (see _refreshPlaybackState
           // right after this switch).
-        case 'startRadio':
-          final track = provider.currentTrack;
-          if (track == null) {
-            _logger.log('AndroidAuto: startRadio: no currentTrack');
-            return;
-          }
-          _logger.log('AndroidAuto: startRadio: track=${track.name}, playerId=${player.playerId}');
-          await provider.playRadio(player.playerId, track);
-          _logger.log('AndroidAuto: startRadio: done');
-          // Fetch updated queue after radio starts and populate AA queue
-          _refreshQueueAfterDelay(provider, player.playerId);
         case 'cycleRepeat':
           final queue = await provider.getQueue(player.playerId);
           final currentMode = queue?.repeatMode ?? 'off';
@@ -639,16 +627,8 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   static final _iconAlbum = Uri.parse('android.resource://$_iconPkg/drawable/ic_auto_album');
   static final _iconPlaylist = Uri.parse('android.resource://$_iconPkg/drawable/ic_auto_playlist');
   static final _iconFavorite = Uri.parse('android.resource://$_iconPkg/drawable/ic_auto_favorite');
-  static final _iconStartRadio = Uri.parse('android.resource://$_iconPkg/drawable/ic_auto_radio');
-
   // Custom now-playing action buttons for Android Auto
   // Icons change based on current state for visual feedback
-  static final _radioControl = MediaControl.custom(
-    androidIcon: 'drawable/ic_auto_radio',
-    label: 'Start Radio',
-    name: 'startRadio',
-  );
-
   MediaControl _shuffleControl() {
     return MediaControl.custom(
       androidIcon: _shuffleOn ? 'drawable/ic_auto_shuffle_on' : 'drawable/ic_auto_shuffle',
@@ -695,7 +675,6 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     _shuffleControl(),
     if (!_isAndroidAutoConnected) _switchPlayerControl,
     _favoriteControl(),
-    _radioControl,
     _repeatControl(),
   ];
 
@@ -923,42 +902,6 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     _clearErrorState();
 
     try {
-      if (mediaId.startsWith('artistradio|')) {
-        final artistName = mediaId.substring('artistradio|'.length);
-        final artist = SyncService.instance.cachedArtists
-            .where((a) => a.name == artistName)
-            .firstOrNull;
-        if (artist == null) {
-          _logger.log('AndroidAuto: Artist radio: artist "$artistName" not found');
-          return;
-        }
-        _logger.log('AndroidAuto: Starting artist radio for "$artistName"');
-        await provider.api?.playArtistRadio(playerId, artist);
-        _refreshQueueAfterDelay(provider, playerId);
-        return;
-      }
-
-      if (mediaId.startsWith('smartshuffle|')) {
-        final ctxKey = mediaId.substring('smartshuffle|'.length);
-        final trackList = _autoTrackCache[ctxKey];
-        if (trackList == null || trackList.isEmpty) {
-          _logger.log('AndroidAuto: Start Radio: no cached tracks for $ctxKey');
-          return;
-        }
-        final seed = trackList[Random().nextInt(trackList.length)];
-        try {
-          await provider.api?.playRadio(playerId, seed);
-          _refreshQueueAfterDelay(provider, playerId);
-        } catch (e) {
-          _logger.log('AndroidAuto: Start Radio failed, playing shuffled: $e');
-          final shuffled = List<ma.Track>.from(trackList)..shuffle(Random());
-          await provider.playTracks(playerId, shuffled, startIndex: 0);
-          await provider.toggleShuffle(playerId, true);
-          _populateQueue(provider, shuffled, 0);
-        }
-        return;
-      }
-
       if (mediaId.startsWith('track|')) {
         // Format: track|{tProvider}|{tItemId}|{ctxType}|{ctxProvider}|{ctxId}
         final parts = mediaId.split('|');
@@ -1487,7 +1430,6 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     const ctxKey = 'favs||';
     _cacheTrackList(ctxKey, tracks);
     final items = tracks.map((t) => _autoTrackItem(provider, t, ctxKey)).toList();
-    if (items.isNotEmpty) items.insert(0, _autoStartRadioItem(ctxKey));
     return items;
   }
 
@@ -1520,7 +1462,6 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     final ctxKey = 'plist|$plProvider|$plItemId';
     _cacheTrackList(ctxKey, tracks);
     final items = tracks.map((t) => _autoTrackItem(provider, t, ctxKey)).toList();
-    if (items.isNotEmpty) items.insert(0, _autoStartRadioItem(ctxKey));
     return items;
   }
 
@@ -1554,19 +1495,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       albums = provider.getArtistAlbumsFromLibrary(artistName);
     }
     _logger.log('AndroidAuto: Artist "$artistName" albums: ${albums.length}');
-    // Music Assistant's filesystem-only libraries have no real "similar
-    // tracks" data, so radio for library-only artists tends to produce
-    // unrelated results — only offer it when it'll actually be good.
-    final artist = SyncService.instance.cachedArtists.where((a) => a.name == artistName).firstOrNull;
-    final canRadio = artist != null && provider.artistSupportsRadio(artist);
     return [
-      if (canRadio)
-        MediaItem(
-          id: 'artistradio|$artistName',
-          title: 'Start Radio',
-          artUri: _iconRadio,
-          playable: true,
-        ),
       ...albums.map((a) => MediaItem(
         id: 'album|${a.provider}|${a.itemId}',
         title: a.name,
@@ -1607,7 +1536,6 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     final ctxKey = 'album|$alProvider|$alItemId';
     _cacheTrackList(ctxKey, tracks);
     final items = tracks.map((t) => _autoTrackItem(provider, t, ctxKey)).toList();
-    if (items.isNotEmpty) items.insert(0, _autoStartRadioItem(ctxKey));
     return items;
   }
 
@@ -1770,15 +1698,6 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       'android.media.extra.PLAYBACK_STATUS': book.fullyPlayed == true ? 2 : 1,
       'android.media.extra.PLAYBACK_STATUS_COMPLETION_PERCENTAGE': book.progress,
     };
-  }
-
-  MediaItem _autoStartRadioItem(String ctxKey) {
-    return MediaItem(
-      id: 'smartshuffle|$ctxKey',
-      title: 'Start Radio',
-      artUri: _iconStartRadio,
-      playable: true,
-    );
   }
 
   MediaItem _autoTrackItem(
