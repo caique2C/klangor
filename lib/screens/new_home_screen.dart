@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../models/recommendation_folder.dart';
@@ -317,12 +318,24 @@ class _NewHomeScreenState extends State<NewHomeScreen> with AutomaticKeepAliveCl
     super.build(context); // Required for AutomaticKeepAliveClientMixin
     // Settings are loaded in initState and didChangeAppLifecycleState - no need to reload on every build
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: colorScheme.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        // Without an explicit style here, AppBar computes its own default
+        // for a transparent background rather than inheriting the correct
+        // one main.dart/SystemUIWrapper already set globally - on this
+        // screen that default came out wrong (light/white icons against
+        // this screen's light background), making the whole status bar
+        // unreadable except the battery glyph. Match it explicitly instead
+        // of relying on AppBar's guess.
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        ),
         title: Padding(
           padding: const EdgeInsets.only(left: 16.0),
           child: Image.asset(
