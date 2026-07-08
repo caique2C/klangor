@@ -6395,6 +6395,12 @@ class MusicAssistantProvider with ChangeNotifier {
         // Report state to MA immediately (fire and forget)
         _sendspinService?.reportState(playing: false, paused: true);
 
+        // Tell the OS-facing playback state too - otherwise the next resume's
+        // audio-focus reclaim (gated on a rising edge of "was playing") never
+        // fires, since nothing else on this path touches it. See
+        // MassivAudioHandler.markLocalPaused doc comment.
+        _notificationBridge.markLocalPaused();
+
         // Update local player state optimistically for UI responsiveness
         if (_selectedPlayer != null) {
           _selectedPlayer = _selectedPlayer!.copyWith(state: 'paused');

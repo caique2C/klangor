@@ -56,6 +56,11 @@ class PlaybackNotificationBridge {
   /// Clear remote playback state (e.g. player deselected/disconnected).
   void clearRemotePlaybackState() => _handler.clearRemotePlaybackState();
 
+  /// Mark local (builtin player) playback as paused in the OS-facing state
+  /// without touching track metadata - see MassivAudioHandler.markLocalPaused
+  /// doc comment for why this matters for audio-focus reclaim on resume.
+  void markLocalPaused() => _handler.markLocalPaused();
+
   /// Update the reported queue index (e.g. after skip/previous) without a
   /// full notification rebuild.
   void updateQueueIndex(int index) => _handler.updateQueueIndex(index);

@@ -482,6 +482,31 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     ));
   }
 
+  /// Mark local (builtin player) playback as paused in the OS-facing state,
+  /// without touching track metadata. pausePlayer() in the provider pauses
+  /// the PCM engine and reports state to the MA server (e.g. on AA
+  /// disconnect), but never told this handler - leaving
+  /// playbackState.value.playing stuck at true. updateLocalModeNotification's
+  /// audio-focus reclaim on resume is gated on a rising edge of that flag
+  /// ("only reclaim focus when transitioning to playing, to avoid stealing
+  /// focus back from other apps on every position update") - if it was never
+  /// flipped to false here, that reclaim is silently skipped on resume, so
+  /// PCM feeding continues (position advances normally) with no actual
+  /// audio focus/output. Call this wherever the builtin player pauses
+  /// outside of updateLocalModeNotification's own play/pause transitions.
+  ///
+  /// Guarded on !_isRemoteMode: onAADisconnected unconditionally pauses the
+  /// builtin player on every AA disconnect, even when a *remote* MA player
+  /// (e.g. a Chromecast speaker) is the one actually selected and playing.
+  /// Without this guard, that spurious pause of an inactive local player
+  /// would incorrectly flip the shared notification/AA "now playing" state
+  /// to paused while the remote player keeps right on playing.
+  void markLocalPaused() {
+    if (_isRemoteMode) return;
+    if (!playbackState.value.playing) return;
+    playbackState.add(playbackState.value.copyWith(playing: false));
+  }
+
   /// Clear remote playback state and hide notification
   void clearRemotePlaybackState() async {
     _isRemoteMode = false;
