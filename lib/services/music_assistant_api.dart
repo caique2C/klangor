@@ -80,6 +80,12 @@ class MusicAssistantAPI {
   Completer<void>? _connectionInProgress;
   bool _isDisposed = false;
 
+  // Guard to prevent overlapping _reconnect() backoff loops - onError/onDone/
+  // heartbeat-failure can all call _reconnect() independently, and without
+  // this a second call arriving while the first is mid-backoff would start
+  // its own parallel retry loop.
+  bool _isReconnecting = false;
+
   Future<void> connect() async {
     // If disposed, don't try to connect
     if (_isDisposed) {
@@ -3692,6 +3698,11 @@ class MusicAssistantAPI {
     }
   }
 
+  // Backoff ceiling for _reconnect()'s retry loop - keeps retrying
+  // indefinitely (e.g. while the home server is down for a while) without
+  // hammering it every Timings.reconnectDelay forever.
+  static const Duration _maxReconnectDelay = Duration(seconds: 30);
+
   Future<void> _reconnect() async {
     // Don't reconnect if disposed
     if (_isDisposed) {
@@ -3713,22 +3724,40 @@ class MusicAssistantAPI {
       return;
     }
 
+    // Don't start a second backoff loop if one is already retrying in the
+    // background - let it keep running instead of racing two loops.
+    if (_isReconnecting) {
+      _logger.log('Reconnect: Backoff loop already running, skipping duplicate trigger');
+      return;
+    }
+    _isReconnecting = true;
+
     // Cancel all pending requests before reconnecting to prevent memory leaks
     _cancelPendingRequests('Connection lost, reconnecting');
 
-    await Future.delayed(Timings.reconnectDelay);
-
-    // Check again after delay
-    if (_isDisposed ||
-        _currentState == MAConnectionState.connected ||
-        _currentState == MAConnectionState.authenticated) {
-      return;
-    }
-
     try {
-      await connect();
-    } catch (e) {
-      _logger.log('Reconnection failed: $e');
+      var delay = Timings.reconnectDelay;
+      while (true) {
+        await Future.delayed(delay);
+
+        // Check again after delay
+        if (_isDisposed ||
+            _currentState == MAConnectionState.connected ||
+            _currentState == MAConnectionState.authenticated) {
+          return;
+        }
+
+        try {
+          await connect();
+          return;
+        } catch (e) {
+          _logger.log('Reconnection attempt failed, retrying in ${delay.inSeconds}s: $e');
+          delay = delay * 2;
+          if (delay > _maxReconnectDelay) delay = _maxReconnectDelay;
+        }
+      }
+    } finally {
+      _isReconnecting = false;
     }
   }
 

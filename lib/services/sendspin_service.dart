@@ -40,6 +40,11 @@ class SendspinService {
   WebSocketChannel? _channel;
   Timer? _heartbeatTimer;
   Timer? _reconnectTimer;
+  // Exponential backoff state for _scheduleReconnect() - grows on each
+  // consecutive failed attempt (capped), resets to base once connected again.
+  static const Duration _baseReconnectDelay = Duration(seconds: 5);
+  static const Duration _maxReconnectDelay = Duration(seconds: 30);
+  Duration _reconnectDelay = _baseReconnectDelay;
 
   // Connection state
   SendspinConnectionState _state = SendspinConnectionState.disconnected;
@@ -284,6 +289,7 @@ class SendspinService {
 
       _logger.log('Sendspin: Connected and registered successfully');
       _updateState(SendspinConnectionState.connected);
+      _reconnectDelay = _baseReconnectDelay;
       _startHeartbeat();
 
       return true;
@@ -667,17 +673,23 @@ class SendspinService {
     _heartbeatTimer = null;
   }
 
-  /// Schedule reconnection attempt
+  /// Schedule reconnection attempt with exponential backoff. Keeps retrying
+  /// (capped delay) rather than giving up after one failed attempt, since
+  /// nothing else re-triggers a retry once the channel never got reopened.
   void _scheduleReconnect() {
     if (_isDisposed) return;
 
     _reconnectTimer?.cancel();
-    _reconnectTimer = Timer(const Duration(seconds: 5), () {
-      if (!_isDisposed && _state != SendspinConnectionState.connected) {
-        _logger.log('Sendspin: Attempting reconnection...');
-        if (_connectedUrl != null) {
-          connectWithUrl(_connectedUrl!);
-        }
+    _reconnectTimer = Timer(_reconnectDelay, () async {
+      if (_isDisposed || _state == SendspinConnectionState.connected) return;
+      _logger.log('Sendspin: Attempting reconnection...');
+      if (_connectedUrl == null) return;
+
+      final connected = await connectWithUrl(_connectedUrl!);
+      if (!connected && !_isDisposed) {
+        _reconnectDelay = _reconnectDelay * 2;
+        if (_reconnectDelay > _maxReconnectDelay) _reconnectDelay = _maxReconnectDelay;
+        _scheduleReconnect();
       }
     });
   }
