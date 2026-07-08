@@ -169,8 +169,10 @@ class PcmAudioPlayer {
       // Set up feed callback for when buffer needs more data
       pcm.FlutterPcmSound.setFeedCallback(_onFeedRequested);
 
-      // Set log level for debugging
-      await pcm.FlutterPcmSound.setLogLevel(pcm.LogLevel.standard);
+      // LogLevel.standard prints every single feed() call (~40x/second) to
+      // logcat - floods the buffer badly enough that it pushes out genuinely
+      // useful diagnostic lines (from this app or elsewhere) within seconds.
+      await pcm.FlutterPcmSound.setLogLevel(pcm.LogLevel.error);
 
       _state = PcmPlayerState.ready;
       _logger.log('PcmAudioPlayer: Initialized successfully');
@@ -184,11 +186,29 @@ class PcmAudioPlayer {
 
   /// Callback when flutter_pcm_sound needs more audio data
   void _onFeedRequested(int remainingFrames) {
+    // remainingFrames == 0 means the native buffer fully drained before we
+    // fed more data - an actual underrun, audible as a click/gap. Worth
+    // surfacing distinctly from the routine low-buffer callback so a
+    // reported crackle/stutter can be correlated against real underruns.
+    if (remainingFrames == 0) {
+      _logger.log('⚠️ PcmAudioPlayer: Native buffer underrun (0 frames remaining) - audible glitch likely');
+    }
+
     // This is called from native when buffer is getting low
     // Block feeding during pause, transitional states, or when not playing
     if (_state != PcmPlayerState.playing) return;
     if (_shouldBlockFeeding) return;
-    if (_audioBuffer.isEmpty || _isFeeding) return;
+    if (_audioBuffer.isEmpty) {
+      // Native wants data but the network hasn't delivered any yet - a
+      // Dart-side/network starvation, distinct from a Dart-side processing
+      // stall (which would instead show a healthy _audioBuffer sitting
+      // unfed). Also worth correlating against reported glitches.
+      if (remainingFrames == 0) {
+        _logger.log('⚠️ PcmAudioPlayer: Underrun with empty local buffer - network/decode not keeping up');
+      }
+      return;
+    }
+    if (_isFeeding) return;
 
     _feedNextChunk();
   }
@@ -369,17 +389,38 @@ class PcmAudioPlayer {
              !_shouldBlockFeeding) {
         final chunk = _audioBuffer.removeAt(0);
 
-        // Convert Uint8List (raw bytes) to Int16 samples
-        // Sendspin sends 16-bit little-endian PCM
-        final rawSamples = _bytesToInt16List(chunk);
-        final samples = _volumeGain == 1.0
-            ? rawSamples
-            : rawSamples.map((s) => (s * _volumeGain).round().clamp(-32768, 32767)).toList();
+        // Sendspin sends 16-bit little-endian PCM, which matches this app's
+        // only real-world targets (Android/iOS are both little-endian host
+        // order), so the common case (gain == 1.0, which is every case today
+        // - setVolumeGain has no callers anywhere in the app) can feed the
+        // network bytes through with a single bulk copy instead of the
+        // previous unconditional byte->int->byte round trip (manual
+        // per-sample unpack into a growable List<int>, then repacked into a
+        // brand new ByteData) that ran on every ~25ms chunk for the entire
+        // duration of every track - pure allocation/GC overhead for a gain
+        // adjustment that never actually happens, and a plausible contributor
+        // to the progressive crackling/stutter reported after a track has
+        // been playing a while.
+        //
+        // The copy is required, not optional: `chunk` here is typically a
+        // Uint8List.sublistView into a *larger* shared buffer (Sendspin
+        // strips a 9-byte header via sublistView, not a copy - see
+        // sendspin_service.dart:_handleBinaryAudioData). PcmArrayInt16.feed()
+        // sends `bytes.buffer.asUint8List()`, which returns the *entire*
+        // underlying buffer, ignoring the view's own offset/length - wrapping
+        // the view directly would leak neighboring bytes (or the stripped
+        // header) into the native feed. Uint8List.fromList forces a
+        // tightly-sized, non-aliased copy first.
+        final buffer = _volumeGain == 1.0
+            ? pcm.PcmArrayInt16(bytes: ByteData.sublistView(Uint8List.fromList(chunk)))
+            : pcm.PcmArrayInt16.fromList(_bytesToInt16List(chunk)
+                .map((s) => (s * _volumeGain).round().clamp(-32768, 32767))
+                .toList());
 
         // Check state again before the async feed call
-        if (samples.isNotEmpty && !_shouldBlockFeeding) {
+        if (buffer.count != 0 && !_shouldBlockFeeding) {
           try {
-            await pcm.FlutterPcmSound.feed(pcm.PcmArrayInt16.fromList(samples));
+            await pcm.FlutterPcmSound.feed(buffer);
           } catch (feedError) {
             // Auto-recover from "must call setup first" error
             // This happens when audio frames arrive before stream/start message
@@ -402,7 +443,7 @@ class PcmAudioPlayer {
                 _logger.log('PcmAudioPlayer: Auto-recovery successful');
 
                 // Retry the feed with the current chunk
-                await pcm.FlutterPcmSound.feed(pcm.PcmArrayInt16.fromList(samples));
+                await pcm.FlutterPcmSound.feed(buffer);
               } catch (recoveryError) {
                 _logger.log('PcmAudioPlayer: Auto-recovery failed: $recoveryError');
                 _isAutoRecovering = false;
