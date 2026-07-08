@@ -269,7 +269,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         orElse: () => RecommendationFolder(
           itemId: itemId,
           provider: 'unknown',
-          name: rowId,
+          name: itemId
+              .replaceAll('_', ' ')
+              .split(' ')
+              .where((w) => w.isNotEmpty)
+              .map((w) => w[0].toUpperCase() + w.substring(1))
+              .join(' '),
           items: [],
         ),
       );
@@ -1192,84 +1197,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Support Development banner
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color(0xFFEA4AAA).withOpacity(0.15),
-                    Color(0xFF1F6FEB).withOpacity(0.15),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: colorScheme.outline.withOpacity(0.2),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.favorite_rounded,
-                        color: Color(0xFFEA4AAA),
-                        size: 24,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          S.of(context)!.supportDevelopment,
-                          style: textTheme.titleMedium?.copyWith(
-                            color: colorScheme.onBackground,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    S.of(context)!.ensembleIsUnofficial,
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onBackground.withOpacity(0.7),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      // GitHub Sponsors button
-                      Expanded(
-                        child: _DonationButton(
-                          label: S.of(context)!.sponsorOnGitHub,
-                          color: Color(0xFF1F6FEB),
-                          iconWidget: Icon(Icons.code, size: 20),
-                          onTap: () => _launchUrl('https://github.com/sponsors/CollotsSpot'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      // Ko-fi button
-                      Expanded(
-                        child: _DonationButton(
-                          icon: null,
-                          label: S.of(context)!.buyMeAKoFi,
-                          color: Color(0xFFFF5E5B),
-                          iconWidget: Icon(Icons.coffee_rounded, color: Colors.white),
-                          onTap: () => _launchUrl('https://ko-fi.com/collotsspot'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
             // About Klangor card
             Container(
               width: double.infinity,
@@ -1510,66 +1437,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               );
             }).toList(),
         ],
-      ),
-    );
-  }
-}
-
-// Custom donation button widget
-class _DonationButton extends StatelessWidget {
-  final String? icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-  final Widget? iconWidget;
-
-  const _DonationButton({
-    this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-    this.iconWidget,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          height: 48,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: color.withOpacity(0.3),
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (iconWidget != null)
-                iconWidget!
-              else if (icon != null)
-                Image.asset(
-                  icon!,
-                  width: 20,
-                  height: 20,
-                ),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
