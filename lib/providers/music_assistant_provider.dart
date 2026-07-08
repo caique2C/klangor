@@ -2442,6 +2442,22 @@ class MusicAssistantProvider with ChangeNotifier {
       _sendspinService?.dispose();
       _sendspinService = SendspinService(_serverUrl!);
 
+      // Seed the initial reported volume from the phone's actual current
+      // system volume, not the service's hardcoded default - otherwise every
+      // connection told the MA server this player was at 100% volume
+      // regardless of the real value, until something else happened to
+      // correct it later.
+      try {
+        final systemVolume = await FlutterVolumeController.getVolume();
+        if (systemVolume != null) {
+          final volumeLevel = (systemVolume * 100).round();
+          _sendspinService!.setInitialVolume(volumeLevel);
+          _localPlayerVolume = volumeLevel;
+        }
+      } catch (e) {
+        _logger.log('⚠️ Failed to read system volume for initial Sendspin state: $e');
+      }
+
       // Set auth token for proxy authentication (MA 2.7.1+ or manually configured proxy)
       final authToken = await SettingsService.getMaAuthToken();
       if (authToken != null) {
@@ -2712,11 +2728,10 @@ class MusicAssistantProvider with ChangeNotifier {
       final track = _currentTrack!;
       final trackArtworkUrl = _api?.getImageUrl(track, size: 512);
       final displayArtist = _trackDisplayArtist(track);
-      final artistWithPlayer = '${displayArtist} • ${_selectedPlayer?.name ?? ''}';
       final mediaItem = audio_service.MediaItem(
         id: track.uri ?? track.itemId,
         title: track.name,
-        artist: artistWithPlayer,
+        artist: displayArtist,
         album: track.album?.name ?? '',
         duration: track.duration,
         artUri: _contentArtUri(trackArtworkUrl),
@@ -2784,11 +2799,10 @@ class MusicAssistantProvider with ChangeNotifier {
       final track = _currentTrack!;
       final artworkUrl = _api?.getImageUrl(track, size: 512);
       final displayArtist = _trackDisplayArtist(track);
-      final artistWithPlayer = '${displayArtist} • ${_selectedPlayer?.name ?? ''}';
       final mediaItem = audio_service.MediaItem(
         id: track.uri ?? track.itemId,
         title: track.name,
-        artist: artistWithPlayer,
+        artist: displayArtist,
         album: track.album?.name ?? '',
         duration: track.duration,
         artUri: _contentArtUri(artworkUrl),
@@ -4740,11 +4754,10 @@ class MusicAssistantProvider with ChangeNotifier {
         final track = _currentTrack!;
         final artworkUrl = _api?.getImageUrl(track, size: 512);
         final displayArtist = _trackDisplayArtist(track);
-        final artistWithPlayer = '${displayArtist} • ${player.name}';
         final mediaItem = audio_service.MediaItem(
           id: track.uri ?? track.itemId,
           title: track.name,
-          artist: artistWithPlayer,
+          artist: displayArtist,
           album: track.album?.name ?? '',
           duration: track.duration,
           artUri: _contentArtUri(artworkUrl),
@@ -4772,11 +4785,10 @@ class MusicAssistantProvider with ChangeNotifier {
         final track = _currentTrack!;
         final artworkUrl = _api?.getImageUrl(track, size: 512);
         final displayArtist = _trackDisplayArtist(track);
-        final artistWithPlayer = '${displayArtist} • ${player.name}';
         final mediaItem = audio_service.MediaItem(
           id: track.uri ?? track.itemId,
           title: track.name,
-          artist: artistWithPlayer,
+          artist: displayArtist,
           album: track.album?.name ?? '',
           duration: track.duration,
           artUri: _contentArtUri(artworkUrl),
@@ -4800,11 +4812,10 @@ class MusicAssistantProvider with ChangeNotifier {
         final artworkUrl = _api?.getImageUrl(track, size: 512);
         // Include player name in artist line: "Artist • Player Name"
         final displayArtist = _trackDisplayArtist(track);
-        final artistWithPlayer = '${displayArtist} • ${player.name}';
         final mediaItem = audio_service.MediaItem(
           id: track.uri ?? track.itemId,
           title: track.name,
-          artist: artistWithPlayer,
+          artist: displayArtist,
           album: track.album?.name ?? '',
           duration: track.duration,
           artUri: _contentArtUri(artworkUrl),
@@ -4980,11 +4991,10 @@ class MusicAssistantProvider with ChangeNotifier {
 
     final artworkUrl = _api?.getImageUrl(track, size: 512);
     final displayArtist = _trackDisplayArtist(track);
-    final artistWithPlayer = '${displayArtist} • ${_selectedPlayer!.name}';
     final mediaItem = audio_service.MediaItem(
       id: track.uri ?? track.itemId,
       title: track.name,
-      artist: artistWithPlayer,
+      artist: displayArtist,
       album: track.album?.name ?? '',
       duration: track.duration,
       artUri: _contentArtUri(artworkUrl),
@@ -5524,11 +5534,10 @@ class MusicAssistantProvider with ChangeNotifier {
         if (isBuiltinPlayer) {
           // Local playback - use local mode notification (keeps pause working)
           final displayArtist = _trackDisplayArtist(track);
-          final artistWithPlayer = '$displayArtist • ${_selectedPlayer!.name}';
           final mediaItem = audio_service.MediaItem(
             id: track.uri ?? track.itemId,
             title: track.name,
-            artist: artistWithPlayer,
+            artist: displayArtist,
             album: track.album?.name ?? '',
             duration: track.duration,
             artUri: _contentArtUri(artworkUrl),
@@ -5543,11 +5552,10 @@ class MusicAssistantProvider with ChangeNotifier {
           // Remote MA player - show notification via remote mode
           // Include player name in artist line: "Artist • Player Name"
           final displayArtist = _trackDisplayArtist(track);
-          final artistWithPlayer = '$displayArtist • ${_selectedPlayer!.name}';
           final mediaItem = audio_service.MediaItem(
             id: track.uri ?? track.itemId,
             title: track.name,
-            artist: artistWithPlayer,
+            artist: displayArtist,
             album: track.album?.name ?? '',
             duration: track.duration,
             artUri: _contentArtUri(artworkUrl),
@@ -6208,20 +6216,19 @@ class MusicAssistantProvider with ChangeNotifier {
       }
 
       // Fallback: not (yet) part of the loaded queue - e.g. a different
-      // album, or nothing has been queued this session. Settle any in-flight
-      // local stream first; still helps this path even though it isn't
-      // sufficient on its own for the same-queue case above.
-      if (clearQueue && (_pcmAudioPlayer?.isPlaying ?? false)) {
-        final builtinPlayerId = await SettingsService.getBuiltinPlayerId();
-        if (builtinPlayerId != null &&
-            PlayerRepository.idsMatchRaw(playerId, builtinPlayerId) &&
-            _sendspinConnected) {
-          await _pcmAudioPlayer?.pause(isUserInitiated: false);
-          _sendspinService?.reportState(playing: false, paused: true);
-          await Future.delayed(const Duration(milliseconds: 200));
-        }
-      }
-
+      // album/playlist, or nothing has been queued this session. Send the
+      // replace directly - a client-side pre-pause was tried here and
+      // removed after live logs showed it backfiring: stale, already-in-
+      // flight audio from the *old* stream (sent by the server before it
+      // even received our replace command) arrives while our own pause has
+      // the player in `paused`, and _onAudioData's auto-recovery logic (see
+      // its doc comment) can't tell that apart from a legitimate new stream
+      // starting early - it resumes the player into a stale/starved state,
+      // and the confused handoff that follows left MA's own queue reporting
+      // "stopped" instead of "playing" (confirmed via player_updated/
+      // group_update events), not just a delayed start. Direct replace still
+      // hits the underlying MA-server race sometimes, but doesn't add this
+      // failure mode on top of it.
       await _api?.playTracks(playerId, tracks, startIndex: startIndex, clearQueue: clearQueue);
 
       if (targetTrack != null) {

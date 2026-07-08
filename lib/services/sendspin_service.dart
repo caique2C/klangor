@@ -79,6 +79,11 @@ class SendspinService {
   bool _isPlaying = false;
   bool _isPaused = false;
   int _position = 0;
+  // Placeholder until setInitialVolume() seeds the real system volume before
+  // connecting - _sendInitialState() reports whatever this is at handshake
+  // time, so leaving it hardcoded at 100 meant every connection told the MA
+  // server (and thus every other client) this player was at max volume,
+  // regardless of the phone's actual volume.
   int _volume = 100;
   bool _isMuted = false;
 
@@ -544,6 +549,14 @@ class SendspinService {
     } catch (e) {
       _logger.log('Sendspin: Error sending message: $e');
     }
+  }
+
+  /// Seed the volume that will be reported at handshake time, before the
+  /// first client/state message goes out. Call before connect()/
+  /// connectWithUrl() - _sendInitialState() fires as soon as the handshake
+  /// completes, using whatever _volume already holds at that point.
+  void setInitialVolume(int volume) {
+    _volume = volume.clamp(0, 100);
   }
 
   /// Report current player state to server

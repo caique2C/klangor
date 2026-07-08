@@ -49,6 +49,7 @@ class _AlbumDetailsScreenState extends State<AlbumDetailsScreen> with SingleTick
   bool _isDescriptionExpanded = false;
   String? _albumDescription;
   Album? _freshAlbum; // Full album data with image metadata
+  bool _isPlayingTrack = false;
 
   /// Get the best album data available (fresh with images, or widget.album as fallback)
   Album get _displayAlbum => _freshAlbum ?? widget.album;
@@ -634,6 +635,14 @@ class _AlbumDetailsScreenState extends State<AlbumDetailsScreen> with SingleTick
   }
 
   Future<void> _playTrack(int index) async {
+    // Guard against a fast double-tap firing this twice concurrently - two
+    // near-simultaneous playTracks/play_index calls for the same track
+    // confuse the server's queue/stream state, causing it to repeatedly
+    // restart the stream for several seconds (audible glitches, position
+    // jumping around) instead of a clean switch.
+    if (_isPlayingTrack) return;
+    _isPlayingTrack = true;
+
     final maProvider = context.read<MusicAssistantProvider>();
 
     try {
@@ -653,6 +662,8 @@ class _AlbumDetailsScreenState extends State<AlbumDetailsScreen> with SingleTick
     } catch (e) {
       _logger.log('Error playing track: $e');
       _showError('Failed to play track: $e');
+    } finally {
+      _isPlayingTrack = false;
     }
   }
 
@@ -1179,7 +1190,7 @@ class _AlbumDetailsScreenState extends State<AlbumDetailsScreen> with SingleTick
                         ),
                         child: Center(
                           child: Text(
-                            '${track.position ?? index + 1}',
+                            '${index + 1}',
                             style: TextStyle(
                               color: colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.bold,

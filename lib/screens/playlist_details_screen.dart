@@ -46,6 +46,7 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> with Sing
   bool _isLoading = true;
   bool _isFavorite = false;
   late bool _isInLibrary;
+  bool _isPlayingTrack = false;
   ColorScheme? _lightColorScheme;
   ColorScheme? _darkColorScheme;
 
@@ -537,6 +538,11 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> with Sing
   }
 
   Future<void> _playTrack(int index) async {
+    // Guard against a fast double-tap firing this twice concurrently - see
+    // the matching guard in album_details_screen.dart for why.
+    if (_isPlayingTrack) return;
+    _isPlayingTrack = true;
+
     final maProvider = context.read<MusicAssistantProvider>();
 
     try {
@@ -552,6 +558,8 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> with Sing
     } catch (e) {
       _logger.log('Error playing track: $e');
       _showError('Failed to play track: $e');
+    } finally {
+      _isPlayingTrack = false;
     }
   }
 
