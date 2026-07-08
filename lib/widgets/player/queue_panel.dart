@@ -1027,7 +1027,9 @@ class _QueuePanelState extends State<QueuePanel> with SingleTickerProviderStateM
             color: isCurrentItem ? widget.primaryColor.withOpacity(0.15) : widget.backgroundColor,
             borderRadius: isCurrentItem ? BorderRadius.circular(12) : BorderRadius.zero,
           ),
-          child: ListTile(
+          child: Material(
+            type: MaterialType.transparency,
+            child: ListTile(
             dense: true,
             // Compensate for current item's 8px margin on both sides
             // Left:  Non-current: 8+0+16=24px, Current: 8+8+8=24px
@@ -1100,6 +1102,7 @@ class _QueuePanelState extends State<QueuePanel> with SingleTickerProviderStateM
               ],
             ),
             onTap: () => _handleTapToSkip(item, index, isCurrentItem),
+            ),
           ),
         ),
       ),

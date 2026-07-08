@@ -118,13 +118,17 @@ class _VolumeControlState extends State<VolumeControl> {
   Future<void> _adjustVolume(MusicAssistantProvider maProvider, String playerId, double currentVolume, int delta) async {
     final newVolume = ((currentVolume * 100).round() + delta).clamp(0, 100);
 
-    // Show indicator briefly on button tap
+    // Show indicator briefly on button tap. Duration must comfortably exceed the
+    // server round-trip (observed 700ms-1.5s over Sendspin in the field) - if this
+    // timer fires before the server's volume-changed confirmation arrives, the
+    // display briefly reverts to the stale pre-press value and then jumps forward
+    // again once the real update lands, looking like the indicator "moves by itself".
     _buttonIndicatorTimer?.cancel();
     setState(() {
       _showButtonIndicator = true;
       _pendingVolume = newVolume / 100.0;
     });
-    _buttonIndicatorTimer = Timer(const Duration(milliseconds: 800), () {
+    _buttonIndicatorTimer = Timer(const Duration(milliseconds: 2000), () {
       if (mounted) {
         setState(() {
           _showButtonIndicator = false;

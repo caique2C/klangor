@@ -130,8 +130,9 @@ class _ArtistRowState extends State<ArtistRow> with AutomaticKeepAliveClientMixi
     }
 
     // Card layout: circle image + name below
-    // Text area: 8px gap + ~36px for 2-line name = ~44px
-    const textAreaHeight = 44.0;
+    // Text area: 8px gap + ~36px for 2-line name = ~44px, plus a small
+    // safety margin since actual rendered text height can exceed the estimate.
+    const textAreaHeight = 48.0;
     final imageSize = contentHeight - textAreaHeight;
     final cardWidth = imageSize; // Card width = image width (circle)
     final itemExtent = cardWidth + 16; // width + horizontal margins
