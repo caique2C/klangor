@@ -7,6 +7,7 @@
 
   <p><strong>An unofficial mobile client for Music Assistant</strong></p>
   <p>Stream your music library directly to your phone, or control playback on any connected speaker.</p>
+  <p><strong>Built with AI-assisted development using Claude Code.</strong></p>
 </div>
 
 ---
@@ -17,11 +18,9 @@ Klangor is a personal fork of [Ensemble](https://github.com/CollotsSpot/Ensemble
 [CollotsSpot](https://github.com/CollotsSpot). Ensemble is where all of the original design,
 feature set, and UI came from — this fork exists because a series of bug-hunting sessions
 turned into a substantial rewrite of the app's internals (see below), well beyond the size of
-change that fits into a normal pull request. Klangor is not published or supported anywhere
+change that fits into a normal pull request, continuing the same AI-assisted development
+approach the original Ensemble project used. Klangor is not published or supported anywhere
 beyond this repository; it is not affiliated with, endorsed by, or a replacement for Ensemble.
-
-**This application was built with AI-assisted development using Claude Code**, continuing the
-same development approach the original Ensemble project used.
 
 ---
 
