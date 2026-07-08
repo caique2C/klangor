@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'device_id_service.dart';
 import 'secure_storage_service.dart';
 import '../repositories/player_repository.dart';
+import '../models/media_item.dart' show kAlbumTypes;
 
 class SettingsService {
   // Cached SharedPreferences instance for performance
@@ -137,6 +138,7 @@ class SettingsService {
   // Library Sort Order Settings
   static const String _keyLibraryArtistsSortOrder = 'library_artists_sort_order'; // 'alpha', 'alpha_desc'
   static const String _keyLibraryAlbumsSortOrder = 'library_albums_sort_order'; // 'alpha', 'alpha_desc', 'year', 'year_desc', 'artist'
+  static const String _keyLibraryAlbumTypeFilter = 'library_album_type_filter'; // comma-separated AlbumType values; empty/missing = show all
   static const String _keyLibraryTracksSortOrder = 'library_tracks_sort_order'; // 'alpha', 'artist', 'album', 'duration'
   static const String _keyLibraryPlaylistsSortOrder = 'library_playlists_sort_order'; // 'alpha', 'alpha_desc', 'tracks'
   static const String _keyLibraryAuthorsSortOrder = 'library_authors_sort_order'; // 'alpha', 'alpha_desc', 'books'
@@ -623,6 +625,25 @@ class SettingsService {
   static Future<void> setLibraryAlbumsSortOrder(String order) async {
     final prefs = await _getPrefs();
     await prefs.setString(_keyLibraryAlbumsSortOrder, order);
+  }
+
+  /// Which album types to show in the library Albums tab (values match MA's
+  /// AlbumType enum: album/single/ep/compilation/live/soundtrack/unknown).
+  /// Distinguishes "never customized" (key absent - default to every type
+  /// checked/visible) from "user unchecked everything" (key present but
+  /// empty - show nothing), so an all-unchecked state persists correctly
+  /// instead of being silently reinterpreted as "no filter".
+  static Future<Set<String>> getLibraryAlbumTypeFilter() async {
+    final prefs = await _getPrefs();
+    if (!prefs.containsKey(_keyLibraryAlbumTypeFilter)) return kAlbumTypes.toSet();
+    final stored = prefs.getString(_keyLibraryAlbumTypeFilter) ?? '';
+    if (stored.isEmpty) return {};
+    return stored.split(',').toSet();
+  }
+
+  static Future<void> setLibraryAlbumTypeFilter(Set<String> types) async {
+    final prefs = await _getPrefs();
+    await prefs.setString(_keyLibraryAlbumTypeFilter, types.join(','));
   }
 
   // Library Sort Order Settings - Tracks

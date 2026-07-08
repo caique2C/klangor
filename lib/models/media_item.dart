@@ -181,6 +181,11 @@ class Artist extends MediaItem {
   Map<String, dynamic> toJson() => super.toJson();
 }
 
+/// All album types Music Assistant's AlbumType enum can report (see
+/// music_assistant_models/enums.py: album/single/live/soundtrack/
+/// compilation/ep/unknown - any unrecognized value maps to "unknown").
+const List<String> kAlbumTypes = ['album', 'single', 'ep', 'compilation', 'live', 'soundtrack', 'unknown'];
+
 class Album extends MediaItem {
   final List<Artist>? artists;
   final String? albumType;

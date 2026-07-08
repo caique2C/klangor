@@ -58,6 +58,11 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
   bool _showFavoritesOnly = false;
   bool _isChangingMediaType = false; // Flag to ignore onPageChanged during media type transitions
   bool _showOnlyArtistsWithAlbums = false; // Filter artists tab to only show those with albums
+  // Which album types to show in the Albums tab (matches MA's AlbumType enum:
+  // album/single/ep/compilation/live/soundtrack/unknown). Starts as "every
+  // type checked" (all shown); _loadViewPreferences() overwrites this with
+  // whatever was actually persisted, if anything.
+  Set<String> _selectedAlbumTypes = kAlbumTypes.toSet();
   bool _isSyncingArtists = false; // Show progress while re-syncing artists
   bool _isSyncingLibraries = false; // Show progress while re-syncing ABS libraries
   bool _isSyncingProviders = false; // Show progress while syncing after provider toggle
@@ -368,6 +373,9 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
     // Artists filter setting
     final showOnlyArtistsWithAlbums = await SettingsService.getShowOnlyArtistsWithAlbums();
 
+    // Albums filter setting
+    final selectedAlbumTypes = await SettingsService.getLibraryAlbumTypeFilter();
+
     // ABS library settings
     final discoveredLibraries = await SettingsService.getDiscoveredAbsLibraries() ?? [];
     final enabledLibraries = await SettingsService.getEnabledAbsLibraries();
@@ -403,6 +411,9 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
 
         // Artists filter
         _showOnlyArtistsWithAlbums = showOnlyArtistsWithAlbums;
+
+        // Albums filter
+        _selectedAlbumTypes = selectedAlbumTypes;
 
         // ABS library filter
         _discoveredAbsLibraries = discoveredLibraries;
@@ -1960,6 +1971,11 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
         absLibraries: _discoveredAbsLibraries,
         absLibraryEnabled: _absLibraryEnabled,
         onAbsLibraryToggled: _toggleAbsLibrary,
+        // Album type filter (Albums tab only)
+        selectedAlbumTypes: _selectedAlbumTypes,
+        onAlbumTypeToggled: (albumType, enabled) {
+          _toggleAlbumType(albumType, enabled);
+        },
       ),
     );
 
@@ -1982,6 +1998,21 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
         setState(() => _isSyncingArtists = false);
       }
     }
+  }
+
+  /// Toggle an album type in the Albums tab filter (e.g. Album/Single/EP/
+  /// Compilation/Live/Soundtrack/Unknown). Purely client-side - every loaded
+  /// Album already carries its own albumType, so this just re-filters the
+  /// already-synced list rather than triggering a server resync.
+  Future<void> _toggleAlbumType(String albumType, bool enabled) async {
+    setState(() {
+      if (enabled) {
+        _selectedAlbumTypes.add(albumType);
+      } else {
+        _selectedAlbumTypes.remove(albumType);
+      }
+    });
+    await SettingsService.setLibraryAlbumTypeFilter(_selectedAlbumTypes);
   }
 
   /// Toggle an ABS library filter
@@ -4246,9 +4277,12 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
         : syncService.cachedAlbums;
 
     // Filter by favorites if enabled
-    final albums = _showFavoritesOnly
+    final favoritesFiltered = _showFavoritesOnly
         ? filteredAlbums.where((a) => a.favorite == true).toList()
         : filteredAlbums;
+
+    // Filter by album type - only types with a checkmark are shown
+    final albums = favoritesFiltered.where((a) => _selectedAlbumTypes.contains(a.albumType ?? 'unknown')).toList();
 
     if (albums.isEmpty) {
       if (_showFavoritesOnly) {
@@ -5911,6 +5945,9 @@ class _OptionsMenuOverlay extends StatefulWidget {
   final List<Map<String, String>> absLibraries;
   final Map<String, bool> absLibraryEnabled;
   final void Function(String libraryPath, bool enabled) onAbsLibraryToggled;
+  // Album type filter (Albums tab)
+  final Set<String> selectedAlbumTypes;
+  final void Function(String albumType, bool enabled) onAlbumTypeToggled;
 
   const _OptionsMenuOverlay({
     required this.position,
@@ -5937,6 +5974,8 @@ class _OptionsMenuOverlay extends StatefulWidget {
     required this.absLibraries,
     required this.absLibraryEnabled,
     required this.onAbsLibraryToggled,
+    required this.selectedAlbumTypes,
+    required this.onAlbumTypeToggled,
   });
 
   @override
@@ -5952,6 +5991,7 @@ class _OptionsMenuOverlayState extends State<_OptionsMenuOverlay>
   // Note: We don't use local state for enabledProviders anymore - the Selector
   // watches the Provider directly and rebuilds when it changes
   late Map<String, bool> _localAbsLibraryEnabled;
+  late Set<String> _localSelectedAlbumTypes;
   late AnimationController _animController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
@@ -5964,6 +6004,7 @@ class _OptionsMenuOverlayState extends State<_OptionsMenuOverlay>
     _showFavoritesOnly = widget.showFavoritesOnly;
     _showOnlyArtistsWithAlbums = widget.showOnlyArtistsWithAlbums;
     _localAbsLibraryEnabled = Map.from(widget.absLibraryEnabled);
+    _localSelectedAlbumTypes = Set.from(widget.selectedAlbumTypes);
 
     _animController = AnimationController(
       duration: const Duration(milliseconds: 150),
@@ -6060,6 +6101,18 @@ class _OptionsMenuOverlayState extends State<_OptionsMenuOverlay>
       _localAbsLibraryEnabled[libraryPath] = !isEnabled;
     });
     widget.onAbsLibraryToggled(libraryPath, !isEnabled);
+  }
+
+  void _handleAlbumTypeTap(String albumType) {
+    final isEnabled = _localSelectedAlbumTypes.contains(albumType);
+    setState(() {
+      if (isEnabled) {
+        _localSelectedAlbumTypes.remove(albumType);
+      } else {
+        _localSelectedAlbumTypes.add(albumType);
+      }
+    });
+    widget.onAlbumTypeToggled(albumType, !isEnabled);
   }
 
   @override
@@ -6413,6 +6466,59 @@ class _OptionsMenuOverlayState extends State<_OptionsMenuOverlay>
                                 Expanded(
                                   child: Text(
                                     name,
+                                    style: TextStyle(
+                                      color: isEnabled ? colorScheme.primary : null,
+                                      fontWeight: isEnabled ? FontWeight.w600 : FontWeight.normal,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                    ],
+
+                    // Album type filter - only for the Albums tab
+                    if (widget.selectedMediaType == LibraryMediaType.music &&
+                        widget.tabIndex == 1) ...[
+                      const Divider(height: 1),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 4),
+                        child: Text(
+                          'Album Types',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface.withOpacity(0.5),
+                          ),
+                        ),
+                      ),
+                      ...kAlbumTypes.map((albumType) {
+                        final isEnabled = _localSelectedAlbumTypes.contains(albumType);
+                        final label = albumType == 'ep'
+                            ? 'EP'
+                            : albumType == 'unknown'
+                                ? 'Unknown album type'
+                                : '${albumType[0].toUpperCase()}${albumType.substring(1)}';
+
+                        return InkWell(
+                          onTap: () => _handleAlbumTypeTap(albumType),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 24,
+                                  child: isEnabled
+                                      ? Icon(Icons.check, size: 18, color: colorScheme.primary)
+                                      : null,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    label,
                                     style: TextStyle(
                                       color: isEnabled ? colorScheme.primary : null,
                                       fontWeight: isEnabled ? FontWeight.w600 : FontWeight.normal,
