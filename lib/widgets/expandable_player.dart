@@ -786,6 +786,7 @@ class ExpandablePlayerState extends State<ExpandablePlayer>
   Future<void> _toggleShuffle() async {
     if (_queue == null) return;
     final newShuffleState = !_queue!.shuffle;
+    final queueId = _queue!.playerId;
 
     // Optimistically update local state for immediate visual feedback
     setState(() {
@@ -800,10 +801,11 @@ class ExpandablePlayerState extends State<ExpandablePlayer>
 
     final maProvider = context.read<MusicAssistantProvider>();
     // Toggle: if currently shuffled, disable; if not shuffled, enable
-    await maProvider.toggleShuffle(_queue!.playerId, newShuffleState);
-    // Small delay to allow server to finish reordering queue items
-    await Future.delayed(const Duration(milliseconds: 150));
-    await _loadQueue();
+    await maProvider.toggleShuffle(queueId, newShuffleState);
+    await _confirmQueueChange(
+      queueId: queueId,
+      matches: (q) => q.shuffle == newShuffleState,
+    );
   }
 
   Future<void> _cycleRepeat() async {
@@ -837,9 +839,39 @@ class ExpandablePlayerState extends State<ExpandablePlayer>
       );
     });
 
+    final queueId = _queue!.playerId;
     final maProvider = context.read<MusicAssistantProvider>();
-    await maProvider.setRepeatMode(_queue!.playerId, nextMode);
-    await _loadQueue();
+    await maProvider.setRepeatMode(queueId, nextMode);
+    await _confirmQueueChange(
+      queueId: queueId,
+      matches: (q) => q.repeatMode == nextMode,
+    );
+  }
+
+  /// Poll briefly for a queue fetch that actually agrees with a change we
+  /// just requested (shuffle/repeat), rather than trusting a single fetch a
+  /// fixed delay later. A fetch that races the server's own queue-reorder
+  /// work can return the pre-change value even though our command already
+  /// succeeded, silently reverting the optimistic update we just made -
+  /// this is the exact bug that got the shuffle/repeat buttons disabled
+  /// previously (see their onPressed history). If nothing confirms within
+  /// the polling window, deliberately leave the optimistic state in place
+  /// rather than let a stale/racy fetch visibly flip the icon back.
+  Future<void> _confirmQueueChange({
+    required String queueId,
+    required bool Function(PlayerQueue) matches,
+  }) async {
+    final maProvider = context.read<MusicAssistantProvider>();
+    for (int i = 0; i < 5; i++) {
+      await Future.delayed(const Duration(milliseconds: 200));
+      if (!mounted) return;
+      final confirmed = await maProvider.getQueue(queueId);
+      if (confirmed != null && matches(confirmed)) {
+        if (mounted) setState(() => _queue = confirmed);
+        return;
+      }
+    }
+    _logger.log('⚠️ Queue change not confirmed within polling window - keeping optimistic state');
   }
 
   void _toggleQueuePanel() {
@@ -3099,13 +3131,9 @@ class ExpandablePlayerState extends State<ExpandablePlayer>
                           opacity: expandedElementsOpacity,
                           child: _buildSecondaryButton(
                             icon: Icons.shuffle_rounded,
-                            // Temporarily disabled: the toggle reaches the server
-                            // correctly (confirmed via player_queues/get round-trips),
-                            // but this icon doesn't reflect the resulting state, making
-                            // it look broken. Disabled rather than shipped misleading
-                            // until that display bug is fixed.
-                            color: textColor50,
-                            onPressed: null,
+                            color: _queue?.shuffle == true ? primaryColor : textColor50,
+                            onPressed: _isLoadingQueue ? null : _toggleShuffle,
+                            iconSize: 26,
                           ),
                         ) : null,
                       ),
@@ -3152,10 +3180,12 @@ class ExpandablePlayerState extends State<ExpandablePlayer>
                         child: t > 0.3 ? Opacity(
                           opacity: expandedElementsOpacity,
                           child: _buildSecondaryButton(
-                            icon: Icons.repeat_rounded,
-                            // Temporarily disabled - see shuffle button comment above.
-                            color: textColor50,
-                            onPressed: null,
+                            icon: _queue?.repeatOne == true
+                                ? Icons.repeat_one_rounded
+                                : Icons.repeat_rounded,
+                            color: _queue?.repeatOff == false ? primaryColor : textColor50,
+                            onPressed: _isLoadingQueue ? null : _cycleRepeat,
+                            iconSize: 26,
                           ),
                         ) : null,
                       ),
@@ -3754,6 +3784,7 @@ class ExpandablePlayerState extends State<ExpandablePlayer>
     required IconData icon,
     required Color color,
     VoidCallback? onPressed,
+    double iconSize = 22,
   }) {
     return SizedBox(
       width: 44,
@@ -3761,7 +3792,7 @@ class ExpandablePlayerState extends State<ExpandablePlayer>
       child: AnimatedIconButton(
         icon: icon,
         color: color,
-        iconSize: 22,
+        iconSize: iconSize,
         onPressed: onPressed,
       ),
     );

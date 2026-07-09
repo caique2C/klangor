@@ -4,6 +4,11 @@
     android:viewportWidth="24"
     android:viewportHeight="24"
     android:tint="#FFFFFF">
-  <path android:fillColor="#FFFFFF"
-      android:pathData="M7,7h10v3l4,-4 -4,-4v3H5v6h2V7zM17,17H7v-3l-4,4 4,4v-3h12v-6h-2v4z"/>
+  <!-- Glyph nudged up 1.5dp (shared with ic_auto_repeat_all/_one) to keep
+       all three repeat states vertically aligned and leave room below for
+       the "all" state's underline bar. -->
+  <group android:translateY="-1.5">
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M7,7h10v3l4,-4 -4,-4v3H5v6h2V7zM17,17H7v-3l-4,4 4,4v-3h12v-6h-2v4z"/>
+  </group>
 </vector>
