@@ -4,8 +4,17 @@
     android:viewportWidth="24"
     android:viewportHeight="24"
     android:tint="#FFFFFF">
+  <!-- Glyph nudged up 1.5dp - see ic_auto_repeat.xml. -->
+  <group android:translateY="-1.5">
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M7,7h10v3l4,-4 -4,-4v3H5v6h2V7zM17,17H7v-3l-4,4 4,4v-3h12v-6h-2v4z"/>
+  </group>
+  <!-- "On" indicator: underline bar. Kept 1dp off the viewport edge
+       (y21-23 rather than the original y22-24) for a bit of safety margin;
+       combined with the glyph shift above this gives a visibly larger gap
+       than the original bar-flush-to-edge design. Same treatment applied
+       to ic_auto_shuffle_on.xml for a consistent look between the two
+       toggle controls. -->
   <path android:fillColor="#FFFFFF"
-      android:pathData="M7,7h10v3l4,-4 -4,-4v3H5v6h2V7zM17,17H7v-3l-4,4 4,4v-3h12v-6h-2v4z"/>
-  <path android:fillColor="#FFFFFF"
-      android:pathData="M4,22h16v2H4z"/>
+      android:pathData="M4,21h16v2H4z"/>
 </vector>

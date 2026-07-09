@@ -4,8 +4,13 @@
     android:viewportWidth="24"
     android:viewportHeight="24"
     android:tint="#FFFFFF">
-  <path android:fillColor="#FFFFFF"
-      android:pathData="M7,7h10v3l4,-4 -4,-4v3H5v6h2V7zM17,17H7v-3l-4,4 4,4v-3h12v-6h-2v4z"/>
-  <path android:fillColor="#FFFFFF"
-      android:pathData="M13,15V9h-1l-2,1v1h1.5v4z"/>
+  <!-- Both paths nudged up 1.5dp together - see ic_auto_repeat.xml - so the
+       "1" badge stays glued to the loop glyph and all three repeat states
+       stay vertically aligned. -->
+  <group android:translateY="-1.5">
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M7,7h10v3l4,-4 -4,-4v3H5v6h2V7zM17,17H7v-3l-4,4 4,4v-3h12v-6h-2v4z"/>
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M13,15V9h-1l-2,1v1h1.5v4z"/>
+  </group>
 </vector>
