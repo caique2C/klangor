@@ -220,7 +220,7 @@ class MusicAssistantAPI {
       _connectionCompleter = Completer<void>();
 
       // Listen to messages
-      _channel!.stream.listen(
+      final subscription = _channel!.stream.listen(
         _handleMessage,
         onError: (error) {
           _logger.log('WebSocket error: $error');
@@ -239,12 +239,26 @@ class MusicAssistantAPI {
       );
 
       // Wait for server info message with timeout
-      await _connectionCompleter!.future.timeout(
-        Timings.connectionTimeout,
-        onTimeout: () {
-          throw Exception('Connection timeout - no server info received');
-        },
-      );
+      try {
+        await _connectionCompleter!.future.timeout(
+          Timings.connectionTimeout,
+          onTimeout: () {
+            throw Exception('Connection timeout - no server info received');
+          },
+        );
+      } catch (e) {
+        // The socket never produced server info in time (or errored before
+        // it could). Tear it down explicitly rather than leaving it open:
+        // otherwise a late-arriving server_info message could still fire
+        // _handleMessage -> _updateConnectionState(connected) in the
+        // background, silently reviving a connection attempt we've already
+        // reported as failed to the caller, with no coordination with
+        // whatever retry logic runs next.
+        await subscription.cancel();
+        await _channel?.sink.close();
+        _channel = null;
+        rethrow;
+      }
 
       _logger.log('Connection: Connected to server');
       if (_connectionInProgress != null && !_connectionInProgress!.isCompleted) {
@@ -258,6 +272,13 @@ class MusicAssistantAPI {
         _connectionInProgress!.completeError(e);
       }
       _connectionInProgress = null;
+      // Nothing else retries a *first* failed connect attempt (the
+      // WebSocket onError/onDone handlers above only cover a connection
+      // that was already established and then dropped) - without this, a
+      // slow/transient failure on the very first attempt (e.g. right after
+      // an app cold start) left the app stuck showing an error state
+      // indefinitely, with no automatic retry.
+      unawaited(_reconnect());
       rethrow;
     }
   }
