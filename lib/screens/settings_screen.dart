@@ -156,7 +156,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await _loadClientCertificateStatus();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Client certificate imported. Reconnect to use it.')),
+          SnackBar(
+            content: const Text('Client certificate imported.'),
+            action: SnackBarAction(label: 'Reconnect', onPressed: _reconnect),
+          ),
         );
       }
     } on InvalidClientCertificateException catch (e) {
@@ -168,6 +171,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } finally {
       if (mounted) setState(() => _isImportingCertificate = false);
     }
+  }
+
+  bool _isReconnecting = false;
+
+  Future<void> _reconnect() async {
+    setState(() => _isReconnecting = true);
+    final provider = context.read<MusicAssistantProvider>();
+    await provider.checkAndReconnect();
+    if (!mounted) return;
+    setState(() => _isReconnecting = false);
+
+    final connected = provider.connectionState == MAConnectionState.connected ||
+        provider.connectionState == MAConnectionState.authenticated;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(connected ? 'Reconnected.' : 'Reconnect failed — still ${_getStatusText(provider.connectionState).toLowerCase()}.'),
+      ),
+    );
   }
 
   Future<String?> _promptForCertificatePassword() {
@@ -727,6 +748,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
 
             const SizedBox(height: 16),
+
+            // Reconnect button — a lightweight retry that doesn't clear the
+            // saved server URL or drop back to the login screen, unlike
+            // Disconnect below. Useful after importing a client certificate,
+            // or any time the connection is stuck in an error state.
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: FilledButton.tonalIcon(
+                onPressed: _isReconnecting ? null : _reconnect,
+                icon: _isReconnecting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh_rounded),
+                label: Text(
+                  'Reconnect',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                style: FilledButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 12),
 
             // Disconnect button
             SizedBox(
