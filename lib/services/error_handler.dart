@@ -3,6 +3,7 @@ import 'debug_logger.dart';
 /// Error types for user-friendly messages
 enum ErrorType {
   connection,
+  certificate,
   authentication,
   network,
   playback,
@@ -32,6 +33,25 @@ class ErrorHandler {
     _logger.log('❌ Error in $context: $error');
 
     final errorStr = error.toString().toLowerCase();
+
+    // TLS/certificate errors - e.g. a server behind a reverse proxy that
+    // requires mutual TLS (a client certificate), rejected because none was
+    // presented, an expired one, or a wrong password preventing it from
+    // being loaded. Checked before the generic network case below since
+    // these often also mention "socket"/"connection".
+    if (errorStr.contains('handshake') ||
+        errorStr.contains('certificate') ||
+        errorStr.contains('tlsexception') ||
+        errorStr.contains('sslexception') ||
+        errorStr.contains('bad_certificate') ||
+        errorStr.contains('certificate_required')) {
+      return ErrorInfo(
+        type: ErrorType.certificate,
+        userMessage: 'Secure connection failed. If your server requires a client certificate, check it\'s imported and still valid.',
+        technicalMessage: error.toString(),
+        canRetry: true,
+      );
+    }
 
     // Connection errors
     if (errorStr.contains('not connected') ||
