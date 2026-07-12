@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,6 +14,7 @@ import 'providers/navigation_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'services/settings_service.dart';
+import 'services/client_certificate_service.dart';
 import 'services/database_service.dart';
 import 'services/profile_service.dart';
 import 'services/sync_service.dart';
@@ -54,6 +56,16 @@ void main() {
       // Migrate credentials to secure storage (one-time for existing users)
       await SettingsService.migrateToSecureStorage();
       _logger.log('🔐 Secure storage migration complete');
+
+      // If a client certificate (mTLS) has been imported, install it globally
+      // before any network connection is attempted — this must happen before
+      // MusicAssistantProvider's WebSocket connect, which runs during the
+      // very first frame via LoginScreen/HomeScreen.
+      final clientCertContext = await ClientCertificateService.instance.buildSecurityContext();
+      if (clientCertContext != null) {
+        HttpOverrides.global = ClientCertHttpOverrides(clientCertContext);
+        _logger.log('🔐 Client certificate installed for mTLS');
+      }
 
       // Load library from cache for instant startup
       await SyncService.instance.loadFromCache();
