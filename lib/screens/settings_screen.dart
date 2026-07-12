@@ -184,9 +184,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     final connected = provider.connectionState == MAConnectionState.connected ||
         provider.connectionState == MAConnectionState.authenticated;
+    final failureReason = provider.error ?? _getStatusText(provider.connectionState).toLowerCase();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(connected ? 'Reconnected.' : 'Reconnect failed — still ${_getStatusText(provider.connectionState).toLowerCase()}.'),
+        content: Text(connected ? 'Reconnected.' : 'Reconnect failed — $failureReason'),
       ),
     );
   }
@@ -591,6 +592,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     // Use select to only rebuild when connectionState changes
     final connectionState = context.select<MusicAssistantProvider, MAConnectionState>((p) => p.connectionState);
+    final connectionError = context.select<MusicAssistantProvider, String?>((p) => p.error);
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -657,22 +659,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 color: colorScheme.surfaceVariant.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    _getStatusIcon(connectionState),
-                    color: _getStatusColor(connectionState, colorScheme),
-                    size: 20,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        _getStatusIcon(connectionState),
+                        color: _getStatusColor(connectionState, colorScheme),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _getStatusText(connectionState),
+                        style: textTheme.titleMedium?.copyWith(
+                          color: _getStatusColor(connectionState, colorScheme),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _getStatusText(connectionState),
-                    style: textTheme.titleMedium?.copyWith(
-                      color: _getStatusColor(connectionState, colorScheme),
-                      fontWeight: FontWeight.bold,
+                  // Show the specific reason (e.g. TLS/certificate failure,
+                  // DNS lookup failure, timeout) instead of just the generic
+                  // "Connection Error" label - avoids needing to dig into the
+                  // debug log for common, recognizable failure causes.
+                  if (connectionState == MAConnectionState.error && connectionError != null) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      connectionError,
+                      textAlign: TextAlign.center,
+                      style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
