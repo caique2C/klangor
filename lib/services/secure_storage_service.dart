@@ -17,6 +17,9 @@ class SecureStorageService {
   static const String _keyAuthCredentials = 'secure_auth_credentials';
   static const String _keyPassword = 'secure_password';
   static const String _keyAbsApiToken = 'secure_abs_api_token';
+  static const String _keyClientCertP12 = 'secure_client_cert_p12';
+  static const String _keyClientCertPassword = 'secure_client_cert_password';
+  static const String _keyClientCertImportedAt = 'secure_client_cert_imported_at';
 
   // Auth Token (for stream requests)
   static Future<String?> getAuthToken() async {
@@ -142,6 +145,58 @@ class SecureStorageService {
     } else {
       await _storage.write(key: _keyAbsApiToken, value: token);
     }
+  }
+
+  // Client certificate (mTLS) — stored as base64-encoded PKCS12 bytes plus
+  // its password, so a SecurityContext can be rebuilt at startup.
+  static Future<String?> getClientCertP12Base64() async {
+    try {
+      return await _storage.read(key: _keyClientCertP12);
+    } catch (e) {
+      if (e.toString().contains('BadPaddingException') ||
+          e.toString().contains('BAD_DECRYPT')) {
+        await _storage.delete(key: _keyClientCertP12);
+        return null;
+      }
+      rethrow;
+    }
+  }
+
+  static Future<String?> getClientCertPassword() async {
+    try {
+      return await _storage.read(key: _keyClientCertPassword);
+    } catch (e) {
+      if (e.toString().contains('BadPaddingException') ||
+          e.toString().contains('BAD_DECRYPT')) {
+        await _storage.delete(key: _keyClientCertPassword);
+        return null;
+      }
+      rethrow;
+    }
+  }
+
+  static Future<DateTime?> getClientCertImportedAt() async {
+    final iso = await _storage.read(key: _keyClientCertImportedAt);
+    if (iso == null) return null;
+    return DateTime.tryParse(iso);
+  }
+
+  static Future<void> setClientCertificate({
+    required String p12Base64,
+    required String password,
+  }) async {
+    await _storage.write(key: _keyClientCertP12, value: p12Base64);
+    await _storage.write(key: _keyClientCertPassword, value: password);
+    await _storage.write(
+      key: _keyClientCertImportedAt,
+      value: DateTime.now().toIso8601String(),
+    );
+  }
+
+  static Future<void> clearClientCertificate() async {
+    await _storage.delete(key: _keyClientCertP12);
+    await _storage.delete(key: _keyClientCertPassword);
+    await _storage.delete(key: _keyClientCertImportedAt);
   }
 
   /// Clear all secure storage (used during logout)
