@@ -131,11 +131,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _importClientCertificate() async {
-    final result = await FilePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['p12', 'pfx'],
-      withData: true,
-    );
+    // Deliberately FileType.any rather than FileType.custom with an
+    // allowedExtensions filter: cloud-backed DocumentsProviders (e.g.
+    // Nextcloud) resolve the MIME type for an unrecognized extension like
+    // .p12 inconsistently, which greys the file out as unselectable even
+    // though it's right there. The actual PKCS12/password validation below
+    // is the real gate, so a pre-filter here only adds a failure mode.
+    final result = await FilePicker.pickFiles(withData: true);
     final file = result?.files.singleOrNull;
     if (file?.bytes == null || !mounted) return;
 
