@@ -56,6 +56,9 @@ dependencies:
   # Raw PCM Audio Playback (for Sendspin streaming)
   flutter_pcm_sound: ^3.3.3
 
+  # File access (client certificate import)
+  file_picker: ^11.0.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
