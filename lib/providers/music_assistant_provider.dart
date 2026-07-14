@@ -136,6 +136,18 @@ class MusicAssistantProvider with ChangeNotifier {
   TrackMetadata? _currentNotificationMetadata;
   Completer<void>? _registrationInProgress;
   Completer<void>? _reconnectInProgress;
+  // Guards connectToServer() itself (not just checkAndReconnect()'s callers)
+  // - _initialize() calls it directly from the constructor, and separately
+  // MassivAudioHandler/main.dart's connectivity watcher can trigger
+  // checkAndReconnect() -> connectToServer() within the same cold-start
+  // window. Without this, two concurrent invocations each build their own
+  // MusicAssistantAPI and race: whichever's _api?.dispose() runs while the
+  // other's connect() is still in flight closes stream controllers out from
+  // under it ("Bad state: Cannot add new events after calling close"), and
+  // whichever attempt happens to fail last overwrites a perfectly good
+  // "connected" state with "error" - showing a connection error even though
+  // the app is, in fact, connected.
+  Completer<void>? _connectToServerInProgress;
 
   // Local player service
   late final LocalPlayerService _localPlayer;
@@ -192,6 +204,10 @@ class MusicAssistantProvider with ChangeNotifier {
   String? get error => _error;
   bool get isConnected => _connectionState == MAConnectionState.connected ||
                           _connectionState == MAConnectionState.authenticated;
+
+  /// Round-trip time to the MA server over the live connection, or null if
+  /// not connected or the measurement fails. See [MusicAssistantAPI.measureRoundTripTime].
+  Future<Duration?> measureRoundTripTime() => _api?.measureRoundTripTime() ?? Future.value(null);
 
   // Library getters with provider filtering applied
   List<Artist> get artists => filterByProvider(_artists);
@@ -1141,6 +1157,12 @@ class MusicAssistantProvider with ChangeNotifier {
   // ============================================================================
 
   Future<void> connectToServer(String serverUrl) async {
+    if (_connectToServerInProgress != null && !_connectToServerInProgress!.isCompleted) {
+      _logger.log('🔄 connectToServer already in progress, joining existing attempt');
+      return _connectToServerInProgress!.future;
+    }
+    final inProgress = Completer<void>();
+    _connectToServerInProgress = inProgress;
     try {
       _error = null;
       _serverUrl = serverUrl;
@@ -1175,10 +1197,12 @@ class MusicAssistantProvider with ChangeNotifier {
             }
 
             // No auth required — safe to broadcast connected and initialize
+            _error = null;
             _connectionState = state;
             notifyListeners();
             await _initializeAfterConnection();
           } else if (state == MAConnectionState.authenticated) {
+            _error = null;
             _connectionState = state;
             notifyListeners();
             _logger.log('✅ MA authentication successful');
@@ -1236,13 +1260,19 @@ class MusicAssistantProvider with ChangeNotifier {
 
       await _api!.connect();
       notifyListeners();
+      if (!inProgress.isCompleted) inProgress.complete();
     } catch (e) {
       final errorInfo = ErrorHandler.handleError(e, context: 'Connect to server');
       _error = errorInfo.userMessage;
       _connectionState = MAConnectionState.error;
       _logger.log('Connection error: ${errorInfo.technicalMessage}');
       notifyListeners();
+      if (!inProgress.isCompleted) inProgress.completeError(e);
       rethrow;
+    } finally {
+      if (identical(_connectToServerInProgress, inProgress)) {
+        _connectToServerInProgress = null;
+      }
     }
   }
 
