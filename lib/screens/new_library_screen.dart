@@ -4044,7 +4044,7 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
       }
       return EmptyState.artists(
         context: context,
-        onRefresh: () => context.read<MusicAssistantProvider>().loadLibrary(),
+        onRefresh: () => context.read<MusicAssistantProvider>().forceLibrarySync(),
       );
     }
 
@@ -4055,7 +4055,7 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
     return RefreshIndicator(
       color: colorScheme.primary,
       backgroundColor: colorScheme.background,
-      onRefresh: () async => context.read<MusicAssistantProvider>().loadLibrary(),
+      onRefresh: () async => context.read<MusicAssistantProvider>().forceLibrarySync(),
       child: LetterScrollbar(
         controller: _artistsScrollController,
         items: artistNames,
@@ -4294,7 +4294,7 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
       }
       return EmptyState.albums(
         context: context,
-        onRefresh: () => context.read<MusicAssistantProvider>().loadLibrary(),
+        onRefresh: () => context.read<MusicAssistantProvider>().forceLibrarySync(),
       );
     }
 
@@ -4309,7 +4309,7 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
     return RefreshIndicator(
       color: colorScheme.primary,
       backgroundColor: colorScheme.background,
-      onRefresh: () async => context.read<MusicAssistantProvider>().loadLibrary(),
+      onRefresh: () async => context.read<MusicAssistantProvider>().forceLibrarySync(),
       child: LetterScrollbar(
         controller: _albumsScrollController,
         items: albumNames,
