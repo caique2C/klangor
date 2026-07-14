@@ -731,7 +731,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 8),
                   Text(
                     _hasClientCertificate
-                        ? 'Configured${_clientCertificateImportedAt != null ? ' — imported ${DateFormat.yMMMd().format(_clientCertificateImportedAt!)}' : ''}'
+                        ? 'Configured${_clientCertificateImportedAt != null ? ' — imported ${DateFormat.yMMMd().format(_clientCertificateImportedAt!)}' : ''}. Used automatically only if the server asks for it, so servers that don\'t require it still connect fine.'
                         : 'Not configured. Only needed if your server requires a client certificate to connect at all.',
                     style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
                   ),

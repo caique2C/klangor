@@ -93,6 +93,7 @@ class SettingsService {
   static const String _keyOwnerName = 'owner_name';
   static const String _keyLastSelectedPlayerId = 'last_selected_player_id';
   static const String _keySmartSortPlayers = 'smart_sort_players';
+  static const String _keyClientCertRequiredHint = 'client_cert_required_hint';
   static const String _keyShowRecentAlbums = 'show_recent_albums';
   static const String _keyShowDiscoverArtists = 'show_discover_artists';
   static const String _keyShowDiscoverAlbums = 'show_discover_albums';
@@ -362,6 +363,24 @@ class SettingsService {
   // Smart Sort Players - sort by status (playing > on > off) instead of alphabetically
   static Future<bool> getSmartSortPlayers() => _getBool(_keySmartSortPlayers, defaultValue: false);
   static Future<void> setSmartSortPlayers(bool smartSort) => _setBool(_keySmartSortPlayers, smartSort);
+
+  /// Whether the configured server is known to require the client
+  /// certificate (mTLS) to connect at all. Null means "not yet known" -
+  /// [ClientCertificateService.runWithCertFallback] hasn't learned the
+  /// answer yet and will probe on the next connection attempt.
+  static Future<bool?> getClientCertRequiredHint() async {
+    final prefs = await _getPrefs();
+    return prefs.getBool(_keyClientCertRequiredHint);
+  }
+
+  static Future<void> setClientCertRequiredHint(bool? required) async {
+    final prefs = await _getPrefs();
+    if (required == null) {
+      await prefs.remove(_keyClientCertRequiredHint);
+    } else {
+      await prefs.setBool(_keyClientCertRequiredHint, required);
+    }
+  }
 
   // Helper to create player name with possessive apostrophe
   // Automatically detects Phone vs Tablet based on screen size

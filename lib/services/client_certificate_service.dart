@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'secure_storage_service.dart';
+import 'settings_service.dart';
 import 'debug_logger.dart';
 
 /// Thrown when an imported PKCS12 file/password can't be used to build a
@@ -49,11 +50,16 @@ class ClientCertificateService {
       p12Base64: base64Encode(bytes),
       password: password,
     );
+    // Whether this cert is actually required is a property of whatever
+    // server it turns out to be used against - forget any previous
+    // answer so the next connection attempt probes again.
+    await SettingsService.setClientCertRequiredHint(null);
     _logger.log('🔐 Client certificate imported (${bytes.length} bytes)');
   }
 
   Future<void> clearCertificate() async {
     await SecureStorageService.clearClientCertificate();
+    await SettingsService.setClientCertRequiredHint(null);
     _logger.log('🔐 Client certificate removed');
   }
 
@@ -74,6 +80,54 @@ class ClientCertificateService {
       _logger.log('⚠️ Stored client certificate is no longer valid: $e');
       return null;
     }
+  }
+
+  /// Runs [attempt] (typically a `WebSocket.connect(...)` call), deciding
+  /// whether to present the stored client certificate for that connection's
+  /// TLS handshake.
+  ///
+  /// If we don't yet know whether the server needs it, this tries without
+  /// the certificate first and only retries with it if that attempt fails
+  /// with a TLS/handshake error. That's what lets the same app
+  /// configuration reach both a server that enforces mTLS directly (e.g.
+  /// over Tailscale) and one that doesn't (e.g. reached through a tunnel
+  /// that terminates TLS itself and rejects an unexpected client
+  /// certificate) without the user having to add/remove the certificate
+  /// depending on which path they're on. The answer is remembered
+  /// (see [SettingsService.getClientCertRequiredHint]) so later connections
+  /// go straight to the right behavior instead of re-probing — and failing
+  /// once — every time.
+  Future<T> runWithCertFallback<T>(Future<T> Function() attempt) async {
+    final certContext = await buildSecurityContext();
+    if (certContext == null) {
+      HttpOverrides.global = null;
+      return attempt();
+    }
+
+    final requiredHint = await SettingsService.getClientCertRequiredHint();
+
+    if (requiredHint != true) {
+      HttpOverrides.global = null;
+      try {
+        final result = await attempt();
+        if (requiredHint == null) {
+          await SettingsService.setClientCertRequiredHint(false);
+        }
+        return result;
+      } catch (e) {
+        if (!_looksLikeTlsFailure(e)) rethrow;
+        _logger.log('🔐 Connection without client certificate failed ($e) — retrying with it');
+      }
+    }
+
+    HttpOverrides.global = ClientCertHttpOverrides(certContext);
+    final result = await attempt();
+    await SettingsService.setClientCertRequiredHint(true);
+    return result;
+  }
+
+  bool _looksLikeTlsFailure(Object error) {
+    return error is HandshakeException || error is TlsException || error is CertificateException;
   }
 
   SecurityContext _buildContextFromP12(Uint8List bytes, String password) {

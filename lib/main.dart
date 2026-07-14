@@ -57,14 +57,27 @@ void main() {
       await SettingsService.migrateToSecureStorage();
       _logger.log('🔐 Secure storage migration complete');
 
-      // If a client certificate (mTLS) has been imported, install it globally
-      // before any network connection is attempted — this must happen before
-      // MusicAssistantProvider's WebSocket connect, which runs during the
-      // very first frame via LoginScreen/HomeScreen.
-      final clientCertContext = await ClientCertificateService.instance.buildSecurityContext();
-      if (clientCertContext != null) {
-        HttpOverrides.global = ClientCertHttpOverrides(clientCertContext);
-        _logger.log('🔐 Client certificate installed for mTLS');
+      // If a client certificate (mTLS) has been imported AND we already know
+      // (from a previous connection) that the server requires it, install it
+      // globally up front so even the very first request — before
+      // MusicAssistantProvider's WebSocket connect runs — presents it.
+      // Otherwise leave it uninstalled: ClientCertificateService.
+      // runWithCertFallback() decides per-connection whether to present the
+      // certificate, since the same app config may need to reach a server
+      // that requires it (e.g. direct/Tailscale) and one that doesn't (e.g.
+      // through a tunnel that would reject an unexpected client cert).
+      final hasClientCert = await ClientCertificateService.instance.hasCertificate();
+      if (hasClientCert) {
+        final requiredHint = await SettingsService.getClientCertRequiredHint();
+        if (requiredHint == true) {
+          final clientCertContext = await ClientCertificateService.instance.buildSecurityContext();
+          if (clientCertContext != null) {
+            HttpOverrides.global = ClientCertHttpOverrides(clientCertContext);
+            _logger.log('🔐 Client certificate installed for mTLS (previously confirmed required)');
+          }
+        } else {
+          _logger.log('🔐 Client certificate configured — will only be used if the server requires it');
+        }
       }
 
       // Load library from cache for instant startup
