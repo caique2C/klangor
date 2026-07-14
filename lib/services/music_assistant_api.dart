@@ -15,6 +15,7 @@ import 'debug_logger.dart';
 import 'settings_service.dart';
 import 'device_id_service.dart';
 import 'retry_helper.dart';
+import 'client_certificate_service.dart';
 import 'auth/auth_manager.dart';
 
 enum MAConnectionState {
@@ -182,16 +183,25 @@ class MusicAssistantAPI {
           );
           _logger.log('Using port ${NetworkConstants.defaultWsPort} for unsecure connection');
         } else {
-          // For WSS (secure WebSocket), DON'T specify port - use implicit default
-          // This is critical for Cloudflare WebSocket support
+          // For WSS (secure WebSocket), pass port 443 explicitly. Leaving
+          // it out (Uri without a port for a "wss" scheme, which Dart's
+          // default-port table doesn't know about) makes Uri.port read
+          // back as 0, and dart:io's WebSocket.connect carries that 0
+          // through into the Host header of the underlying HTTP Upgrade
+          // request when it converts wss -> https internally - producing
+          // a literal "Host: host:0" that a Host-based reverse proxy
+          // (Traefik, nginx) won't match, yielding a 404. Since Traefik's
+          // Host() rule matching strips the port anyway, an explicit 443
+          // here is not observably different to any reverse proxy/CDN,
+          // Cloudflare included, while avoiding that bug.
           finalUri = Uri(
             scheme: uri.scheme,
             host: uri.host,
-            // NO PORT - let it use default 443 implicitly
+            port: 443,
             path: '/ws',
             queryParameters: {'client_id': clientId},
           );
-          _logger.log('Using implicit default port (443) for secure connection');
+          _logger.log('Using explicit port 443 for secure connection');
         }
       }
 
@@ -209,10 +219,15 @@ class MusicAssistantAPI {
         _logger.log('Connection: No authentication configured');
       }
 
-      // Use WebSocket.connect with headers, then wrap in IOWebSocketChannel
-      final webSocket = await WebSocket.connect(
-        wsUrl,
-        headers: headers.isNotEmpty ? headers : null,
+      // Use WebSocket.connect with headers, then wrap in IOWebSocketChannel.
+      // Routed through the client-cert fallback so a server that doesn't
+      // require mTLS still connects even when a certificate is configured
+      // (e.g. it's only needed for a different, direct connection path).
+      final webSocket = await ClientCertificateService.instance.runWithCertFallback(
+        () => WebSocket.connect(
+          wsUrl,
+          headers: headers.isNotEmpty ? headers : null,
+        ),
       );
       _channel = IOWebSocketChannel(webSocket);
 
@@ -220,7 +235,7 @@ class MusicAssistantAPI {
       _connectionCompleter = Completer<void>();
 
       // Listen to messages
-      _channel!.stream.listen(
+      final subscription = _channel!.stream.listen(
         _handleMessage,
         onError: (error) {
           _logger.log('WebSocket error: $error');
@@ -239,12 +254,26 @@ class MusicAssistantAPI {
       );
 
       // Wait for server info message with timeout
-      await _connectionCompleter!.future.timeout(
-        Timings.connectionTimeout,
-        onTimeout: () {
-          throw Exception('Connection timeout - no server info received');
-        },
-      );
+      try {
+        await _connectionCompleter!.future.timeout(
+          Timings.connectionTimeout,
+          onTimeout: () {
+            throw Exception('Connection timeout - no server info received');
+          },
+        );
+      } catch (e) {
+        // The socket never produced server info in time (or errored before
+        // it could). Tear it down explicitly rather than leaving it open:
+        // otherwise a late-arriving server_info message could still fire
+        // _handleMessage -> _updateConnectionState(connected) in the
+        // background, silently reviving a connection attempt we've already
+        // reported as failed to the caller, with no coordination with
+        // whatever retry logic runs next.
+        await subscription.cancel();
+        await _channel?.sink.close();
+        _channel = null;
+        rethrow;
+      }
 
       _logger.log('Connection: Connected to server');
       if (_connectionInProgress != null && !_connectionInProgress!.isCompleted) {
@@ -258,6 +287,13 @@ class MusicAssistantAPI {
         _connectionInProgress!.completeError(e);
       }
       _connectionInProgress = null;
+      // Nothing else retries a *first* failed connect attempt (the
+      // WebSocket onError/onDone handlers above only cover a connection
+      // that was already established and then dropped) - without this, a
+      // slow/transient failure on the very first attempt (e.g. right after
+      // an app cold start) left the app stuck showing an error state
+      // indefinitely, with no automatic retry.
+      unawaited(_reconnect());
       rethrow;
     }
   }
@@ -3346,8 +3382,17 @@ class MusicAssistantAPI {
       baseUrl = '${uri.scheme}://${uri.host}:${uri.port}';
     }
 
+    // MA's imageproxy now addresses images by an opaque `proxy_id` the
+    // server injects onto every MediaItemImage during API serialization
+    // (`/imageproxy/<proxy_id>?size=&fmt=`) rather than by raw
+    // provider+path query params - the old `?provider=&path=` form 404s
+    // against current servers since no route matches it at all. Fall back
+    // to the old form only if an older server didn't send a proxy_id.
+    final proxyId = selectedImage['proxy_id'] as String?;
+    if (proxyId != null && proxyId.isNotEmpty) {
+      return '$baseUrl/imageproxy/$proxyId?size=$size&fmt=jpeg';
+    }
     final provider = selectedImage['provider'] as String?;
-    // Use the imageproxy endpoint
     return '$baseUrl/imageproxy?provider=${Uri.encodeComponent(provider ?? "")}&size=$size&fmt=jpeg&path=${Uri.encodeComponent(imagePath)}';
   }
 

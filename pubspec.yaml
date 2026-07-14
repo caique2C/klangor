@@ -1,7 +1,7 @@
 name: klangor
 description: A minimalistic Music Assistant client built with Flutter, forked from Ensemble
 publish_to: 'none'
-version: 4.0.10
+version: 4.0.15
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -55,6 +55,9 @@ dependencies:
 
   # Raw PCM Audio Playback (for Sendspin streaming)
   flutter_pcm_sound: ^3.3.3
+
+  # File access (client certificate import)
+  file_picker: ^11.0.2
 
 dev_dependencies:
   flutter_test:

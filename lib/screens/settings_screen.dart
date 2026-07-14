@@ -1,13 +1,17 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:intl/intl.dart';
 import '../l10n/app_localizations.dart';
 import '../models/recommendation_folder.dart';
 import '../providers/locale_provider.dart';
 import '../providers/music_assistant_provider.dart';
 import '../services/music_assistant_api.dart';
 import '../services/settings_service.dart';
+import '../services/client_certificate_service.dart';
 import '../theme/theme_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/page_transitions.dart';
@@ -56,6 +60,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   List<RecommendationFolder> _discoveryFolders = [];
   Map<String, bool> _discoveryRowEnabled = {};
   bool _isLoadingDiscoveryFolders = false;
+  // Client certificate (mTLS) state
+  bool _hasClientCertificate = false;
+  DateTime? _clientCertificateImportedAt;
+  bool _isImportingCertificate = false;
 
   /// All available static home screen rows (that can be toggled on/off)
   static const List<String> _allAvailableRows = [
@@ -108,6 +116,143 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _loadSettings();
     _loadAppVersion();
+    _loadClientCertificateStatus();
+  }
+
+  Future<void> _loadClientCertificateStatus() async {
+    final hasCert = await ClientCertificateService.instance.hasCertificate();
+    final importedAt = await ClientCertificateService.instance.importedAt();
+    if (mounted) {
+      setState(() {
+        _hasClientCertificate = hasCert;
+        _clientCertificateImportedAt = importedAt;
+      });
+    }
+  }
+
+  Future<void> _importClientCertificate() async {
+    // Deliberately FileType.any rather than FileType.custom with an
+    // allowedExtensions filter: cloud-backed DocumentsProviders (e.g.
+    // Nextcloud) resolve the MIME type for an unrecognized extension like
+    // .p12 inconsistently, which greys the file out as unselectable even
+    // though it's right there. The actual PKCS12/password validation below
+    // is the real gate, so a pre-filter here only adds a failure mode.
+    final result = await FilePicker.pickFiles(withData: true);
+    final file = result?.files.singleOrNull;
+    if (file?.bytes == null || !mounted) return;
+
+    final password = await _promptForCertificatePassword();
+    if (password == null || !mounted) return;
+
+    setState(() => _isImportingCertificate = true);
+    try {
+      await ClientCertificateService.instance.importP12(file!.bytes!, password);
+      // Apply immediately so a reconnect (or app restart) picks it up without
+      // needing to fully relaunch the app.
+      final securityContext = await ClientCertificateService.instance.buildSecurityContext();
+      if (securityContext != null) {
+        HttpOverrides.global = ClientCertHttpOverrides(securityContext);
+      }
+      await _loadClientCertificateStatus();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Client certificate imported.'),
+            action: SnackBarAction(label: 'Reconnect', onPressed: _reconnect),
+          ),
+        );
+      }
+    } on InvalidClientCertificateException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isImportingCertificate = false);
+    }
+  }
+
+  bool _isReconnecting = false;
+
+  Future<void> _reconnect() async {
+    setState(() => _isReconnecting = true);
+    final provider = context.read<MusicAssistantProvider>();
+    await provider.checkAndReconnect();
+    if (!mounted) return;
+    setState(() => _isReconnecting = false);
+
+    final connected = provider.connectionState == MAConnectionState.connected ||
+        provider.connectionState == MAConnectionState.authenticated;
+    final failureReason = provider.error ?? _getStatusText(provider.connectionState).toLowerCase();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(connected ? 'Reconnected.' : 'Reconnect failed — $failureReason'),
+      ),
+    );
+  }
+
+  Future<String?> _promptForCertificatePassword() {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Certificate Password'),
+          content: TextField(
+            controller: controller,
+            obscureText: true,
+            autofocus: true,
+            decoration: const InputDecoration(hintText: 'PKCS12 password'),
+            onSubmitted: (value) => Navigator.pop(dialogContext, value),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, controller.text),
+              child: const Text('Import'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _removeClientCertificate() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Remove Client Certificate?'),
+          content: const Text(
+            'If your server requires this certificate to connect at all, '
+            'you will not be able to reconnect until a certificate is '
+            'imported again.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(dialogContext).colorScheme.error,
+              ),
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Remove'),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true) return;
+
+    await ClientCertificateService.instance.clearCertificate();
+    HttpOverrides.global = null;
+    await _loadClientCertificateStatus();
   }
 
   Future<void> _loadAppVersion() async {
@@ -447,6 +592,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     // Use select to only rebuild when connectionState changes
     final connectionState = context.select<MusicAssistantProvider, MAConnectionState>((p) => p.connectionState);
+    final connectionError = context.select<MusicAssistantProvider, String?>((p) => p.error);
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -513,27 +659,147 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 color: colorScheme.surfaceVariant.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    _getStatusIcon(connectionState),
-                    color: _getStatusColor(connectionState, colorScheme),
-                    size: 20,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        _getStatusIcon(connectionState),
+                        color: _getStatusColor(connectionState, colorScheme),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _getStatusText(connectionState),
+                        style: textTheme.titleMedium?.copyWith(
+                          color: _getStatusColor(connectionState, colorScheme),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _getStatusText(connectionState),
-                    style: textTheme.titleMedium?.copyWith(
-                      color: _getStatusColor(connectionState, colorScheme),
-                      fontWeight: FontWeight.bold,
+                  // Show the specific reason (e.g. TLS/certificate failure,
+                  // DNS lookup failure, timeout) instead of just the generic
+                  // "Connection Error" label - avoids needing to dig into the
+                  // debug log for common, recognizable failure causes.
+                  if (connectionState == MAConnectionState.error && connectionError != null) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      connectionError,
+                      textAlign: TextAlign.center,
+                      style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
                     ),
+                  ],
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Client certificate (mTLS) section — only relevant for servers
+            // behind a reverse proxy that requires a client cert at the TLS
+            // handshake itself. Most users will never touch this.
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceVariant.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        _hasClientCertificate ? Icons.verified_user_rounded : Icons.gpp_maybe_outlined,
+                        color: _hasClientCertificate ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Client Certificate (mTLS)',
+                        style: textTheme.titleSmall?.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _hasClientCertificate
+                        ? 'Configured${_clientCertificateImportedAt != null ? ' — imported ${DateFormat.yMMMd().format(_clientCertificateImportedAt!)}' : ''}. Used automatically only if the server asks for it, so servers that don\'t require it still connect fine.'
+                        : 'Not configured. Only needed if your server requires a client certificate to connect at all.',
+                    style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: _isImportingCertificate ? null : _importClientCertificate,
+                          child: _isImportingCertificate
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : Text(_hasClientCertificate ? 'Replace' : 'Import'),
+                        ),
+                      ),
+                      if (_hasClientCertificate) ...[
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: _removeClientCertificate,
+                            style: OutlinedButton.styleFrom(foregroundColor: colorScheme.error),
+                            child: const Text('Remove'),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),
             ),
 
             const SizedBox(height: 16),
+
+            // Reconnect button — a lightweight retry that doesn't clear the
+            // saved server URL or drop back to the login screen, unlike
+            // Disconnect below. Useful after importing a client certificate,
+            // or any time the connection is stuck in an error state.
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: FilledButton.tonalIcon(
+                onPressed: _isReconnecting ? null : _reconnect,
+                icon: _isReconnecting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh_rounded),
+                label: Text(
+                  'Reconnect',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                style: FilledButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 12),
 
             // Disconnect button
             SizedBox(

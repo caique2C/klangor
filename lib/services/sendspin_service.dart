@@ -7,6 +7,7 @@ import 'package:web_socket_channel/io.dart';
 import 'debug_logger.dart';
 import 'settings_service.dart';
 import 'device_id_service.dart';
+import 'client_certificate_service.dart';
 
 /// Connection state for Sendspin player
 enum SendspinConnectionState {
@@ -212,8 +213,11 @@ class SendspinService {
       // Connect to the base URL without query params - we send player info in hello message
       _logger.log('Sendspin: Connecting to $url${useProxyAuth ? ' (with proxy auth)' : ''}');
 
-      // Create WebSocket connection
-      final webSocket = await WebSocket.connect(url).timeout(timeout);
+      // Create WebSocket connection - routed through the client-cert
+      // fallback so this still connects when the server doesn't require
+      // mTLS even if a certificate is configured (see runWithCertFallback).
+      final webSocket = await ClientCertificateService.instance
+          .runWithCertFallback(() => WebSocket.connect(url).timeout(timeout));
 
       _channel = IOWebSocketChannel(webSocket);
       _connectedUrl = url;
@@ -624,10 +628,17 @@ class SendspinService {
 
     // Remove any existing path and add /sendspin
     final uri = Uri.parse(url);
+    // For "wss" with no explicit port, pass 443 explicitly rather than
+    // leaving it out - Dart's Uri doesn't know a default port for "wss",
+    // so an omitted port reads back as 0, and dart:io's WebSocket.connect
+    // carries that 0 into the Host header when it converts wss -> https
+    // internally, breaking Host-based routing (see the same fix in
+    // MusicAssistantApi.connect()).
+    final port = uri.hasPort ? uri.port : (uri.scheme == 'wss' ? 443 : null);
     return Uri(
       scheme: uri.scheme,
       host: uri.host,
-      port: uri.hasPort ? uri.port : null,
+      port: port,
       path: '/sendspin',
     ).toString();
   }
