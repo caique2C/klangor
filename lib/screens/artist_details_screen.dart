@@ -946,6 +946,20 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> with LibraryS
               expandedHeight: expandedHeight,
               pinned: true,
               backgroundColor: colorScheme.background,
+              // Without this, the status bar icon style falls back to
+              // whatever SystemUIWrapper set globally based on the app's
+              // overall theme brightness - but this screen's background can
+              // be an adaptive color extracted from the artist's artwork,
+              // which doesn't always match that global brightness closely
+              // enough for icons to stay readable. Compute it from the
+              // actual background in use instead.
+              systemOverlayStyle: SystemUiOverlayStyle(
+                statusBarColor: Colors.transparent,
+                statusBarIconBrightness:
+                    ThemeData.estimateBrightnessForColor(colorScheme.background) == Brightness.dark
+                        ? Brightness.light
+                        : Brightness.dark,
+              ),
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back_rounded),
                 onPressed: () {

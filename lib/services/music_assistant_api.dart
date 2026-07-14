@@ -3743,6 +3743,27 @@ class MusicAssistantAPI {
     }
   }
 
+  /// Round-trip time for a lightweight command over the live, already
+  /// authenticated WS connection - reflects real end-to-end latency to the
+  /// server (through whatever reverse proxy/tunnel/mTLS handshake is
+  /// already established), not just a raw TCP connect time. Returns null
+  /// if not currently connected or if the request fails/times out.
+  Future<Duration?> measureRoundTripTime() async {
+    if (_currentState != MAConnectionState.connected &&
+        _currentState != MAConnectionState.authenticated) {
+      return null;
+    }
+    final stopwatch = Stopwatch()..start();
+    try {
+      await _sendCommand('info').timeout(const Duration(seconds: 5));
+      stopwatch.stop();
+      return stopwatch.elapsed;
+    } catch (e) {
+      _logger.log('Round-trip time measurement failed: $e');
+      return null;
+    }
+  }
+
   // Backoff ceiling for _reconnect()'s retry loop - keeps retrying
   // indefinitely (e.g. while the home server is down for a while) without
   // hammering it every Timings.reconnectDelay forever.

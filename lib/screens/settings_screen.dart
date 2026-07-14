@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -12,6 +13,7 @@ import '../providers/music_assistant_provider.dart';
 import '../services/music_assistant_api.dart';
 import '../services/settings_service.dart';
 import '../services/client_certificate_service.dart';
+import '../services/connection_diagnostics_service.dart';
 import '../theme/theme_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/page_transitions.dart';
@@ -64,6 +66,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _hasClientCertificate = false;
   DateTime? _clientCertificateImportedAt;
   bool _isImportingCertificate = false;
+  // Connection diagnostics - re-run fresh (never cached) whenever
+  // connectionState changes or the user taps refresh, so this never shows
+  // a stale "not working" after the underlying issue has actually cleared.
+  ConnectionDiagnostics? _diagnostics;
+  bool _isRunningDiagnostics = false;
+  MAConnectionState? _lastDiagnosedState;
 
   /// All available static home screen rows (that can be toggled on/off)
   static const List<String> _allAvailableRows = [
@@ -117,6 +125,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _loadSettings();
     _loadAppVersion();
     _loadClientCertificateStatus();
+    _runDiagnostics();
+  }
+
+  Future<void> _runDiagnostics() async {
+    // Don't stack overlapping passes - each one already does a DNS lookup,
+    // socket connects, and a live round-trip request, so back-to-back
+    // triggers (e.g. a state-change callback firing while the refresh
+    // button's own pass is still running) would only add load for no
+    // benefit; whichever pass is already in flight will produce fresh
+    // enough results for both.
+    if (_isRunningDiagnostics) return;
+    final provider = context.read<MusicAssistantProvider>();
+    final serverUrl = provider.serverUrl;
+    if (serverUrl == null) return;
+    if (mounted) setState(() => _isRunningDiagnostics = true);
+    final result = await ConnectionDiagnosticsService.run(
+      serverUrl: serverUrl,
+      serverConnected: provider.isConnected,
+      measureRoundTripTime: provider.measureRoundTripTime,
+    );
+    if (mounted) {
+      setState(() {
+        _diagnostics = result;
+        _isRunningDiagnostics = false;
+      });
+    }
   }
 
   Future<void> _loadClientCertificateStatus() async {
@@ -595,12 +629,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final connectionError = context.select<MusicAssistantProvider, String?>((p) => p.error);
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // The connection can recover (or fail) in the background - e.g. the
+    // automatic reconnect loop succeeding while this screen is open - so
+    // re-run diagnostics fresh whenever the state actually settles instead
+    // of only ever reflecting whatever was true when the screen first
+    // opened or the last time the user tapped refresh. Only for *settled*
+    // states, not every transient step (connecting/authenticating) a single
+    // connect attempt passes through - triggering a full DNS+socket+RTT
+    // pass on each of those made the screen visibly janky, since one
+    // connect can cycle through 4-5 states in well under a second.
+    const settledStates = {
+      MAConnectionState.connected,
+      MAConnectionState.authenticated,
+      MAConnectionState.error,
+      MAConnectionState.disconnected,
+    };
+    if (_lastDiagnosedState != connectionState && settledStates.contains(connectionState)) {
+      _lastDiagnosedState = connectionState;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _runDiagnostics());
+    }
 
     return Scaffold(
       backgroundColor: colorScheme.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () {
@@ -659,39 +718,137 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 color: colorScheme.surfaceVariant.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+              child: Stack(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        _getStatusIcon(connectionState),
-                        color: _getStatusColor(connectionState, colorScheme),
-                        size: 20,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            _getStatusIcon(connectionState),
+                            color: _getStatusColor(connectionState, colorScheme),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            _getStatusText(connectionState),
+                            style: textTheme.titleMedium?.copyWith(
+                              color: _getStatusColor(connectionState, colorScheme),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _getStatusText(connectionState),
-                        style: textTheme.titleMedium?.copyWith(
-                          color: _getStatusColor(connectionState, colorScheme),
-                          fontWeight: FontWeight.bold,
+                      // Show the specific reason (e.g. TLS/certificate failure,
+                      // DNS lookup failure, timeout) instead of just the generic
+                      // "Connection Error" label - avoids needing to dig into the
+                      // debug log for common, recognizable failure causes.
+                      if (connectionState == MAConnectionState.error && connectionError != null) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          connectionError,
+                          textAlign: TextAlign.center,
+                          style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
                         ),
+                      ],
+                      const SizedBox(height: 12),
+                      Divider(height: 1, color: colorScheme.onSurfaceVariant.withOpacity(0.15)),
+                      const SizedBox(height: 10),
+                      // Detailed checklist - always a *fresh* run (see
+                      // _runDiagnostics), never a cached/stale snapshot, so
+                      // this can't keep showing "not working" after the
+                      // underlying issue actually cleared.
+                      _buildDiagnosticRow(
+                        'Name lookup (DNS)',
+                        _diagnostics?.dnsStatus,
+                        colorScheme,
+                        textTheme,
+                        detail: _formatDuration(_diagnostics?.dnsTime),
                       ),
+                      _buildDiagnosticRow(
+                        'IPv4 connectivity',
+                        _diagnostics?.ipv4Status,
+                        colorScheme,
+                        textTheme,
+                      ),
+                      _buildDiagnosticRow(
+                        'IPv6 connectivity',
+                        _diagnostics?.ipv6Status,
+                        colorScheme,
+                        textTheme,
+                      ),
+                      _buildDiagnosticRow(
+                        'Client certificate',
+                        _diagnostics?.certificateStatus,
+                        colorScheme,
+                        textTheme,
+                        detail: _diagnostics == null
+                            ? null
+                            : (_diagnostics!.certificateConfigured ? 'in use' : 'not needed'),
+                      ),
+                      _buildDiagnosticRow(
+                        'Connected to music server',
+                        _diagnostics == null
+                            ? null
+                            : (_diagnostics!.serverConnected ? DiagnosticStatus.ok : DiagnosticStatus.failed),
+                        colorScheme,
+                        textTheme,
+                      ),
+                      if (_diagnostics?.roundTripTime != null)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 3),
+                          child: Row(
+                            children: [
+                              Icon(Icons.speed_rounded, color: colorScheme.onSurfaceVariant, size: 16),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Round-trip time',
+                                  style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                                ),
+                              ),
+                              Text(
+                                _formatDuration(_diagnostics!.roundTripTime)!,
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (_diagnostics != null) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          'Checked ${_formatAge(_diagnostics!.checkedAt)}',
+                          style: textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant.withOpacity(0.6),
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
-                  // Show the specific reason (e.g. TLS/certificate failure,
-                  // DNS lookup failure, timeout) instead of just the generic
-                  // "Connection Error" label - avoids needing to dig into the
-                  // debug log for common, recognizable failure causes.
-                  if (connectionState == MAConnectionState.error && connectionError != null) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      connectionError,
-                      textAlign: TextAlign.center,
-                      style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                  Positioned(
+                    top: -4,
+                    right: -4,
+                    child: IconButton(
+                      icon: _isRunningDiagnostics
+                          ? SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            )
+                          : Icon(Icons.refresh_rounded, color: colorScheme.onSurfaceVariant, size: 20),
+                      tooltip: 'Refresh diagnostics',
+                      onPressed: _isRunningDiagnostics ? null : _runDiagnostics,
                     ),
-                  ],
+                  ),
                 ],
               ),
             ),
@@ -1593,6 +1750,63 @@ class _SettingsScreenState extends State<SettingsScreen> {
       case MAConnectionState.disconnected:
         return s.disconnected;
     }
+  }
+
+  Widget _buildDiagnosticRow(
+    String label,
+    DiagnosticStatus? status,
+    ColorScheme colorScheme,
+    TextTheme textTheme, {
+    String? detail,
+  }) {
+    final IconData icon;
+    final Color color;
+    switch (status) {
+      case DiagnosticStatus.ok:
+        icon = Icons.check_circle_rounded;
+        color = Colors.green;
+      case DiagnosticStatus.failed:
+        icon = Icons.cancel_rounded;
+        color = colorScheme.error;
+      case DiagnosticStatus.skipped:
+        icon = Icons.remove_circle_outline_rounded;
+        color = colorScheme.onSurfaceVariant.withOpacity(0.5);
+      case DiagnosticStatus.unknown:
+      case null:
+        icon = Icons.circle_outlined;
+        color = colorScheme.onSurfaceVariant.withOpacity(0.5);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(label, style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
+          ),
+          if (detail != null)
+            Text(
+              detail,
+              style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String? _formatDuration(Duration? duration) {
+    if (duration == null) return null;
+    return '${duration.inMilliseconds} ms';
+  }
+
+  String _formatAge(DateTime checkedAt) {
+    final elapsed = DateTime.now().difference(checkedAt);
+    if (elapsed.inSeconds < 5) return 'just now';
+    if (elapsed.inMinutes < 1) return '${elapsed.inSeconds}s ago';
+    if (elapsed.inHours < 1) return '${elapsed.inMinutes}m ago';
+    return '${elapsed.inHours}h ago';
   }
 
   Future<void> _launchUrl(String url) async {
