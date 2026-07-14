@@ -1,7 +1,7 @@
 name: klangor
 description: A minimalistic Music Assistant client built with Flutter, forked from Ensemble
 publish_to: 'none'
-version: 4.0.21
+version: 4.0.24
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
