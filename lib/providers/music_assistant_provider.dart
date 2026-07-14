@@ -6277,6 +6277,16 @@ class MusicAssistantProvider with ChangeNotifier {
       if (targetTrack != null) {
         _currentTrack = targetTrack;
         notifyListeners();
+
+        // The replace race described above means the server sometimes
+        // never actually starts the stream, even though it accepted the
+        // command - the mini player badge above already updated to the
+        // new track regardless, since that's just reflecting what we
+        // asked for. Previously the user had to notice audio never
+        // started and press play again, which sends player_queues/resume
+        // (the same reliable command play_index/next/previous use) -
+        // detect that and do it for them automatically instead.
+        unawaited(_verifyPlaybackStartedOrResume(playerId, targetTrack));
       }
     } catch (e) {
       final errorInfo = ErrorHandler.handleError(e, context: 'Play tracks');
@@ -6284,6 +6294,40 @@ class MusicAssistantProvider with ChangeNotifier {
       ErrorHandler.logError('Play tracks', e);
       notifyListeners();
       rethrow;
+    }
+  }
+
+  /// After a queue replace, polls for the new playing state every 500ms and
+  /// nudges with a resume whenever it still hasn't landed, up to 10 tries
+  /// (5s total) - working around the player_queues/play_media replace race
+  /// documented in playTracks() above, without touching the replace
+  /// command's own timing (a client-side pre-pause was tried for that and
+  /// reverted after it made things worse - see the comment above). Each
+  /// resume is a no-op once a prior one has actually taken effect, since
+  /// the next poll then sees "playing" and returns before sending another.
+  Future<void> _verifyPlaybackStartedOrResume(String playerId, Track expectedTrack) async {
+    const maxAttempts = 10;
+    const pollInterval = Duration(milliseconds: 500);
+
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+      await Future.delayed(pollInterval);
+
+      // Bail if the user has since moved on to a different track/player -
+      // don't second-guess a state that's no longer what we started.
+      if (_currentTrack?.itemId != expectedTrack.itemId) return;
+
+      final player = _availablePlayers.cast<Player?>().firstWhere(
+        (p) => p?.playerId == playerId,
+        orElse: () => null,
+      );
+      if (player == null || player.state == 'playing') return;
+
+      _logger.log('⚠️ Playback didn\'t start after queue replace (attempt $attempt/$maxAttempts) - auto-resuming');
+      try {
+        await resumePlayer(playerId);
+      } catch (e) {
+        ErrorHandler.logError('Auto-resume after replace', e);
+      }
     }
   }
 
