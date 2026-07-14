@@ -622,6 +622,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  /// Cleanly exits the app - unlike swiping it away in the system app
+  /// switcher or a force-stop, SystemNavigator.pop() finishes the Activity
+  /// through the normal Android lifecycle, so playback/connection cleanup
+  /// (dispose callbacks, foreground service teardown) actually runs instead
+  /// of being abruptly killed.
+  Future<void> _quitApp() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Quit Klangor?'),
+          content: const Text('This closes the app completely, stopping playback.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Quit'),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed == true) {
+      await SystemNavigator.pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Use select to only rebuild when connectionState changes
@@ -975,6 +1005,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: FilledButton.styleFrom(
                   backgroundColor: colorScheme.errorContainer.withOpacity(0.4),
                   foregroundColor: colorScheme.error,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // Quit button - the only clean way to fully exit; closing via
+            // the system app switcher force-kills the process instead.
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: OutlinedButton.icon(
+                onPressed: _quitApp,
+                icon: const Icon(Icons.exit_to_app_rounded),
+                label: const Text(
+                  'Quit App',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: colorScheme.onSurfaceVariant,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
