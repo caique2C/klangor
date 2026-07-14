@@ -160,9 +160,17 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       }
     });
 
-    // Handle becoming noisy (headphones unplugged, BT/AA disconnected)
+    // Handle becoming noisy (headphones unplugged, BT/AA disconnected).
+    // Guarded the same way as the interruption listener above: this is the
+    // phone's own audio route changing, so it should only pause the builtin
+    // (local/Sendspin) player. Without this guard, an unrelated route change
+    // on the phone (e.g. its own headphones) while remote-controlling a
+    // different MA player elsewhere would incorrectly pause that remote
+    // player too - the AA-specific disconnect path (onAADisconnected below)
+    // already handles pausing the builtin player explicitly on AA disconnect.
     _becomingNoisySubscription = session.becomingNoisyEventStream.listen((_) {
-      _logger.log('🔊 Audio becoming noisy (route changed), suppressing resume');
+      _logger.log('🔊 Audio becoming noisy (route changed), builtinActive=$_isBuiltinPlayerActive');
+      if (!_isBuiltinPlayerActive) return;
       _suppressResume = true;
       pause();
     });

@@ -5684,14 +5684,20 @@ class MusicAssistantProvider with ChangeNotifier {
   }
 
   Future<void> nextTrackSelectedPlayer() async {
-    if (_selectedPlayer == null) return;
+    if (_selectedPlayer == null) {
+      _logger.log('⚠️ nextTrackSelectedPlayer: no selected player, ignoring');
+      return;
+    }
     await nextTrack(_selectedPlayer!.playerId);
     await Future.delayed(Timings.trackChangeDelay);
     await _updatePlayerState();
   }
 
   Future<void> previousTrackSelectedPlayer() async {
-    if (_selectedPlayer == null) return;
+    if (_selectedPlayer == null) {
+      _logger.log('⚠️ previousTrackSelectedPlayer: no selected player, ignoring');
+      return;
+    }
     await previousTrack(_selectedPlayer!.playerId);
     await Future.delayed(Timings.trackChangeDelay);
     await _updatePlayerState();
