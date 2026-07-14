@@ -379,16 +379,30 @@ class PcmAudioPlayer {
     _feedCompleter = Completer<void>();
 
     try {
-      int chunksProcessed = 0;
-
       // CRITICAL: Only feed limited chunks to keep native buffer small
       // This is the key to fast pause - we drain ~200ms instead of 5-8 seconds
+      final chunksToFeed = <Uint8List>[];
+      var totalBytes = 0;
       while (_audioBuffer.isNotEmpty &&
-             chunksProcessed < _maxChunksPerFeed &&
+             chunksToFeed.length < _maxChunksPerFeed &&
              _state == PcmPlayerState.playing &&
              !_shouldBlockFeeding) {
         final chunk = _audioBuffer.removeAt(0);
+        chunksToFeed.add(chunk);
+        totalBytes += chunk.length;
+      }
 
+      // Merge into a single native feed() call instead of one call per
+      // ~25ms chunk (up to _maxChunksPerFeed calls). flutter_pcm_sound's
+      // native playback thread does a full pass over its queued buffers
+      // on every single feed to compute remaining-frame stats, so calling
+      // it once per ~200ms batch instead of up to 8x had it that often
+      // was the direct cause of the native thread sitting near 100% CPU
+      // continuously even during perfectly healthy playback (confirmed
+      // via `top -H`: pegged with zero buffer overflows/underruns) -
+      // this reduces native round-trips ~8x without changing how much
+      // audio is fed or the pause-responsiveness cap.
+      if (chunksToFeed.isNotEmpty && !_shouldBlockFeeding) {
         // Sendspin sends 16-bit little-endian PCM, which matches this app's
         // only real-world targets (Android/iOS are both little-endian host
         // order), so the common case (gain == 1.0, which is every case today
@@ -402,18 +416,24 @@ class PcmAudioPlayer {
         // to the progressive crackling/stutter reported after a track has
         // been playing a while.
         //
-        // The copy is required, not optional: `chunk` here is typically a
-        // Uint8List.sublistView into a *larger* shared buffer (Sendspin
-        // strips a 9-byte header via sublistView, not a copy - see
-        // sendspin_service.dart:_handleBinaryAudioData). PcmArrayInt16.feed()
-        // sends `bytes.buffer.asUint8List()`, which returns the *entire*
-        // underlying buffer, ignoring the view's own offset/length - wrapping
-        // the view directly would leak neighboring bytes (or the stripped
-        // header) into the native feed. Uint8List.fromList forces a
-        // tightly-sized, non-aliased copy first.
+        // Each chunk here is typically a Uint8List.sublistView into a
+        // *larger* shared buffer (Sendspin strips a 9-byte header via
+        // sublistView, not a copy - see
+        // sendspin_service.dart:_handleBinaryAudioData), so they're copied
+        // into one tightly-sized, non-aliased merged buffer first -
+        // PcmArrayInt16.feed() sends `bytes.buffer.asUint8List()`, which
+        // returns the *entire* underlying buffer, ignoring a view's own
+        // offset/length.
+        final merged = Uint8List(totalBytes);
+        var offset = 0;
+        for (final chunk in chunksToFeed) {
+          merged.setRange(offset, offset + chunk.length, chunk);
+          offset += chunk.length;
+        }
+
         final buffer = _volumeGain == 1.0
-            ? pcm.PcmArrayInt16(bytes: ByteData.sublistView(Uint8List.fromList(chunk)))
-            : pcm.PcmArrayInt16.fromList(_bytesToInt16List(chunk)
+            ? pcm.PcmArrayInt16(bytes: ByteData.sublistView(merged))
+            : pcm.PcmArrayInt16.fromList(_bytesToInt16List(merged)
                 .map((s) => (s * _volumeGain).round().clamp(-32768, 32767))
                 .toList());
 
@@ -442,7 +462,7 @@ class PcmAudioPlayer {
                 _startElapsedTimeTimer();
                 _logger.log('PcmAudioPlayer: Auto-recovery successful');
 
-                // Retry the feed with the current chunk
+                // Retry the feed with the current merged buffer
                 await pcm.FlutterPcmSound.feed(buffer);
               } catch (recoveryError) {
                 _logger.log('PcmAudioPlayer: Auto-recovery failed: $recoveryError');
@@ -457,20 +477,14 @@ class PcmAudioPlayer {
 
           // Don't update stats if we got paused during the feed
           if (!_shouldBlockFeeding) {
-            _framesPlayed++;
-            _bytesPlayed += chunk.length;
-            chunksProcessed++;
+            _framesPlayed += chunksToFeed.length;
+            _bytesPlayed += totalBytes;
 
             // Log periodically
-            if (_framesPlayed % 100 == 0) {
+            if (_framesPlayed % 100 < chunksToFeed.length) {
               _logger.log('PcmAudioPlayer: Played $_framesPlayed frames (${(_bytesPlayed / 1024).toStringAsFixed(1)} KB)');
             }
           }
-        }
-
-        // Yield to event loop mid-feed to allow UI to respond
-        if (chunksProcessed % 4 == 0) {
-          await Future.delayed(Duration.zero);
         }
       }
     } catch (e) {
