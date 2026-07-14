@@ -1075,7 +1075,7 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> with Sing
                             );
                           },
                           child: ListTile(
-                            contentPadding: const EdgeInsets.only(left: 12, right: 20),
+                            contentPadding: const EdgeInsets.only(left: 8, right: 13),
                             leading: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [

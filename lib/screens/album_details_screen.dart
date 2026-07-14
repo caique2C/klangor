@@ -1181,6 +1181,7 @@ class _AlbumDetailsScreenState extends State<AlbumDetailsScreen> with SingleTick
                       );
                     },
                     child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 11.0),
                       leading: Container(
                         width: 40,
                         height: 40,
