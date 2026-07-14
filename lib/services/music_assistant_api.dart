@@ -3317,8 +3317,29 @@ class MusicAssistantAPI {
     return streamUrl;
   }
 
+  // MA's imageproxy rejects any size outside this exact set with HTTP 400
+  // (music_assistant/controllers/metadata/constants.py:
+  // _ALLOWED_IMAGEPROXY_SIZES). UI call sites pass whatever pixel size suits
+  // their layout (128, 200, 300, ...), so getImageUrl() snaps to the
+  // nearest allowed size below rather than requiring every caller to know
+  // and match this exact set - a mismatch here silently breaks every image
+  // at that size (confirmed live: ArtistAvatar's default of 128 isn't in
+  // the set, so it 400'd for every artist using it, misread at first as a
+  // caching/staleness issue since CachedNetworkImage's default errorWidget
+  // doesn't surface the actual HTTP status).
+  static const List<int> _allowedImageproxySizes = [80, 160, 256, 512, 1024];
+
+  int _snapToAllowedImageproxySize(int requested) {
+    if (requested <= 0) return 0;
+    for (final allowed in _allowedImageproxySizes) {
+      if (requested <= allowed) return allowed;
+    }
+    return _allowedImageproxySizes.last;
+  }
+
   // Get image URL
   String? getImageUrl(MediaItem item, {int size = 256}) {
+    final snappedSize = _snapToAllowedImageproxySize(size);
     // Images are in metadata.images as an array
     final images = item.metadata?['images'] as List<dynamic>?;
     if (images == null || images.isEmpty) {
@@ -3390,10 +3411,10 @@ class MusicAssistantAPI {
     // to the old form only if an older server didn't send a proxy_id.
     final proxyId = selectedImage['proxy_id'] as String?;
     if (proxyId != null && proxyId.isNotEmpty) {
-      return '$baseUrl/imageproxy/$proxyId?size=$size&fmt=jpeg';
+      return '$baseUrl/imageproxy/$proxyId?size=$snappedSize&fmt=jpeg';
     }
     final provider = selectedImage['provider'] as String?;
-    return '$baseUrl/imageproxy?provider=${Uri.encodeComponent(provider ?? "")}&size=$size&fmt=jpeg&path=${Uri.encodeComponent(imagePath)}';
+    return '$baseUrl/imageproxy?provider=${Uri.encodeComponent(provider ?? "")}&size=$snappedSize&fmt=jpeg&path=${Uri.encodeComponent(imagePath)}';
   }
 
   // ==================== iTunes Artwork Lookup ====================

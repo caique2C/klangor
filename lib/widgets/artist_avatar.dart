@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/media_item.dart';
 import '../providers/music_assistant_provider.dart';
 import '../services/image_prefetch_service.dart';
+import '../services/debug_logger.dart';
 
 /// A CircleAvatar that shows the artist image from Music Assistant.
 class ArtistAvatar extends StatefulWidget {
@@ -11,7 +12,6 @@ class ArtistAvatar extends StatefulWidget {
   final double radius;
   final int imageSize;
   final String? heroTag;
-  final ValueChanged<String?>? onImageLoaded;
 
   const ArtistAvatar({
     super.key,
@@ -19,7 +19,6 @@ class ArtistAvatar extends StatefulWidget {
     this.radius = 24,
     this.imageSize = 128,
     this.heroTag,
-    this.onImageLoaded,
   });
 
   @override
@@ -27,32 +26,22 @@ class ArtistAvatar extends StatefulWidget {
 }
 
 class _ArtistAvatarState extends State<ArtistAvatar> {
-  String? _imageUrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadImage();
-  }
-
-  void _loadImage() {
-    final provider = context.read<MusicAssistantProvider>();
-    final maUrl = provider.getImageUrl(widget.artist, size: widget.imageSize);
-    if (maUrl != null) {
-      _imageUrl = maUrl;
-      widget.onImageLoaded?.call(maUrl);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    // Computed fresh every build (cheap - just a metadata lookup + string
+    // build) rather than cached in State: a cached value could only ever
+    // go stale if the artist's underlying image data changes - e.g. a
+    // library re-sync minting a new server-side image id after the MA
+    // server restarts/upgrades - and there's no reliable, cheap signal for
+    // "did that change" that's worth chasing instead of just not caching.
+    final imageUrl = context.read<MusicAssistantProvider>().getImageUrl(widget.artist, size: widget.imageSize);
 
     Widget avatarContent;
-    if (_imageUrl != null) {
+    if (imageUrl != null) {
       avatarContent = ClipOval(
         child: CachedNetworkImage(
-          imageUrl: _imageUrl!,
+          imageUrl: imageUrl,
           width: widget.radius * 2,
           height: widget.radius * 2,
           fit: BoxFit.cover,
@@ -69,10 +58,13 @@ class _ArtistAvatarState extends State<ArtistAvatar> {
             color: colorScheme.surfaceVariant,
             child: Icon(Icons.person_rounded, color: colorScheme.onSurfaceVariant),
           ),
-          errorWidget: (context, url, error) => Container(
-            color: colorScheme.surfaceVariant,
-            child: Icon(Icons.person_rounded, color: colorScheme.onSurfaceVariant),
-          ),
+          errorWidget: (context, url, error) {
+            DebugLogger().log('⚠️ ArtistAvatar: failed to load $url for "${widget.artist.name}": $error');
+            return Container(
+              color: colorScheme.surfaceVariant,
+              child: Icon(Icons.person_rounded, color: colorScheme.onSurfaceVariant),
+            );
+          },
         ),
       );
     } else {

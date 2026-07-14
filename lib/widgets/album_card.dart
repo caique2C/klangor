@@ -37,7 +37,6 @@ class AlbumCard extends StatefulWidget {
 }
 
 class _AlbumCardState extends State<AlbumCard> with LibraryStatusMixin {
-  String? _cachedMaImageUrl;
   bool _isNavigating = false;
 
   @override
@@ -63,10 +62,6 @@ class _AlbumCardState extends State<AlbumCard> with LibraryStatusMixin {
       if (!service.isFavorite(key) && (widget.album.favorite ?? false)) {
         service.setFavoriteStatus(key, true);
       }
-    });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _cachedMaImageUrl = context.read<MusicAssistantProvider>().api?.getImageUrl(widget.album, size: 256);
     });
   }
 
@@ -243,8 +238,13 @@ class _AlbumCardState extends State<AlbumCard> with LibraryStatusMixin {
   @override
   Widget build(BuildContext context) {
     final maProvider = context.read<MusicAssistantProvider>();
-    // Use cached URL if available, otherwise get fresh
-    final imageUrl = _cachedMaImageUrl ?? maProvider.api?.getImageUrl(widget.album, size: 256);
+    // Computed fresh every build (cheap - just a metadata lookup + string
+    // build) rather than cached in State: a cached value could only ever
+    // go stale if the album's underlying image data changes - e.g. a
+    // library re-sync minting a new server-side image id after the MA
+    // server restarts/upgrades - and there's no reliable, cheap signal for
+    // "did that change" that's worth chasing instead of just not caching.
+    final imageUrl = maProvider.api?.getImageUrl(widget.album, size: 256);
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
