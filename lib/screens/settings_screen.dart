@@ -622,11 +622,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  /// Cleanly exits the app - unlike swiping it away in the system app
-  /// switcher or a force-stop, SystemNavigator.pop() finishes the Activity
-  /// through the normal Android lifecycle, so playback/connection cleanup
-  /// (dispose callbacks, foreground service teardown) actually runs instead
-  /// of being abruptly killed.
+  /// Cleanly exits the app. Two things SystemNavigator.pop() alone doesn't
+  /// handle, confirmed live via `adb shell dumpsys activity recents` -
+  /// Flutter's own "close the app" API only moves the task to back on
+  /// Android, it doesn't remove it from the recent-apps switcher or end the
+  /// process:
+  /// 1. androidStopForegroundOnPause is deliberately false (so background
+  ///    playback survives normal pausing), which means the audio_service
+  ///    foreground service/notification keeps the process alive regardless -
+  ///    stopped explicitly first.
+  /// 2. Actually removing the task from the recents list needs
+  ///    Activity.finishAndRemoveTask(), which isn't exposed via any
+  ///    Flutter/dart:ui API - routed through the existing platform channel
+  ///    to MainActivity.kt instead of SystemNavigator.pop().
+  static const _platformChannel = MethodChannel('com.klangor.app/volume_buttons');
+
   Future<void> _quitApp() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -648,7 +658,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       },
     );
     if (confirmed == true) {
-      await SystemNavigator.pop();
+      if (mounted) {
+        await context.read<MusicAssistantProvider>().stopAudioService();
+      }
+      await _platformChannel.invokeMethod('quitApp');
     }
   }
 
@@ -926,24 +939,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton(
+                        child: FilledButton.tonalIcon(
                           onPressed: _isImportingCertificate ? null : _importClientCertificate,
-                          child: _isImportingCertificate
+                          icon: _isImportingCertificate
                               ? const SizedBox(
                                   width: 16,
                                   height: 16,
                                   child: CircularProgressIndicator(strokeWidth: 2),
                                 )
-                              : Text(_hasClientCertificate ? 'Replace' : 'Import'),
+                              : const Icon(Icons.upload_file_rounded),
+                          label: Text(_hasClientCertificate ? 'Replace' : 'Import'),
+                          style: FilledButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
                         ),
                       ),
                       if (_hasClientCertificate) ...[
                         const SizedBox(width: 12),
                         Expanded(
-                          child: OutlinedButton(
+                          child: FilledButton.tonalIcon(
                             onPressed: _removeClientCertificate,
-                            style: OutlinedButton.styleFrom(foregroundColor: colorScheme.error),
-                            child: const Text('Remove'),
+                            icon: const Icon(Icons.delete_outline_rounded),
+                            label: const Text('Remove'),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: colorScheme.errorContainer.withOpacity(0.4),
+                              foregroundColor: colorScheme.error,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -1019,7 +1045,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             SizedBox(
               width: double.infinity,
               height: 50,
-              child: OutlinedButton.icon(
+              child: FilledButton.tonalIcon(
                 onPressed: _quitApp,
                 icon: const Icon(Icons.exit_to_app_rounded),
                 label: const Text(
@@ -1029,8 +1055,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: colorScheme.onSurfaceVariant,
+                style: FilledButton.styleFrom(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

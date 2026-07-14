@@ -82,6 +82,16 @@ class MainActivity: AudioServiceActivity() {
                     syncSystemVolume(volume)
                     result.success(null)
                 }
+                "quitApp" -> {
+                    // SystemNavigator.pop() (Flutter's own "close the app" API) only
+                    // moves the task to back on Android - it doesn't remove it from
+                    // the recent-apps switcher, and the process lingers. Explicit
+                    // Quit action needs finishAndRemoveTask() instead, which isn't
+                    // exposed via any Flutter/dart:ui API.
+                    Log.d(TAG, "Quit requested - finishing and removing task")
+                    finishAndRemoveTask()
+                    result.success(null)
+                }
                 else -> {
                     Log.d(TAG, "Unknown method: ${call.method}")
                     result.notImplemented()

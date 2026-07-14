@@ -2090,6 +2090,19 @@ class MusicAssistantProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Stops the audio_service foreground service/notification for local
+  /// playback. Needed before a full app quit: androidStopForegroundOnPause
+  /// is false (so background playback survives normal pausing), which also
+  /// means an active foreground service keeps the whole process alive in
+  /// the background - and showing in the recent-apps switcher - even after
+  /// SystemNavigator.pop() finishes the Activity. audioHandler.stop() is
+  /// repurposed for player switching and doesn't touch the service; only
+  /// the base AudioHandler.stop() (exposed here as stopService()) actually
+  /// tears it down.
+  Future<void> stopAudioService() async {
+    await audioHandler.stopService();
+  }
+
   /// Clear all caches and state (for logout or server change)
   void clearAllOnLogout() {
     _availablePlayers = [];
