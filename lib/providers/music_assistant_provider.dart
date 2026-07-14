@@ -3172,7 +3172,10 @@ class MusicAssistantProvider with ChangeNotifier {
             if (_serverUrl != null) {
               try {
                 final imgUri = Uri.parse(imageUrl);
-                final queryString = imgUri.query;
+                // Keep the original path (e.g. /imageproxy/<proxy_id>) -
+                // MA addresses images by an opaque id path segment, not
+                // just query params, so only the scheme+host should
+                // change here, not the path.
                 var baseUrl = _serverUrl!;
                 if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
                   baseUrl = 'https://$baseUrl';
@@ -3180,7 +3183,8 @@ class MusicAssistantProvider with ChangeNotifier {
                 if (baseUrl.endsWith('/')) {
                   baseUrl = baseUrl.substring(0, baseUrl.length - 1);
                 }
-                finalImageUrl = '$baseUrl/imageproxy?$queryString';
+                final query = imgUri.query.isNotEmpty ? '?${imgUri.query}' : '';
+                finalImageUrl = '$baseUrl${imgUri.path}$query';
               } catch (e) {
                 // Use original URL
               }
@@ -3412,7 +3416,9 @@ class MusicAssistantProvider with ChangeNotifier {
       if (imageUrl != null && _serverUrl != null) {
         try {
           final imgUri = Uri.parse(imageUrl);
-          final queryString = imgUri.query;
+          // Keep the original path (e.g. /imageproxy/<proxy_id>) - MA
+          // addresses images by an opaque id path segment, not just query
+          // params, so only the scheme+host should change here.
           var baseUrl = _serverUrl!;
           if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
             baseUrl = 'https://$baseUrl';
@@ -3420,7 +3426,8 @@ class MusicAssistantProvider with ChangeNotifier {
           if (baseUrl.endsWith('/')) {
             baseUrl = baseUrl.substring(0, baseUrl.length - 1);
           }
-          imageUrl = '$baseUrl/imageproxy?$queryString';
+          final query = imgUri.query.isNotEmpty ? '?${imgUri.query}' : '';
+          imageUrl = '$baseUrl${imgUri.path}$query';
         } catch (e) {
           if (imageUrl != null && imageUrl.startsWith('http://')) {
             imageUrl = imageUrl.replaceFirst('http://', 'https://');
