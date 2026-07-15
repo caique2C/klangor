@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../models/recommendation_folder.dart';
 import '../providers/music_assistant_provider.dart';
 import '../providers/navigation_provider.dart';
+import '../services/music_assistant_api.dart' show MAConnectionState;
 import '../services/settings_service.dart';
 import '../services/debug_logger.dart';
 import '../services/sync_service.dart';
@@ -313,6 +314,21 @@ class _NewHomeScreenState extends State<NewHomeScreen> with AutomaticKeepAliveCl
     }
   }
 
+  String _connectionStatusTooltip(MAConnectionState state) {
+    switch (state) {
+      case MAConnectionState.connected:
+      case MAConnectionState.authenticated:
+        return 'Connected';
+      case MAConnectionState.connecting:
+      case MAConnectionState.authenticating:
+        return 'Connecting...';
+      case MAConnectionState.error:
+        return 'Connection error - showing cached data';
+      case MAConnectionState.disconnected:
+        return 'Disconnected - showing cached data';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
@@ -348,6 +364,40 @@ class _NewHomeScreenState extends State<NewHomeScreen> with AutomaticKeepAliveCl
         titleSpacing: 0,
         centerTitle: false,
         actions: [
+          // Connection status dot - so a disconnected session (still showing
+          // its last-cached artists/albums/etc.) can't be mistaken for a
+          // live, up-to-date one at a glance.
+          Padding(
+            padding: const EdgeInsets.only(right: 4.0),
+            child: Selector<MusicAssistantProvider, MAConnectionState>(
+              selector: (_, p) => p.connectionState,
+              builder: (context, connectionState, _) {
+                final Color color;
+                switch (connectionState) {
+                  case MAConnectionState.connected:
+                  case MAConnectionState.authenticated:
+                    color = Colors.green;
+                  case MAConnectionState.connecting:
+                  case MAConnectionState.authenticating:
+                    color = Colors.amber;
+                  case MAConnectionState.error:
+                  case MAConnectionState.disconnected:
+                    color = Colors.red;
+                }
+                return Tooltip(
+                  message: _connectionStatusTooltip(connectionState),
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: color,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
           // Sync indicator - shows when library is syncing in background
           ListenableBuilder(
             listenable: SyncService.instance,

@@ -317,7 +317,7 @@ class SettingsService {
   static Future<bool> getUseMaterialTheme() => _getBool(_keyUseMaterialTheme, defaultValue: false);
   static Future<void> saveUseMaterialTheme(bool enabled) => _setBool(_keyUseMaterialTheme, enabled);
 
-  static Future<bool> getAdaptiveTheme() => _getBool(_keyAdaptiveTheme, defaultValue: true);
+  static Future<bool> getAdaptiveTheme() => _getBool(_keyAdaptiveTheme, defaultValue: false);
   static Future<void> saveAdaptiveTheme(bool enabled) => _setBool(_keyAdaptiveTheme, enabled);
 
   static Future<String?> getCustomColor() => _getString(_keyCustomColor);
@@ -365,7 +365,7 @@ class SettingsService {
   static Future<bool> getSmartSortPlayers() => _getBool(_keySmartSortPlayers, defaultValue: false);
   static Future<void> setSmartSortPlayers(bool smartSort) => _setBool(_keySmartSortPlayers, smartSort);
 
-  static Future<bool> getAutoResumeAfterInterruption() => _getBool(_keyAutoResumeAfterInterruption, defaultValue: true);
+  static Future<bool> getAutoResumeAfterInterruption() => _getBool(_keyAutoResumeAfterInterruption, defaultValue: false);
   static Future<void> setAutoResumeAfterInterruption(bool enabled) => _setBool(_keyAutoResumeAfterInterruption, enabled);
 
   /// Whether the configured server is known to require the client
@@ -454,7 +454,7 @@ class SettingsService {
   static Future<void> setShowFavoritePodcasts(bool show) => _setBool(_keyShowFavoritePodcasts, show);
 
   // Library Artists Filter - show only artists that have albums in library
-  static Future<bool> getShowOnlyArtistsWithAlbums() => _getBool(_keyShowOnlyArtistsWithAlbums, defaultValue: false);
+  static Future<bool> getShowOnlyArtistsWithAlbums() => _getBool(_keyShowOnlyArtistsWithAlbums, defaultValue: true);
   static Future<void> setShowOnlyArtistsWithAlbums(bool show) => _setBool(_keyShowOnlyArtistsWithAlbums, show);
 
   // Home Row Order
@@ -942,16 +942,16 @@ class SettingsService {
     await prefs.setBool(_keyShowHints, show);
   }
 
-  /// Get whether provider icons are shown on album art (default: true)
+  /// Get whether provider icons are shown on album art (default: false)
   static Future<bool> getShowProviderIcons() async {
     final prefs = await _getPrefs();
-    return prefs.getBool(_keyShowProviderIcons) ?? true;
+    return prefs.getBool(_keyShowProviderIcons) ?? false;
   }
 
   /// Synchronous getter for provider icons setting (uses cached prefs)
-  /// Returns true if prefs not yet initialized
+  /// Returns false if prefs not yet initialized
   static bool getShowProviderIconsSync() {
-    return _prefsCache?.getBool(_keyShowProviderIcons) ?? true;
+    return _prefsCache?.getBool(_keyShowProviderIcons) ?? false;
   }
 
   /// Set whether provider icons are shown on album art

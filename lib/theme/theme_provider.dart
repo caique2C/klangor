@@ -43,7 +43,7 @@ void markDetailScreenEntered(BuildContext context) {
 class ThemeProvider extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
   bool _useMaterialTheme = false;
-  bool _adaptiveTheme = true;
+  bool _adaptiveTheme = false;
   Color _customColor = const Color(0xFF604CEC);
 
   // Adaptive colors extracted from current album art

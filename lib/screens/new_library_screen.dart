@@ -57,7 +57,7 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
   bool _isLoadingAudiobooks = false;
   bool _showFavoritesOnly = false;
   bool _isChangingMediaType = false; // Flag to ignore onPageChanged during media type transitions
-  bool _showOnlyArtistsWithAlbums = false; // Filter artists tab to only show those with albums
+  bool _showOnlyArtistsWithAlbums = true; // Filter artists tab to only show those with albums
   // Which album types to show in the Albums tab (matches MA's AlbumType enum:
   // album/single/ep/compilation/live/soundtrack/unknown). Starts as "every
   // type checked" (all shown); _loadViewPreferences() overwrites this with

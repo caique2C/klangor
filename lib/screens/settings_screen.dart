@@ -16,7 +16,6 @@ import '../services/client_certificate_service.dart';
 import '../services/connection_diagnostics_service.dart';
 import '../theme/theme_provider.dart';
 import '../theme/app_theme.dart';
-import '../utils/page_transitions.dart';
 import '../providers/navigation_provider.dart';
 import '../widgets/global_player_overlay.dart';
 import 'debug_log_screen.dart';
@@ -55,11 +54,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // Player settings
   bool _smartSortPlayers = false;
   bool _volumePrecisionMode = true;
-  bool _autoResumeAfterInterruption = true;
+  bool _autoResumeAfterInterruption = false;
   // Hint settings
   bool _showHints = true;
   // Display settings
-  bool _showProviderIcons = true;
+  bool _showProviderIcons = false;
   // Discovery folders state
   List<RecommendationFolder> _discoveryFolders = [];
   Map<String, bool> _discoveryRowEnabled = {};
@@ -819,19 +818,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.bug_report_rounded),
-            onPressed: () {
-              Navigator.push(
-                context,
-                FadeSlidePageRoute(child: const DebugLogScreen()),
-              );
-            },
-            color: colorScheme.onBackground,
-            tooltip: S.of(context)!.debugLogs,
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         controller: _scrollController,
@@ -1942,7 +1928,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 10),
 
             SizedBox(
               width: double.infinity,
