@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/music_assistant_provider.dart';
@@ -117,6 +118,32 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final provider = context.read<MusicAssistantProvider>();
 
+      // This screen is only ever reached by an explicit, infrequent user
+      // action (fresh install, or pressing Disconnect in Settings) - never
+      // by the app's own silent auto-reconnect. So treat every submission
+      // here as a fresh login rather than trying to detect whether the
+      // account "actually changed": that comparison used to rely on
+      // SettingsService.getUsername(), which is unreliable for this - it
+      // gets overwritten unconditionally further down in this same method
+      // regardless of which credentials actually ended up authenticating,
+      // so a prior mismatched login would permanently poison the
+      // comparison (confirmed live: after one bad switch, previousUsername
+      // read back the *new* typed name even though the session underneath
+      // was still the old account).
+      //
+      // Purge stale cached library data, and clear the stored MA auth
+      // token before connecting - connectToServer() below always tries
+      // that stored token first (then stored username/password) via its
+      // own connection-state listener, regardless of what's typed into
+      // this form. Left in place, a still-valid token from a previous
+      // account would keep silently authenticating as that account even
+      // though the UI shows the newly typed username.
+      _logger.log('🗑️ Login screen submitted - purging cached library data and stale credentials');
+      await provider.clearAllOnLogout();
+      await SettingsService.clearMaAuthToken();
+      await SettingsService.setUsername(username);
+      await SettingsService.setPassword(password);
+
       // Connect to server
       await provider.connectToServer(serverUrl);
 
@@ -197,6 +224,9 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       if (provider.isConnected) {
+        _logger.log('🔄 Forcing full library sync after login');
+        unawaited(provider.forceLibrarySync());
+
         // First-time user: wait for player selection
         final hasCompletedOnboarding = await SettingsService.getHasCompletedOnboarding();
         if (!hasCompletedOnboarding) {

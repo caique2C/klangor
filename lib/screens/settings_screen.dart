@@ -34,6 +34,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _lastFmApiKeyController = TextEditingController();
   final _audioDbApiKeyController = TextEditingController();
   String _appVersion = '';
+  String? _connectedUsername;
   // Main rows (default on)
   bool _showRecentAlbums = true;
   bool _showDiscoverArtists = true;
@@ -209,6 +210,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   bool _isReconnecting = false;
+  bool _isResettingCache = false;
 
   Future<void> _reconnect() async {
     setState(() => _isReconnecting = true);
@@ -233,6 +235,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           title: const Text('Certificate Password'),
           content: TextField(
             controller: controller,
@@ -248,6 +251,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             FilledButton(
               onPressed: () => Navigator.pop(dialogContext, controller.text),
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
               child: const Text('Import'),
             ),
           ],
@@ -261,6 +267,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           title: const Text('Remove Client Certificate?'),
           content: const Text(
             'If your server requires this certificate to connect at all, '
@@ -275,6 +282,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             FilledButton(
               style: FilledButton.styleFrom(
                 backgroundColor: Theme.of(dialogContext).colorScheme.error,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () => Navigator.pop(dialogContext, true),
               child: const Text('Remove'),
@@ -303,6 +311,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final lastFmKey = await SettingsService.getLastFmApiKey();
     if (lastFmKey != null) {
       _lastFmApiKeyController.text = lastFmKey;
+    }
+
+    final connectedUsername = await SettingsService.getUsername();
+    if (mounted) {
+      setState(() => _connectedUsername = connectedUsername);
     }
 
     final audioDbKey = await SettingsService.getTheAudioDbApiKey();
@@ -610,6 +623,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _disconnect() async {
+    // Logging back in (same or different account) always purges the local
+    // cache and re-downloads everything (see LoginScreen._connect) - warn
+    // here, before that point, since by the time credentials are typed on
+    // the login screen it's too late to back out without losing them.
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: const Text('Disconnect?'),
+          content: const Text('Logging back in - with the same or a different account - clears all locally cached artists, albums, and playlists, then re-downloads everything from the server.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Disconnect'),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true) return;
+
     final provider = context.read<MusicAssistantProvider>();
     await provider.disconnect();
 
@@ -645,6 +687,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           title: const Text('Quit Klangor?'),
           content: const Text('This closes the app completely, stopping playback.'),
           actions: [
@@ -654,6 +697,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             FilledButton(
               onPressed: () => Navigator.pop(dialogContext, true),
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
               child: const Text('Quit'),
             ),
           ],
@@ -668,11 +714,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  /// Manually purges the local library cache and forces a full resync.
+  /// Mirrors the automatic purge that runs on server/account change
+  /// (see LoginScreen._connect) - exposed here as a fallback for anyone who
+  /// needs to force it without switching accounts (e.g. after suspecting
+  /// stale data, or for debugging).
+  Future<void> _resetLibraryCache() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: const Text('Reset Library Cache?'),
+          content: const Text('Clears all locally cached artists, albums, and playlists, then re-downloads everything from the server.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Reset'),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true) return;
+
+    setState(() => _isResettingCache = true);
+    final provider = context.read<MusicAssistantProvider>();
+    await provider.clearLibraryCacheOnly();
+    await provider.forceLibrarySync();
+    if (!mounted) return;
+    setState(() => _isResettingCache = false);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Library cache reset')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Use select to only rebuild when connectionState changes
     final connectionState = context.select<MusicAssistantProvider, MAConnectionState>((p) => p.connectionState);
     final connectionError = context.select<MusicAssistantProvider, String?>((p) => p.error);
+    final serverUrl = context.select<MusicAssistantProvider, String?>((p) => p.serverUrl);
+    // Prefer the server-confirmed username over the locally-typed one -
+    // the latter can't detect a still-valid stored token silently
+    // re-authenticating as a *different* previously-connected account.
+    final authenticatedUsername = context.select<MusicAssistantProvider, String?>((p) => p.authenticatedUsername);
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -795,6 +889,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         const SizedBox(height: 6),
                         Text(
                           connectionError,
+                          textAlign: TextAlign.center,
+                          style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                        ),
+                      ],
+                      // Which server/account this actually is - handy for
+                      // confirming a credential switch really took effect
+                      // (e.g. after using Reset Library Cache) instead of
+                      // guessing from the library contents alone. Prefers the
+                      // server-confirmed username (falls back to the locally
+                      // typed one only if that hasn't loaded yet, e.g. right
+                      // after app start before authentication completes).
+                      if (serverUrl != null || authenticatedUsername != null || _connectedUsername != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          [
+                            if (authenticatedUsername != null) authenticatedUsername
+                            else if (_connectedUsername != null) _connectedUsername,
+                            if (serverUrl != null) Uri.tryParse(serverUrl)?.host ?? serverUrl,
+                          ].join(' @ '),
                           textAlign: TextAlign.center,
                           style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
                         ),
@@ -1066,6 +1179,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
 
+            const SizedBox(height: 12),
+
+            // Reset library cache - normally happens automatically on
+            // server/account change (see LoginScreen), this is the manual
+            // fallback for the same purge + forced resync.
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: FilledButton.tonalIcon(
+                onPressed: _isResettingCache ? null : _resetLibraryCache,
+                icon: _isResettingCache
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.cleaning_services_rounded),
+                label: const Text(
+                  'Reset Library Cache',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                style: FilledButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+
             const SizedBox(height: 32),
 
             // Theme section
@@ -1310,6 +1455,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       context: context,
                       builder: (dialogContext) {
                         return AlertDialog(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           title: Text(S.of(context)!.language),
                           content: Column(
                             mainAxisSize: MainAxisSize.min,

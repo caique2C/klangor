@@ -195,6 +195,13 @@ class MusicAssistantProvider with ChangeNotifier {
   // Available music providers discovered from MA
   List<ProviderInstance> _availableMusicProviders = [];
 
+  // Username as confirmed by the server's own /user_settings response after
+  // a real authentication - unlike SettingsService.getUsername() (just the
+  // last string typed into the login form), this can't go stale if a
+  // still-valid stored token silently re-authenticates as a *different*
+  // account than what was typed (see LoginScreen._connect's token-clearing).
+  String? _authenticatedUsername;
+
   // ============================================================================
   // GETTERS
   // ============================================================================
@@ -228,6 +235,11 @@ class MusicAssistantProvider with ChangeNotifier {
 
   /// Provider filter from MA user settings (empty = all providers allowed)
   List<String> get providerFilter => _providerFilter;
+
+  /// Username confirmed by the server for the live session - see
+  /// _authenticatedUsername for why this is more trustworthy than
+  /// SettingsService.getUsername().
+  String? get authenticatedUsername => _authenticatedUsername;
 
   /// Whether provider filtering is active
   bool get hasProviderFilter => _providerFilter.isNotEmpty;
@@ -1334,6 +1346,7 @@ class MusicAssistantProvider with ChangeNotifier {
       // Set profile name
       final displayName = userInfo['display_name'] as String?;
       final username = userInfo['username'] as String?;
+      _authenticatedUsername = username;
 
       final profileName = (displayName != null && displayName.isNotEmpty) ? displayName : username;
 
@@ -2103,19 +2116,44 @@ class MusicAssistantProvider with ChangeNotifier {
     await audioHandler.stopService();
   }
 
-  /// Clear all caches and state (for logout or server change)
-  void clearAllOnLogout() {
+  /// Clear all caches and state (for logout or server/account change)
+  Future<void> clearAllOnLogout() async {
     _availablePlayers = [];
     _selectedPlayer = null;
     _artists = [];
     _albums = [];
     _tracks = [];
     _currentTrack = null;
+    _authenticatedUsername = null;
     _cacheService.clearAll();
+    await SyncService.instance.clearAllCache();
     _groupVolumeManager.clear();
     _pendingVolumes.clear();
     _pendingVolumeTimestamps.clear();
+    // Bump so the Home screen's _onProviderChanged listener force-refreshes
+    // its rows - clearing the caches above alone doesn't do this, since Home
+    // rows hold their own already-fetched state and only refetch in response
+    // to this counter changing (see connectToServer's "different server"
+    // check for the other place this same signal is used).
+    _homeRefreshCounter++;
     _logger.log('🗑️ Cleared all data on logout');
+    notifyListeners();
+  }
+
+  /// Clears cached library data (artists/albums/tracks/home rows) without
+  /// touching player state. Used by the manual "Reset Library Cache" Settings
+  /// action, which stays on the same account/connection - unlike
+  /// clearAllOnLogout(), which also clears players because it's only used
+  /// right before a full reconnect that re-registers them.
+  Future<void> clearLibraryCacheOnly() async {
+    _artists = [];
+    _albums = [];
+    _tracks = [];
+    _cacheService.invalidateHomeCache();
+    _cacheService.clearAllDetailCaches();
+    await SyncService.instance.clearAllCache();
+    _homeRefreshCounter++;
+    _logger.log('🗑️ Cleared library cache (players untouched)');
     notifyListeners();
   }
 

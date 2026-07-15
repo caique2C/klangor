@@ -177,6 +177,30 @@ class SyncService with ChangeNotifier {
     }
   }
 
+  /// Clears all cached library data, in-memory and on disk. Needed when
+  /// switching accounts/servers - a normal sync alone won't remove stale
+  /// data from the previous login, since partial syncs (used whenever
+  /// specific providers are enabled) intentionally preserve untouched
+  /// items so toggling a provider off/on doesn't lose its cached data.
+  Future<void> clearAllCache() async {
+    _cachedAlbums = [];
+    _cachedArtists = [];
+    _cachedAudiobooks = [];
+    _cachedPlaylists = [];
+    _cachedPodcasts = [];
+    _albumSourceProviders = {};
+    _artistSourceProviders = {};
+    _audiobookSourceProviders = {};
+    _playlistSourceProviders = {};
+    _lastSyncTime = null;
+    _dataVersion++;
+    if (_db.isInitialized) {
+      await _db.clearAllCache();
+    }
+    _logger.log('🗑️ Cleared all cached library data');
+    notifyListeners();
+  }
+
   /// Sync library data from MA API in background
   /// Updates database cache and notifies listeners when complete
   /// [providerInstanceIds] - list of provider IDs to sync (fetches each provider separately for accurate source tracking)
