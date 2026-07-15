@@ -472,7 +472,7 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
   /// Sort albums and cache the result - only re-sorts when key changes
   /// Returns cached sorted list if data hasn't changed
   List<Album> _getSortedAlbums(List<Album> albums) {
-    final cacheKey = '${albums.length}_${albums.isNotEmpty ? albums.first.itemId : ''}_${albums.isNotEmpty ? albums.last.itemId : ''}_$_albumsSortOrder';
+    final cacheKey = '${SyncService.instance.dataVersion}_${albums.length}_${albums.isNotEmpty ? albums.first.itemId : ''}_${albums.isNotEmpty ? albums.last.itemId : ''}_$_albumsSortOrder';
     if (cacheKey == _albumsCacheKey && _cachedSortedAlbums.isNotEmpty) {
       return _cachedSortedAlbums;
     }
@@ -532,7 +532,7 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
 
   /// Sort artists and cache the result - only re-sorts when key changes
   List<Artist> _getSortedArtists(List<Artist> artists) {
-    final cacheKey = '${artists.length}_${artists.isNotEmpty ? artists.first.itemId : ''}_${artists.isNotEmpty ? artists.last.itemId : ''}_$_artistsSortOrder';
+    final cacheKey = '${SyncService.instance.dataVersion}_${artists.length}_${artists.isNotEmpty ? artists.first.itemId : ''}_${artists.isNotEmpty ? artists.last.itemId : ''}_$_artistsSortOrder';
     if (cacheKey == _artistsCacheKey && _cachedSortedArtists.isNotEmpty) {
       return _cachedSortedArtists;
     }
@@ -569,7 +569,7 @@ class _NewLibraryScreenState extends State<NewLibraryScreen>
 
   /// Sort authors and cache the result - groups audiobooks by author and sorts names
   (List<String>, Map<String, List<Audiobook>>) _getSortedAuthors(List<Audiobook> audiobooks) {
-    final cacheKey = '${audiobooks.length}_${audiobooks.isNotEmpty ? audiobooks.first.itemId : ''}_${audiobooks.isNotEmpty ? audiobooks.last.itemId : ''}_$_authorsSortOrder';
+    final cacheKey = '${SyncService.instance.dataVersion}_${audiobooks.length}_${audiobooks.isNotEmpty ? audiobooks.first.itemId : ''}_${audiobooks.isNotEmpty ? audiobooks.last.itemId : ''}_$_authorsSortOrder';
     if (cacheKey == _authorsCacheKey && _sortedAuthorNames.isNotEmpty) {
       return (_sortedAuthorNames, _groupedAudiobooksByAuthor);
     }

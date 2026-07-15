@@ -40,6 +40,12 @@ class SyncService with ChangeNotifier {
   DateTime? _lastSyncTime;
   bool _isSyncing = false;
 
+  // Bumped every time the cached lists are replaced (full sync, partial sync,
+  // or cache load). UI-layer memoized sorts should key off this instead of
+  // heuristics like list length/first/last id, which can stay unchanged even
+  // when an item's metadata (e.g. artwork) was updated in place.
+  int _dataVersion = 0;
+
   // Cached data (loaded from DB, updated after sync)
   List<Album> _cachedAlbums = [];
   List<Artist> _cachedArtists = [];
@@ -58,6 +64,7 @@ class SyncService with ChangeNotifier {
   String? get lastError => _lastError;
   DateTime? get lastSyncTime => _lastSyncTime;
   bool get isSyncing => _isSyncing;
+  int get dataVersion => _dataVersion;
   List<Album> get cachedAlbums => _cachedAlbums;
   List<Artist> get cachedArtists => _cachedArtists;
   List<Audiobook> get cachedAudiobooks => _cachedAudiobooks;
@@ -163,6 +170,7 @@ class SyncService with ChangeNotifier {
                   '${_cachedAudiobooks.length} audiobooks, ${_cachedPlaylists.length} playlists, '
                   '${_cachedPodcasts.length} podcasts from cache');
       _logger.log('📦 Source providers: ${_albumSourceProviders.length} albums, ${_artistSourceProviders.length} artists tracked');
+      _dataVersion++;
       notifyListeners();
     } catch (e) {
       _logger.log('❌ Failed to load from cache: $e');
@@ -425,6 +433,7 @@ class SyncService with ChangeNotifier {
 
       _lastSyncTime = DateTime.now();
       _status = SyncStatus.completed;
+      _dataVersion++;
 
       _logger.log('✅ Library sync complete');
       _logger.log('📊 Source tracking: ${_albumSourceProviders.length} albums, ${_artistSourceProviders.length} artists, ${_audiobookSourceProviders.length} audiobooks have provider info');
