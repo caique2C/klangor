@@ -835,7 +835,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       body: SingleChildScrollView(
         controller: _scrollController,
-        padding: const EdgeInsets.all(24.0),
+        // Settings is rendered inside HomeScreen's own Scaffold, which owns
+        // the bottom nav bar - this screen's SingleChildScrollView doesn't
+        // get an automatic safe-area inset for it, so the last item (View
+        // Debug Logs) ends up partially hidden behind it once scrolled all
+        // the way down without this.
+        padding: EdgeInsets.fromLTRB(
+          24.0,
+          24.0,
+          24.0,
+          24.0 + kBottomNavigationBarHeight + MediaQuery.of(context).padding.bottom,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -1282,6 +1292,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             shape: WidgetStateProperty.all(
                               RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
+                            // Default labelLarge (14sp) wraps "System" onto two
+                            // lines in this 3-segment row on narrower phones.
+                            textStyle: const WidgetStatePropertyAll(TextStyle(fontSize: 12)),
+                            padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 4)),
                           ),
                         ),
                       );
