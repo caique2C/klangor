@@ -3587,25 +3587,44 @@ class MusicAssistantProvider with ChangeNotifier {
     // Ensure home rows are loaded from database before checking cache
     await _cacheService.ensureHomeRowsLoaded();
 
+    // Reuse the same album-type filter as Library > Albums (e.g. hiding
+    // "compilation" albums, which is where "Various Artists" credits mostly
+    // show up) so Home's Discover Albums row stays consistent with it.
+    final selectedTypes = await SettingsService.getLibraryAlbumTypeFilter();
+
     if (_cacheService.isDiscoverAlbumsCacheValid(forceRefresh: forceRefresh)) {
       _logger.log('📦 Using cached discover albums');
-      return _cacheService.getCachedDiscoverAlbums()!;
+      return _filterAlbumsByType(_cacheService.getCachedDiscoverAlbums()!, selectedTypes)
+          .take(LibraryConstants.defaultRecentLimit).toList();
     }
 
-    if (_api == null) return _cacheService.getCachedDiscoverAlbums() ?? [];
+    if (_api == null) {
+      return _filterAlbumsByType(_cacheService.getCachedDiscoverAlbums() ?? [], selectedTypes)
+          .take(LibraryConstants.defaultRecentLimit).toList();
+    }
 
     try {
       _logger.log('🔄 Fetching fresh discover albums...');
+      // Over-fetch since the type filter above can discard a chunk of the
+      // random sample (e.g. a library mostly made up of types the user has
+      // hidden) - without this a restrictive filter could leave the row
+      // showing far fewer albums than intended.
       final albums = await _api!.getRandomAlbums(
-        limit: LibraryConstants.defaultRecentLimit,
+        limit: LibraryConstants.defaultRecentLimit * 4,
         providerInstanceIds: providerIdsForApiCalls,
       );
+      // Cache unfiltered so a later change to the type filter doesn't require a refetch
       _cacheService.setCachedDiscoverAlbums(albums);
-      return albums;
+      return _filterAlbumsByType(albums, selectedTypes).take(LibraryConstants.defaultRecentLimit).toList();
     } catch (e) {
       _logger.log('❌ Failed to fetch discover albums: $e');
-      return _cacheService.getCachedDiscoverAlbums() ?? [];
+      return _filterAlbumsByType(_cacheService.getCachedDiscoverAlbums() ?? [], selectedTypes)
+          .take(LibraryConstants.defaultRecentLimit).toList();
     }
+  }
+
+  List<Album> _filterAlbumsByType(List<Album> albums, Set<String> selectedTypes) {
+    return albums.where((a) => selectedTypes.contains(a.albumType ?? 'unknown')).toList();
   }
 
   Future<List<RecommendationFolder>> getDiscoveryFoldersWithCache({bool forceRefresh = false}) async {
