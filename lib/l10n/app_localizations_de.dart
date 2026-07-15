@@ -80,18 +80,18 @@ class SDe extends S {
   String get tailscaleVpnConnection => 'Tailscale VPN-Verbindung';
 
   @override
-  String get unencryptedConnection => 'Unverschlusselte Verbindung';
+  String get unencryptedConnection => 'Unverschlüsselte Verbindung';
 
   @override
   String get usingHttpOverTailscale =>
-      'HTTP uber Tailscale (verschlusselter Tunnel)';
+      'HTTP über Tailscale (verschlüsselter Tunnel)';
 
   @override
   String get httpsFailedUsingHttp => 'HTTPS fehlgeschlagen, verwende HTTP';
 
   @override
   String get httpNotEncrypted =>
-      'HTTP-Verbindung - Daten sind nicht verschlusselt';
+      'HTTP-Verbindung - Daten sind nicht verschlüsselt';
 
   @override
   String get pleaseEnterServerAddress =>
@@ -102,7 +102,7 @@ class SDe extends S {
 
   @override
   String get pleaseEnterValidPort =>
-      'Bitte gib eine gultige Portnummer ein (1-65535)';
+      'Bitte gib eine gültige Portnummer ein (1-65535)';
 
   @override
   String get pleaseEnterCredentials =>
@@ -110,22 +110,22 @@ class SDe extends S {
 
   @override
   String get authFailed =>
-      'Authentifizierung fehlgeschlagen. Bitte uberprufe deine Anmeldedaten.';
+      'Authentifizierung fehlgeschlagen. Bitte überprüfe deine Anmeldedaten.';
 
   @override
   String get maLoginFailed =>
-      'Music Assistant Anmeldung fehlgeschlagen. Bitte uberprufe deine Anmeldedaten.';
+      'Music Assistant Anmeldung fehlgeschlagen. Bitte überprüfe deine Anmeldedaten.';
 
   @override
   String get connectionFailed =>
-      'Verbindung zum Server fehlgeschlagen. Bitte uberprufe die Adresse und versuche es erneut.';
+      'Verbindung zum Server fehlgeschlagen. Bitte überprüfe die Adresse und versuche es erneut.';
 
   @override
   String get detectingAuth => 'Erkenne Authentifizierung...';
 
   @override
   String get cannotDetermineAuth =>
-      'Authentifizierungsanforderungen konnten nicht ermittelt werden. Bitte uberprufe die Server-URL.';
+      'Authentifizierungsanforderungen konnten nicht ermittelt werden. Bitte überprüfe die Server-URL.';
 
   @override
   String get noAuthentication => 'Keine Authentifizierung';
@@ -140,32 +140,32 @@ class SDe extends S {
   String get musicAssistantLogin => 'Music Assistant Anmeldung';
 
   @override
-  String get pressBackToMinimize => 'Erneut drucken zum Minimieren';
+  String get pressBackToMinimize => 'Erneut drücken zum Minimieren';
 
   @override
   String get recentlyPlayed => 'Zuletzt gespielt';
 
   @override
-  String get discoverArtists => 'Kunstler entdecken';
+  String get discoverArtists => 'Künstler entdecken';
 
   @override
   String get discoverAlbums => 'Alben entdecken';
 
   @override
-  String get discoveryMixes => 'Discovery Mixes';
+  String get discoveryMixes => 'Entdeckungs-Mixe';
 
   @override
   String get discoveryMixesDescription =>
-      'Show provider recommendation mixes (e.g., Tidal Daily Mixes, Discover Weekly) on home screen';
+      'Anbieter-Empfehlungsmixe (z.B. Tidal Daily Mixes, Discover Weekly) auf dem Startbildschirm anzeigen';
 
   @override
-  String get discoveryRows => 'Discovery rows from Music Assistant';
+  String get discoveryRows => 'Entdeckungszeilen von Music Assistant';
 
   @override
-  String get refreshDiscoveryRows => 'Refresh available rows';
+  String get refreshDiscoveryRows => 'Verfügbare Zeilen aktualisieren';
 
   @override
-  String get noDiscoveryRows => 'No discovery rows available';
+  String get noDiscoveryRows => 'Keine Entdeckungszeilen verfügbar';
 
   @override
   String get discoveryRowBadge => 'Music Assistant';
@@ -189,13 +189,13 @@ class SDe extends S {
   String get favoriteTracks => 'Lieblingssongs';
 
   @override
-  String get favoritePlaylists => 'Favorite Playlists';
+  String get favoritePlaylists => 'Lieblings-Wiedergabelisten';
 
   @override
-  String get favoriteRadioStations => 'Favorite Radio Stations';
+  String get favoriteRadioStations => 'Lieblingssender';
 
   @override
-  String get favoritePodcasts => 'Favorite Podcasts';
+  String get favoritePodcasts => 'Lieblingspodcasts';
 
   @override
   String get searchMusic => 'Musik suchen...';
@@ -204,16 +204,16 @@ class SDe extends S {
   String get searchForContent => 'Nach Künstlern, Alben oder Songs suchen';
 
   @override
-  String get recentSearches => 'Recent Searches';
+  String get recentSearches => 'Letzte Suchen';
 
   @override
-  String get clearSearchHistory => 'Clear Search History';
+  String get clearSearchHistory => 'Suchverlauf löschen';
 
   @override
-  String get searchHistoryCleared => 'Search history cleared';
+  String get searchHistoryCleared => 'Suchverlauf gelöscht';
 
   @override
-  String get libraryOnly => 'Library only';
+  String get libraryOnly => 'Nur Bibliothek';
 
   @override
   String get retry => 'Wiederholen';
@@ -393,7 +393,7 @@ class SDe extends S {
   String get tracksAddedToQueue => 'Songs zur Warteschlange hinzugefügt';
 
   @override
-  String get trackAddedToQueue => 'Track added to queue';
+  String get trackAddedToQueue => 'Song zur Warteschlange hinzugefügt';
 
   @override
   String get play => 'Abspielen';
@@ -434,11 +434,11 @@ class SDe extends S {
 
   @override
   String playingRadioStation(String name) {
-    return 'Playing $name';
+    return 'Spiele $name';
   }
 
   @override
-  String get addedToQueue => 'Added to queue';
+  String get addedToQueue => 'Zur Warteschlange hinzugefügt';
 
   @override
   String get inLibrary => 'In Bibliothek';
@@ -675,16 +675,16 @@ class SDe extends S {
   String get sortBySeriesOrder => 'Nach Serienreihenfolge sortieren';
 
   @override
-  String get sortByDuration => 'Sort by duration';
+  String get sortByDuration => 'Nach Dauer sortieren';
 
   @override
-  String get newestFirst => 'Newest first';
+  String get newestFirst => 'Neueste zuerst';
 
   @override
-  String get oldestFirst => 'Oldest first';
+  String get oldestFirst => 'Älteste zuerst';
 
   @override
-  String get viewDetails => 'View details';
+  String get viewDetails => 'Details anzeigen';
 
   @override
   String get listView => 'Listenansicht';
@@ -728,14 +728,16 @@ class SDe extends S {
   String get showFavoriteTracks => 'Lieblingssongs anzeigen';
 
   @override
-  String get showFavoritePlaylists => 'Show a row of your favorite playlists';
+  String get showFavoritePlaylists =>
+      'Eine Zeile mit deinen Lieblings-Wiedergabelisten anzeigen';
 
   @override
   String get showFavoriteRadioStations =>
-      'Show a row of your favorite radio stations';
+      'Eine Zeile mit deinen Lieblingssendern anzeigen';
 
   @override
-  String get showFavoritePodcasts => 'Show a row of your favorite podcasts';
+  String get showFavoritePodcasts =>
+      'Eine Zeile mit deinen Lieblingspodcasts anzeigen';
 
   @override
   String get extractColorsFromArtwork =>
@@ -746,7 +748,7 @@ class SDe extends S {
       'Wähle welche Zeilen auf dem Startbildschirm angezeigt werden';
 
   @override
-  String get favorite => 'Favorite';
+  String get favorite => 'Favorit';
 
   @override
   String get addedToFavorites => 'Zu Favoriten hinzugefügt';
@@ -755,13 +757,13 @@ class SDe extends S {
   String get removedFromFavorites => 'Aus Favoriten entfernt';
 
   @override
-  String get addedToLibrary => 'Added to library';
+  String get addedToLibrary => 'Zur Bibliothek hinzugefügt';
 
   @override
-  String get removedFromLibrary => 'Removed from library';
+  String get removedFromLibrary => 'Aus Bibliothek entfernt';
 
   @override
-  String get addToLibrary => 'Add';
+  String get addToLibrary => 'Hinzufügen';
 
   @override
   String get unknown => 'Unbekannt';
@@ -794,13 +796,13 @@ class SDe extends S {
   String get podcastSupportComingSoon => 'Podcast-Unterstützung kommt bald';
 
   @override
-  String get noPodcasts => 'No podcasts';
+  String get noPodcasts => 'Keine Podcasts';
 
   @override
-  String get addPodcastsHint => 'Subscribe to podcasts in Music Assistant';
+  String get addPodcastsHint => 'Abonniere Podcasts in Music Assistant';
 
   @override
-  String get episodes => 'Episodes';
+  String get episodes => 'Episoden';
 
   @override
   String get episode => 'Episode';
@@ -869,17 +871,18 @@ class SDe extends S {
   String get unknownLibrary => 'Unbekannte Bibliothek';
 
   @override
-  String get musicProviders => 'Music Providers';
+  String get musicProviders => 'Musikanbieter';
 
   @override
   String get musicProvidersDescription =>
-      'Choose which accounts to show in your library';
+      'Wähle welche Konten in deiner Bibliothek angezeigt werden';
 
   @override
-  String get libraryRefreshing => 'Refreshing library...';
+  String get libraryRefreshing => 'Bibliothek wird aktualisiert...';
 
   @override
-  String get cannotDisableLastProvider => 'Cannot disable the last provider';
+  String get cannotDisableLastProvider =>
+      'Der letzte Anbieter kann nicht deaktiviert werden';
 
   @override
   String get noSeriesFound => 'Keine Serien gefunden';
@@ -931,13 +934,13 @@ class SDe extends S {
   String get addAlbumToQueueOn => 'Album zur Warteschlange hinzufügen auf...';
 
   @override
-  String get addToQueue => 'Add to queue';
+  String get addToQueue => 'Zur Warteschlange hinzufügen';
 
   @override
   String get addToQueueOn => 'Zur Warteschlange hinzufügen auf...';
 
   @override
-  String get startRadio => 'Start radio';
+  String get startRadio => 'Radio starten';
 
   @override
   String startRadioOn(String name) {
@@ -954,7 +957,7 @@ class SDe extends S {
   String get albumSingular => 'Album';
 
   @override
-  String get trackSingular => 'Track';
+  String get trackSingular => 'Song';
 
   @override
   String get podcastSingular => 'Podcast';
@@ -994,11 +997,11 @@ class SDe extends S {
       'Nach Status sortieren (spielt, an, aus) statt alphabetisch';
 
   @override
-  String get disableAutoSwitch => 'Disable Auto-Switch';
+  String get disableAutoSwitch => 'Automatischen Wechsel deaktivieren';
 
   @override
   String get disableAutoSwitchDescription =>
-      'Never automatically switch to a different player';
+      'Nie automatisch zu einem anderen Gerät wechseln';
 
   @override
   String get playerStateUnavailable => 'Nicht verfügbar';
@@ -1034,11 +1037,11 @@ class SDe extends S {
       'Hilfreiche Tipps zum Entdecken von Funktionen anzeigen';
 
   @override
-  String get volumePrecisionMode => 'Volume Precision Mode';
+  String get volumePrecisionMode => 'Präzise Lautstärkeregelung';
 
   @override
   String get volumePrecisionModeDescription =>
-      'Hold still while adjusting volume for fine control';
+      'Beim Anpassen der Lautstärke stillhalten für Feinsteuerung';
 
   @override
   String get autoResumeAfterInterruption =>
@@ -1049,14 +1052,14 @@ class SDe extends S {
       'Wiedergabe fortsetzen, nachdem eine andere App die Audioausgabe freigegeben hat oder ein Telefonat beendet wurde';
 
   @override
-  String get display => 'Display';
+  String get display => 'Anzeige';
 
   @override
-  String get showProviderIcons => 'Show Provider Icons';
+  String get showProviderIcons => 'Anbieter-Symbole anzeigen';
 
   @override
   String get showProviderIconsDescription =>
-      'Display provider logos on album art';
+      'Anbieter-Logos auf Albumcovern anzeigen';
 
   @override
   String get pullToSelectPlayers => 'Ziehen um Geräte auszuwählen';
@@ -1068,157 +1071,164 @@ class SDe extends S {
   String get swipeToAdjustVolume => 'Wischen für Lautstärke';
 
   @override
-  String get selectPlayerHint => 'Choose a player, or dismiss by swiping down';
+  String get selectPlayerHint =>
+      'Wähle ein Gerät, oder wische nach unten zum Schließen';
 
   @override
-  String get welcomeToApp => 'Welcome to Klangor';
+  String get welcomeToApp => 'Willkommen bei Klangor';
 
   @override
   String get welcomeMessage =>
-      'By default your phone is the selected player.\nPull the mini player down to select another player.';
+      'Standardmäßig ist dein Telefon das ausgewählte Gerät.\nZiehe den Mini-Player nach unten, um ein anderes Gerät auszuwählen.';
 
   @override
-  String get skip => 'Skip';
+  String get skip => 'Überspringen';
 
   @override
   String get dismissPlayerHint =>
-      'Swipe down, tap outside, or press back to return';
+      'Wische nach unten, tippe daneben, oder drücke zurück, um zurückzukehren';
 
   @override
   String playingAlbum(String albumName) {
-    return 'Playing $albumName';
+    return 'Spiele $albumName';
   }
 
   @override
   String playingPlaylist(String playlistName) {
-    return 'Playing $playlistName';
+    return 'Spiele $playlistName';
   }
 
   @override
-  String get noTracks => 'No tracks';
+  String get noTracks => 'Keine Songs';
 
   @override
   String get addTracksHint =>
-      'Add some music to your library to see tracks here';
+      'Füge Musik zu deiner Bibliothek hinzu, um Songs hier zu sehen';
 
   @override
-  String get noFavoriteRadioStations => 'No favorite radio stations';
+  String get noFavoriteRadioStations => 'Keine Lieblingssender';
 
   @override
   String get longPressRadioHint =>
-      'Long-press a station and tap the heart to add it to favorites';
+      'Halte einen Sender gedrückt und tippe auf das Herz, um ihn zu Favoriten hinzuzufügen';
 
   @override
-  String get noFavoritePodcasts => 'No favorite podcasts';
+  String get noFavoritePodcasts => 'Keine Lieblingspodcasts';
 
   @override
   String get longPressPodcastHint =>
-      'Long-press a podcast and tap the heart to add it to favorites';
+      'Halte einen Podcast gedrückt und tippe auf das Herz, um ihn zu Favoriten hinzuzufügen';
 
   @override
   String failedToPlayRadioStation(String error) {
-    return 'Failed to play radio station: $error';
+    return 'Radiosender konnte nicht abgespielt werden: $error';
   }
 
   @override
-  String get itemAlreadyInLibrary => 'Item is already in library';
+  String get itemAlreadyInLibrary => 'Element ist bereits in der Bibliothek';
 
   @override
-  String get failedToAddToLibrary => 'Failed to add to library';
+  String get failedToAddToLibrary =>
+      'Konnte nicht zur Bibliothek hinzugefügt werden';
 
   @override
-  String get cannotFindLibraryId => 'Cannot find library ID for removal';
+  String get cannotFindLibraryId =>
+      'Bibliotheks-ID zum Entfernen nicht gefunden';
 
   @override
-  String get failedToRemoveFromLibrary => 'Failed to remove from library';
+  String get failedToRemoveFromLibrary =>
+      'Konnte nicht aus Bibliothek entfernt werden';
 
   @override
   String failedToPlayAlbum(String error) {
-    return 'Failed to play album: $error';
+    return 'Album konnte nicht abgespielt werden: $error';
   }
 
   @override
   String playingOnPlayer(String name, String playerName) {
-    return 'Playing $name on $playerName';
+    return 'Spiele $name auf $playerName';
   }
 
   @override
   String failedToPlayPlaylist(String error) {
-    return 'Failed to play playlist: $error';
+    return 'Wiedergabeliste konnte nicht abgespielt werden: $error';
   }
 
   @override
   String failedToPlayAudiobook(String error) {
-    return 'Failed to play audiobook: $error';
+    return 'Hörbuch konnte nicht abgespielt werden: $error';
   }
 
   @override
-  String get noOtherPlayersAvailable => 'No other players available';
+  String get noOtherPlayersAvailable => 'Keine anderen Geräte verfügbar';
 
   @override
-  String get transferQueue => 'Transfer queue';
+  String get transferQueue => 'Warteschlange übertragen';
 
   @override
-  String get clearQueue => 'Clear queue';
+  String get clearQueue => 'Warteschlange leeren';
 
   @override
   String syncingPlayer(String playerName) {
-    return 'Syncing $playerName...';
+    return 'Synchronisiere $playerName...';
   }
 
   @override
-  String get switchPlayer => 'Switch Player';
+  String get switchPlayer => 'Gerät wechseln';
 
   @override
-  String get logsCopiedToClipboard => 'Logs copied to clipboard';
+  String get logsCopiedToClipboard => 'Protokolle in Zwischenablage kopiert';
 
   @override
   String get auto => 'Auto';
 
   @override
-  String get transferQueueTo => 'Transfer Queue To';
+  String get transferQueueTo => 'Warteschlange übertragen an';
 
   @override
   String queueTransferredTo(String playerName) {
-    return 'Queue transferred to $playerName';
+    return 'Warteschlange übertragen an $playerName';
   }
 
   @override
   String failedToTransferQueue(String error) {
-    return 'Failed to transfer queue: $error';
+    return 'Warteschlange konnte nicht übertragen werden: $error';
   }
 
   @override
   String failedToLoadQueue(String error) {
-    return 'Failed to load queue: $error';
+    return 'Warteschlange konnte nicht geladen werden: $error';
   }
 
   @override
-  String get transferTo => 'Transfer to...';
+  String get transferTo => 'Übertragen an...';
 
   @override
-  String get transferQueueToPlayer => 'Transfer queue to another player';
+  String get transferQueueToPlayer =>
+      'Warteschlange an ein anderes Gerät übertragen';
 
   @override
-  String get selectPlayerToPlay => 'Select a player';
+  String get selectPlayerToPlay => 'Wähle ein Gerät';
 
   @override
-  String get selectPlayerToPlayAlbum => 'Select player to play album';
+  String get selectPlayerToPlayAlbum => 'Gerät zum Abspielen des Albums wählen';
 
   @override
-  String get selectPlayerToPlayPlaylist => 'Select player to play playlist';
+  String get selectPlayerToPlayPlaylist =>
+      'Gerät zum Abspielen der Wiedergabeliste wählen';
 
   @override
-  String get selectPlayerForRadio => 'Select player for radio';
+  String get selectPlayerForRadio => 'Gerät für Radio wählen';
 
   @override
-  String get selectPlayerForEpisode => 'Select player for episode';
+  String get selectPlayerForEpisode => 'Gerät für Episode wählen';
 
   @override
-  String get selectPlayerForAudiobook => 'Select player for audiobook';
+  String get selectPlayerForAudiobook => 'Gerät für Hörbuch wählen';
 
   @override
-  String get selectPlayerToAddToQueue => 'Select player to add to queue';
+  String get selectPlayerToAddToQueue =>
+      'Gerät zum Hinzufügen zur Warteschlange wählen';
 
   @override
   String get aboutAndSupport => 'Über & Unterstützung';
@@ -1249,9 +1259,9 @@ class SDe extends S {
   String get reportABug => 'Einen Fehler melden';
 
   @override
-  String get noRowsEnabled => 'No rows enabled';
+  String get noRowsEnabled => 'Keine Zeilen aktiviert';
 
   @override
   String get pullToRefreshHint =>
-      'Pull down to refresh or enable rows in settings';
+      'Ziehe nach unten zum Aktualisieren oder aktiviere Zeilen in den Einstellungen';
 }
