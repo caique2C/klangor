@@ -93,6 +93,7 @@ class SettingsService {
   static const String _keyOwnerName = 'owner_name';
   static const String _keyLastSelectedPlayerId = 'last_selected_player_id';
   static const String _keySmartSortPlayers = 'smart_sort_players';
+  static const String _keyAutoResumeAfterInterruption = 'auto_resume_after_interruption'; // resume playback after another app's audio focus / a phone call ends
   static const String _keyClientCertRequiredHint = 'client_cert_required_hint';
   static const String _keyShowRecentAlbums = 'show_recent_albums';
   static const String _keyShowDiscoverArtists = 'show_discover_artists';
@@ -363,6 +364,9 @@ class SettingsService {
   // Smart Sort Players - sort by status (playing > on > off) instead of alphabetically
   static Future<bool> getSmartSortPlayers() => _getBool(_keySmartSortPlayers, defaultValue: false);
   static Future<void> setSmartSortPlayers(bool smartSort) => _setBool(_keySmartSortPlayers, smartSort);
+
+  static Future<bool> getAutoResumeAfterInterruption() => _getBool(_keyAutoResumeAfterInterruption, defaultValue: true);
+  static Future<void> setAutoResumeAfterInterruption(bool enabled) => _setBool(_keyAutoResumeAfterInterruption, enabled);
 
   /// Whether the configured server is known to require the client
   /// certificate (mTLS) to connect at all. Null means "not yet known" -

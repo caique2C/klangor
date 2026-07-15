@@ -1032,6 +1032,13 @@ class SEn extends S {
       'Hold still while adjusting volume for fine control';
 
   @override
+  String get autoResumeAfterInterruption => 'Auto-Resume After Interruption';
+
+  @override
+  String get autoResumeAfterInterruptionDescription =>
+      'Resume playback after another app\'s audio or a phone call ends';
+
+  @override
   String get display => 'Display';
 
   @override

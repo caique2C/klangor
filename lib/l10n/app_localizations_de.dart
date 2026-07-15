@@ -1041,6 +1041,14 @@ class SDe extends S {
       'Hold still while adjusting volume for fine control';
 
   @override
+  String get autoResumeAfterInterruption =>
+      'Nach Unterbrechung automatisch fortsetzen';
+
+  @override
+  String get autoResumeAfterInterruptionDescription =>
+      'Wiedergabe fortsetzen, nachdem eine andere App die Audioausgabe freigegeben hat oder ein Telefonat beendet wurde';
+
+  @override
   String get display => 'Display';
 
   @override

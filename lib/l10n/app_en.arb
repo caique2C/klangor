@@ -1427,6 +1427,16 @@
     "description": "Description for volume precision mode setting"
   },
 
+  "autoResumeAfterInterruption": "Auto-Resume After Interruption",
+  "@autoResumeAfterInterruption": {
+    "description": "Setting to resume playback after an audio interruption ends"
+  },
+
+  "autoResumeAfterInterruptionDescription": "Resume playback after another app's audio or a phone call ends",
+  "@autoResumeAfterInterruptionDescription": {
+    "description": "Description for auto-resume after interruption setting"
+  },
+
   "display": "Display",
   "@display": {
     "description": "Settings section title for display options"

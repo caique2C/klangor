@@ -285,6 +285,8 @@
   "preferLocalPlayerDescription": "Dieses Gerät immer zuerst auswählen, wenn verfügbar",
   "smartSortPlayers": "Intelligente Sortierung",
   "smartSortPlayersDescription": "Nach Status sortieren (spielt, an, aus) statt alphabetisch",
+  "autoResumeAfterInterruption": "Nach Unterbrechung automatisch fortsetzen",
+  "autoResumeAfterInterruptionDescription": "Wiedergabe fortsetzen, nachdem eine andere App die Audioausgabe freigegeben hat oder ein Telefonat beendet wurde",
   "playerStateUnavailable": "Nicht verfügbar",
   "playerStateOff": "Aus",
   "playerStateIdle": "Inaktiv",

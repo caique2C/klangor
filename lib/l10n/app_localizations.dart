@@ -1943,6 +1943,18 @@ abstract class S {
   /// **'Hold still while adjusting volume for fine control'**
   String get volumePrecisionModeDescription;
 
+  /// Setting to resume playback after an audio interruption ends
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-Resume After Interruption'**
+  String get autoResumeAfterInterruption;
+
+  /// Description for auto-resume after interruption setting
+  ///
+  /// In en, this message translates to:
+  /// **'Resume playback after another app\'s audio or a phone call ends'**
+  String get autoResumeAfterInterruptionDescription;
+
   /// Settings section title for display options
   ///
   /// In en, this message translates to:

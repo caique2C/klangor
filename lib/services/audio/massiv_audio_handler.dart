@@ -119,7 +119,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     // Handle audio interruptions (e.g., another app takes audio focus)
     // Only act on interruptions when playing locally — remote MA players
     // manage their own audio focus on the server side.
-    _interruptionSubscription = session.interruptionEventStream.listen((event) {
+    _interruptionSubscription = session.interruptionEventStream.listen((event) async {
       _logger.log('🔊 Audio interruption: begin=${event.begin}, type=${event.type}, builtinActive=$_isBuiltinPlayerActive');
       if (!_isBuiltinPlayerActive) return;
       if (event.begin) {
@@ -149,6 +149,14 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
             }
             if (!_wasPlayingBeforeInterruption) {
               _logger.log('🔊 Audio interruption ended but was not playing before');
+              break;
+            }
+            // Covers both "another app released audio focus" and "a phone call
+            // ended" - Android surfaces both as the same focus-regain event, so
+            // they can't be distinguished (and therefore not toggled separately)
+            // without also polling telephony state.
+            if (!await SettingsService.getAutoResumeAfterInterruption()) {
+              _logger.log('🔊 Audio interruption ended but auto-resume is disabled in settings');
               break;
             }
             _player.play();

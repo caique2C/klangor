@@ -54,6 +54,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // Player settings
   bool _smartSortPlayers = false;
   bool _volumePrecisionMode = true;
+  bool _autoResumeAfterInterruption = true;
   // Hint settings
   bool _showHints = true;
   // Display settings
@@ -331,6 +332,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // Load player settings
     final smartSort = await SettingsService.getSmartSortPlayers();
     final volumePrecision = await SettingsService.getVolumePrecisionMode();
+    final autoResumeAfterInterruption = await SettingsService.getAutoResumeAfterInterruption();
 
     // Load hint settings
     final showHints = await SettingsService.getShowHints();
@@ -358,6 +360,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _homeRowOrder = rowOrder;
         _smartSortPlayers = smartSort;
         _volumePrecisionMode = volumePrecision;
+        _autoResumeAfterInterruption = autoResumeAfterInterruption;
         _showHints = showHints;
         _showProviderIcons = showProviderIcons;
         _discoveryRowEnabled = discoveryRowPrefs;
@@ -1423,6 +1426,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onChanged: (value) {
                   setState(() => _volumePrecisionMode = value);
                   SettingsService.setVolumePrecisionMode(value);
+                },
+                activeColor: colorScheme.primary,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceVariant.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: SwitchListTile(
+                title: Text(
+                  S.of(context)!.autoResumeAfterInterruption,
+                  style: TextStyle(color: colorScheme.onSurface),
+                ),
+                subtitle: Text(
+                  S.of(context)!.autoResumeAfterInterruptionDescription,
+                  style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6), fontSize: 12),
+                ),
+                value: _autoResumeAfterInterruption,
+                onChanged: (value) {
+                  setState(() => _autoResumeAfterInterruption = value);
+                  SettingsService.setAutoResumeAfterInterruption(value);
                 },
                 activeColor: colorScheme.primary,
                 contentPadding: EdgeInsets.zero,
