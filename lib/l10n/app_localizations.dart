@@ -395,6 +395,12 @@ abstract class S {
   /// **'Music Assistant'**
   String get discoveryRowBadge;
 
+  /// Subtitle shown under a server-provided discovery folder's name in the home row toggle list
+  ///
+  /// In en, this message translates to:
+  /// **'Discovery row from Music Assistant'**
+  String get discoveryRowSubtitle;
+
   /// Home screen section title
   ///
   /// In en, this message translates to:
@@ -2308,6 +2314,258 @@ abstract class S {
   /// In en, this message translates to:
   /// **'Pull down to refresh or enable rows in settings'**
   String get pullToRefreshHint;
+
+  /// Snackbar message after importing a client certificate
+  ///
+  /// In en, this message translates to:
+  /// **'Client certificate imported.'**
+  String get clientCertificateImported;
+
+  /// Button/action label to reconnect to the server
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnect'**
+  String get reconnect;
+
+  /// Snackbar message after a successful reconnect
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnected.'**
+  String get reconnected;
+
+  /// Snackbar message after a failed reconnect
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnect failed — {reason}'**
+  String reconnectFailed(String reason);
+
+  /// Dialog title for entering a client certificate password
+  ///
+  /// In en, this message translates to:
+  /// **'Certificate Password'**
+  String get certificatePassword;
+
+  /// Hint text for the certificate password field
+  ///
+  /// In en, this message translates to:
+  /// **'PKCS12 password'**
+  String get pkcs12Password;
+
+  /// Cancel button label
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// Import button label
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get import;
+
+  /// Button label to replace an existing client certificate
+  ///
+  /// In en, this message translates to:
+  /// **'Replace'**
+  String get replace;
+
+  /// Confirmation dialog title for removing a client certificate
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Client Certificate?'**
+  String get removeClientCertificateTitle;
+
+  /// Confirmation dialog body for removing a client certificate
+  ///
+  /// In en, this message translates to:
+  /// **'If your server requires this certificate to connect at all, you will not be able to reconnect until a certificate is imported again.'**
+  String get removeClientCertificateContent;
+
+  /// Remove button label
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get remove;
+
+  /// Confirmation dialog title for disconnecting
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect?'**
+  String get disconnectTitle;
+
+  /// Confirmation dialog body for disconnecting
+  ///
+  /// In en, this message translates to:
+  /// **'Logging back in - with the same or a different account - clears all locally cached artists, albums, and playlists, then re-downloads everything from the server.'**
+  String get disconnectDialogContent;
+
+  /// Confirmation dialog title for quitting the app
+  ///
+  /// In en, this message translates to:
+  /// **'Quit Klangor?'**
+  String get quitKlangorTitle;
+
+  /// Confirmation dialog body for quitting the app
+  ///
+  /// In en, this message translates to:
+  /// **'This closes the app completely, stopping playback.'**
+  String get quitKlangorContent;
+
+  /// Quit button label
+  ///
+  /// In en, this message translates to:
+  /// **'Quit'**
+  String get quit;
+
+  /// Button label to quit the app
+  ///
+  /// In en, this message translates to:
+  /// **'Quit App'**
+  String get quitApp;
+
+  /// Confirmation dialog title for resetting the library cache
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Library Cache?'**
+  String get resetLibraryCacheTitle;
+
+  /// Confirmation dialog body for resetting the library cache
+  ///
+  /// In en, this message translates to:
+  /// **'Clears all locally cached artists, albums, and playlists, then re-downloads everything from the server.'**
+  String get resetLibraryCacheContent;
+
+  /// Reset button label
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get reset;
+
+  /// Button label to reset the library cache
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Library Cache'**
+  String get resetLibraryCache;
+
+  /// Snackbar message after resetting the library cache
+  ///
+  /// In en, this message translates to:
+  /// **'Library cache reset'**
+  String get libraryCacheReset;
+
+  /// Connection diagnostics row label
+  ///
+  /// In en, this message translates to:
+  /// **'Name lookup (DNS)'**
+  String get nameLookupDns;
+
+  /// Connection diagnostics row label
+  ///
+  /// In en, this message translates to:
+  /// **'IPv4 connectivity'**
+  String get ipv4Connectivity;
+
+  /// Connection diagnostics row label
+  ///
+  /// In en, this message translates to:
+  /// **'IPv6 connectivity'**
+  String get ipv6Connectivity;
+
+  /// Connection diagnostics row label for client certificate check
+  ///
+  /// In en, this message translates to:
+  /// **'Client certificate'**
+  String get clientCertificateDiagnostic;
+
+  /// Diagnostics detail: client certificate is configured and in use
+  ///
+  /// In en, this message translates to:
+  /// **'in use'**
+  String get inUse;
+
+  /// Diagnostics detail: client certificate is not configured/needed
+  ///
+  /// In en, this message translates to:
+  /// **'not needed'**
+  String get notNeeded;
+
+  /// Connection diagnostics row label
+  ///
+  /// In en, this message translates to:
+  /// **'Connected to music server'**
+  String get connectedToMusicServer;
+
+  /// Connection diagnostics label for latency
+  ///
+  /// In en, this message translates to:
+  /// **'Round-trip time'**
+  String get roundTripTime;
+
+  /// Shows how long ago diagnostics were last checked
+  ///
+  /// In en, this message translates to:
+  /// **'Checked {age}'**
+  String checkedAgo(String age);
+
+  /// Tooltip for the diagnostics refresh button
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh diagnostics'**
+  String get refreshDiagnostics;
+
+  /// Section title for client certificate settings
+  ///
+  /// In en, this message translates to:
+  /// **'Client Certificate (mTLS)'**
+  String get clientCertificateMtls;
+
+  /// Client certificate status when configured, with import date
+  ///
+  /// In en, this message translates to:
+  /// **'Configured — imported {date}. Used automatically only if the server asks for it, so servers that don\'t require it still connect fine.'**
+  String clientCertificateConfiguredWithDate(String date);
+
+  /// Client certificate status when configured, without a known import date
+  ///
+  /// In en, this message translates to:
+  /// **'Configured. Used automatically only if the server asks for it, so servers that don\'t require it still connect fine.'**
+  String get clientCertificateConfiguredNoDate;
+
+  /// Client certificate status when not configured
+  ///
+  /// In en, this message translates to:
+  /// **'Not configured. Only needed if your server requires a client certificate to connect at all.'**
+  String get clientCertificateNotConfigured;
+
+  /// Relative time: less than 5 seconds ago
+  ///
+  /// In en, this message translates to:
+  /// **'just now'**
+  String get justNow;
+
+  /// Relative time in seconds
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds}s ago'**
+  String secondsAgo(int seconds);
+
+  /// Relative time in minutes
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes}m ago'**
+  String minutesAgo(int minutes);
+
+  /// Relative time in hours
+  ///
+  /// In en, this message translates to:
+  /// **'{hours}h ago'**
+  String hoursAgo(int hours);
+
+  /// Native name for French, used in the language picker's own-language display
+  ///
+  /// In en, this message translates to:
+  /// **'Français'**
+  String get frenchNative;
 }
 
 class _SDelegate extends LocalizationsDelegate<S> {

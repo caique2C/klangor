@@ -90,7 +90,7 @@ class _RadioStationRowState extends State<RadioStationRow> with AutomaticKeepAli
     }
   }
 
-  Widget _buildContent(double contentHeight, ColorScheme colorScheme) {
+  Widget _buildContent(double contentHeight, double availableWidth, ColorScheme colorScheme) {
     // Only show loading if we have no data at all
     if (_radioStations.isEmpty && _isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -108,33 +108,56 @@ class _RadioStationRowState extends State<RadioStationRow> with AutomaticKeepAli
     // Card layout: circle image + name below (same as ArtistRow)
     // Text area: 8px gap + ~36px for 2-line name = ~44px
     const textAreaHeight = 44.0;
-    final imageSize = contentHeight - textAreaHeight;
-    final cardWidth = imageSize; // Card width = image width (circle)
-    final itemExtent = cardWidth + 16; // width + horizontal margins
+    // Size cards so exactly 4 fit across the row's width instead of
+    // however many happen to fit given a height-driven size (which left a
+    // 5th card peeking in). Capped by the row's own height so cards never
+    // overflow it - if the width-driven size is shorter, the card simply
+    // leaves a bit of empty space below instead of stretching to fill it.
+    const targetColumns = 4;
+    const itemMargin = 16.0; // 8 each side - the item's own margin also
+    // contributes to the inset of the very first/last card, so the outer
+    // Padding below only needs to make up the rest of the mini-player's
+    // 12px-each-side margin (see edgeInset).
+    const edgeInset = 12.0; // Matches the mini-player's own edge margin
+    const outerPadding = 2 * edgeInset - itemMargin; // 4 each side
+    final heightBasedMax = contentHeight - textAreaHeight;
+    final widthBasedSize = (availableWidth - outerPadding) / targetColumns - itemMargin;
+    // Small tolerance: the row-height formula's rounding can leave
+    // heightBasedMax a fraction of a pixel short of widthBasedSize, which
+    // would otherwise block the width-based size for an imperceptible
+    // reason and leave a sliver of a 5th card peeking in again.
+    const heightTolerance = 4.0;
+    final cardWidth = widthBasedSize <= heightBasedMax + heightTolerance ? widthBasedSize : heightBasedMax;
+    final itemExtent = cardWidth + itemMargin; // width + horizontal margins
 
-    return ScrollConfiguration(
-      behavior: const _StretchScrollBehavior(),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12.0),
-        itemCount: _radioStations.length,
-        itemExtent: itemExtent,
-        cacheExtent: 500, // Preload ~3 items ahead for smoother scrolling
-        addAutomaticKeepAlives: false, // Row already uses AutomaticKeepAliveClientMixin
-        addRepaintBoundaries: false, // Cards already have RepaintBoundary
-        itemBuilder: (context, index) {
-          final station = _radioStations[index];
-          return Container(
-            key: ValueKey(station.uri ?? station.itemId),
-            width: cardWidth,
-            margin: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: RadioStationCard(
-              radioStation: station,
-              heroTagSuffix: widget.heroTagSuffix,
-              imageCacheSize: 256,
-            ),
-          );
-        },
+    return Padding(
+      // Constrains the viewport itself (unlike ListView's own `padding`,
+      // which only insets content within an unchanged, full-width
+      // viewport - leaving a 5th item visible in that leftover space).
+      padding: const EdgeInsets.symmetric(horizontal: outerPadding / 2),
+      child: ScrollConfiguration(
+        behavior: const _StretchScrollBehavior(),
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: _radioStations.length,
+          itemExtent: itemExtent,
+          cacheExtent: 500, // Preload ~3 items ahead for smoother scrolling
+          addAutomaticKeepAlives: false, // Row already uses AutomaticKeepAliveClientMixin
+          addRepaintBoundaries: false, // Cards already have RepaintBoundary
+          itemBuilder: (context, index) {
+            final station = _radioStations[index];
+            return Container(
+              key: ValueKey(station.uri ?? station.itemId),
+              width: cardWidth,
+              margin: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: RadioStationCard(
+                radioStation: station,
+                heroTagSuffix: widget.heroTagSuffix,
+                imageCacheSize: 256,
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -150,6 +173,7 @@ class _RadioStationRowState extends State<RadioStationRow> with AutomaticKeepAli
     final totalHeight = widget.rowHeight ?? 207.0; // Default: 44 title + 163 content
     const titleHeight = 44.0; // 12 top padding + ~24 text + 8 bottom padding
     final contentHeight = totalHeight - titleHeight;
+    final availableWidth = MediaQuery.of(context).size.width;
 
     final result = RepaintBoundary(
       child: SizedBox(
@@ -168,7 +192,7 @@ class _RadioStationRowState extends State<RadioStationRow> with AutomaticKeepAli
               ),
             ),
             Expanded(
-              child: _buildContent(contentHeight, colorScheme),
+              child: _buildContent(contentHeight, availableWidth, colorScheme),
             ),
           ],
         ),

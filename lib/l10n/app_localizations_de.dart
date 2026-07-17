@@ -171,6 +171,9 @@ class SDe extends S {
   String get discoveryRowBadge => 'Music Assistant';
 
   @override
+  String get discoveryRowSubtitle => 'Entdeckungszeile von Music Assistant';
+
+  @override
   String get continueListening => 'Weiterhoren';
 
   @override
@@ -1264,4 +1267,148 @@ class SDe extends S {
   @override
   String get pullToRefreshHint =>
       'Ziehe nach unten zum Aktualisieren oder aktiviere Zeilen in den Einstellungen';
+
+  @override
+  String get clientCertificateImported => 'Client-Zertifikat importiert.';
+
+  @override
+  String get reconnect => 'Neu verbinden';
+
+  @override
+  String get reconnected => 'Neu verbunden.';
+
+  @override
+  String reconnectFailed(String reason) {
+    return 'Verbindung fehlgeschlagen — $reason';
+  }
+
+  @override
+  String get certificatePassword => 'Zertifikatspasswort';
+
+  @override
+  String get pkcs12Password => 'PKCS12-Passwort';
+
+  @override
+  String get cancel => 'Abbrechen';
+
+  @override
+  String get import => 'Importieren';
+
+  @override
+  String get replace => 'Ersetzen';
+
+  @override
+  String get removeClientCertificateTitle => 'Client-Zertifikat entfernen?';
+
+  @override
+  String get removeClientCertificateContent =>
+      'Wenn dein Server dieses Zertifikat für die Verbindung zwingend benötigt, kannst du dich erst wieder verbinden, nachdem ein Zertifikat erneut importiert wurde.';
+
+  @override
+  String get remove => 'Entfernen';
+
+  @override
+  String get disconnectTitle => 'Trennen?';
+
+  @override
+  String get disconnectDialogContent =>
+      'Beim erneuten Anmelden - mit demselben oder einem anderen Konto - werden alle lokal zwischengespeicherten Künstler, Alben und Wiedergabelisten gelöscht und anschließend alles neu vom Server geladen.';
+
+  @override
+  String get quitKlangorTitle => 'Klangor beenden?';
+
+  @override
+  String get quitKlangorContent =>
+      'Dies schließt die App vollständig und beendet die Wiedergabe.';
+
+  @override
+  String get quit => 'Beenden';
+
+  @override
+  String get quitApp => 'App beenden';
+
+  @override
+  String get resetLibraryCacheTitle => 'Bibliothek-Cache zurücksetzen?';
+
+  @override
+  String get resetLibraryCacheContent =>
+      'Löscht alle lokal zwischengespeicherten Künstler, Alben und Wiedergabelisten und lädt anschließend alles neu vom Server.';
+
+  @override
+  String get reset => 'Zurücksetzen';
+
+  @override
+  String get resetLibraryCache => 'Bibliothek-Cache zurücksetzen';
+
+  @override
+  String get libraryCacheReset => 'Bibliothek-Cache zurückgesetzt';
+
+  @override
+  String get nameLookupDns => 'Namensauflösung (DNS)';
+
+  @override
+  String get ipv4Connectivity => 'IPv4-Konnektivität';
+
+  @override
+  String get ipv6Connectivity => 'IPv6-Konnektivität';
+
+  @override
+  String get clientCertificateDiagnostic => 'Client-Zertifikat';
+
+  @override
+  String get inUse => 'in Verwendung';
+
+  @override
+  String get notNeeded => 'nicht benötigt';
+
+  @override
+  String get connectedToMusicServer => 'Mit Musikserver verbunden';
+
+  @override
+  String get roundTripTime => 'Round-Trip-Zeit';
+
+  @override
+  String checkedAgo(String age) {
+    return 'Geprüft $age';
+  }
+
+  @override
+  String get refreshDiagnostics => 'Diagnose aktualisieren';
+
+  @override
+  String get clientCertificateMtls => 'Client-Zertifikat (mTLS)';
+
+  @override
+  String clientCertificateConfiguredWithDate(String date) {
+    return 'Konfiguriert — importiert $date. Wird automatisch nur verwendet, wenn der Server danach fragt - Server, die es nicht benötigen, verbinden sich weiterhin problemlos.';
+  }
+
+  @override
+  String get clientCertificateConfiguredNoDate =>
+      'Konfiguriert. Wird automatisch nur verwendet, wenn der Server danach fragt - Server, die es nicht benötigen, verbinden sich weiterhin problemlos.';
+
+  @override
+  String get clientCertificateNotConfigured =>
+      'Nicht konfiguriert. Nur nötig, wenn dein Server zwingend ein Client-Zertifikat für die Verbindung verlangt.';
+
+  @override
+  String get justNow => 'gerade eben';
+
+  @override
+  String secondsAgo(int seconds) {
+    return 'vor ${seconds}s';
+  }
+
+  @override
+  String minutesAgo(int minutes) {
+    return 'vor ${minutes}m';
+  }
+
+  @override
+  String hoursAgo(int hours) {
+    return 'vor ${hours}h';
+  }
+
+  @override
+  String get frenchNative => 'Français';
 }

@@ -138,7 +138,7 @@ class ExpandablePlayerState extends State<ExpandablePlayer>
   // Dimensions
   static double get _collapsedHeight => MiniPlayerLayout.height;
   static const double _collapsedMargin = 12.0; // Increased from 8 to 12 (4px more gap above nav bar)
-  static const double _collapsedBorderRadius = 16.0;
+  static const double _collapsedBorderRadius = 12.0;
   static double get _collapsedArtSize => MiniPlayerLayout.artSize;
   static const double _bottomNavHeight = 56.0;
 

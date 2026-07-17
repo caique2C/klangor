@@ -172,6 +172,9 @@ class SEs extends S {
   String get discoveryRowBadge => 'Music Assistant';
 
   @override
+  String get discoveryRowSubtitle => 'Discovery row from Music Assistant';
+
+  @override
   String get continueListening => 'Continuar escuchando';
 
   @override
@@ -1261,4 +1264,148 @@ class SEs extends S {
   @override
   String get pullToRefreshHint =>
       'Pull down to refresh or enable rows in settings';
+
+  @override
+  String get clientCertificateImported => 'Client certificate imported.';
+
+  @override
+  String get reconnect => 'Reconnect';
+
+  @override
+  String get reconnected => 'Reconnected.';
+
+  @override
+  String reconnectFailed(String reason) {
+    return 'Reconnect failed — $reason';
+  }
+
+  @override
+  String get certificatePassword => 'Certificate Password';
+
+  @override
+  String get pkcs12Password => 'PKCS12 password';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get import => 'Import';
+
+  @override
+  String get replace => 'Replace';
+
+  @override
+  String get removeClientCertificateTitle => 'Remove Client Certificate?';
+
+  @override
+  String get removeClientCertificateContent =>
+      'If your server requires this certificate to connect at all, you will not be able to reconnect until a certificate is imported again.';
+
+  @override
+  String get remove => 'Remove';
+
+  @override
+  String get disconnectTitle => 'Disconnect?';
+
+  @override
+  String get disconnectDialogContent =>
+      'Logging back in - with the same or a different account - clears all locally cached artists, albums, and playlists, then re-downloads everything from the server.';
+
+  @override
+  String get quitKlangorTitle => 'Quit Klangor?';
+
+  @override
+  String get quitKlangorContent =>
+      'This closes the app completely, stopping playback.';
+
+  @override
+  String get quit => 'Quit';
+
+  @override
+  String get quitApp => 'Quit App';
+
+  @override
+  String get resetLibraryCacheTitle => 'Reset Library Cache?';
+
+  @override
+  String get resetLibraryCacheContent =>
+      'Clears all locally cached artists, albums, and playlists, then re-downloads everything from the server.';
+
+  @override
+  String get reset => 'Reset';
+
+  @override
+  String get resetLibraryCache => 'Reset Library Cache';
+
+  @override
+  String get libraryCacheReset => 'Library cache reset';
+
+  @override
+  String get nameLookupDns => 'Name lookup (DNS)';
+
+  @override
+  String get ipv4Connectivity => 'IPv4 connectivity';
+
+  @override
+  String get ipv6Connectivity => 'IPv6 connectivity';
+
+  @override
+  String get clientCertificateDiagnostic => 'Client certificate';
+
+  @override
+  String get inUse => 'in use';
+
+  @override
+  String get notNeeded => 'not needed';
+
+  @override
+  String get connectedToMusicServer => 'Connected to music server';
+
+  @override
+  String get roundTripTime => 'Round-trip time';
+
+  @override
+  String checkedAgo(String age) {
+    return 'Checked $age';
+  }
+
+  @override
+  String get refreshDiagnostics => 'Refresh diagnostics';
+
+  @override
+  String get clientCertificateMtls => 'Client Certificate (mTLS)';
+
+  @override
+  String clientCertificateConfiguredWithDate(String date) {
+    return 'Configured — imported $date. Used automatically only if the server asks for it, so servers that don\'t require it still connect fine.';
+  }
+
+  @override
+  String get clientCertificateConfiguredNoDate =>
+      'Configured. Used automatically only if the server asks for it, so servers that don\'t require it still connect fine.';
+
+  @override
+  String get clientCertificateNotConfigured =>
+      'Not configured. Only needed if your server requires a client certificate to connect at all.';
+
+  @override
+  String get justNow => 'just now';
+
+  @override
+  String secondsAgo(int seconds) {
+    return '${seconds}s ago';
+  }
+
+  @override
+  String minutesAgo(int minutes) {
+    return '${minutes}m ago';
+  }
+
+  @override
+  String hoursAgo(int hours) {
+    return '${hours}h ago';
+  }
+
+  @override
+  String get frenchNative => 'Français';
 }

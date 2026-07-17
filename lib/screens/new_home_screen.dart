@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -32,9 +33,14 @@ class NewHomeScreen extends StatefulWidget {
   State<NewHomeScreen> createState() => _NewHomeScreenState();
 }
 
-class _NewHomeScreenState extends State<NewHomeScreen> with AutomaticKeepAliveClientMixin {
+class _NewHomeScreenState extends State<NewHomeScreen>
+    with AutomaticKeepAliveClientMixin {
   static final _logger = DebugLogger();
   final ValueNotifier<int> _refreshSignal = ValueNotifier<int>(0);
+  // Suppresses the AppBar sync spinner while the pull-to-refresh gesture's
+  // own Material RefreshIndicator is already showing its own spinner for
+  // the same sync - otherwise both appear stacked on top of each other.
+  final ValueNotifier<bool> _isPullRefreshing = ValueNotifier<bool>(false);
   // Main rows (default on)
   bool _showRecentAlbums = true;
   bool _showDiscoverArtists = true;
@@ -65,7 +71,8 @@ class _NewHomeScreenState extends State<NewHomeScreen> with AutomaticKeepAliveCl
   SyncStatus? _lastSyncStatus;
   int _lastArtistCount = 0;
   MusicAssistantProvider? _providerListeningTo;
-  int _lastHomeRefreshCounter = 0;  // Track home refresh counter to force row refreshes
+  int _lastHomeRefreshCounter =
+      0; // Track home refresh counter to force row refreshes
 
   @override
   void initState() {
@@ -108,11 +115,14 @@ class _NewHomeScreenState extends State<NewHomeScreen> with AutomaticKeepAliveCl
     final showFavPlaylists = await SettingsService.getShowFavoritePlaylists();
     final showFavRadio = await SettingsService.getShowFavoriteRadioStations();
     final showFavPodcasts = await SettingsService.getShowFavoritePodcasts();
-    final showContAudiobooks = await SettingsService.getShowContinueListeningAudiobooks();
-    final showDiscAudiobooks = await SettingsService.getShowDiscoverAudiobooks();
+    final showContAudiobooks =
+        await SettingsService.getShowContinueListeningAudiobooks();
+    final showDiscAudiobooks =
+        await SettingsService.getShowDiscoverAudiobooks();
     final showDiscSeries = await SettingsService.getShowDiscoverSeries();
     final rowOrder = await SettingsService.getHomeRowOrder();
-    final discoveryRowPrefs = await SettingsService.getDiscoveryRowPreferences();
+    final discoveryRowPrefs =
+        await SettingsService.getDiscoveryRowPreferences();
     if (mounted) {
       setState(() {
         _showRecentAlbums = showRecent;
@@ -141,6 +151,7 @@ class _NewHomeScreenState extends State<NewHomeScreen> with AutomaticKeepAliveCl
     _providerListeningTo?.removeListener(_onProviderChanged);
     _providerListeningTo = null;
     _refreshSignal.dispose();
+    _isPullRefreshing.dispose();
     super.dispose();
   }
 
@@ -154,7 +165,8 @@ class _NewHomeScreenState extends State<NewHomeScreen> with AutomaticKeepAliveCl
       // Check if artists list is empty - favorites will also be empty
       if (_lastArtistCount == 0) {
         _hadEmptyFavoritesOnLoad = true;
-        _logger.log('📋 Home: favorites empty on load, will refresh after sync');
+        _logger
+            .log('📋 Home: favorites empty on load, will refresh after sync');
         // Also listen to provider for when cache loads (before sync completes)
         _providerListeningTo = provider;
         provider.addListener(_onProviderChanged);
@@ -171,17 +183,19 @@ class _NewHomeScreenState extends State<NewHomeScreen> with AutomaticKeepAliveCl
 
     // Check if home refresh counter changed (indicates authentication completed and cache was invalidated)
     if (currentRefreshCounter != _lastHomeRefreshCounter) {
-      _logger.log('🔄 Home: refresh counter changed ($_lastHomeRefreshCounter -> $currentRefreshCounter), refreshing all rows');
+      _logger.log(
+          '🔄 Home: refresh counter changed ($_lastHomeRefreshCounter -> $currentRefreshCounter), refreshing all rows');
       _lastHomeRefreshCounter = currentRefreshCounter;
       _refreshSignal.value++;
-      return;  // Don't process other refresh conditions in this cycle
+      return; // Don't process other refresh conditions in this cycle
     }
 
     // Check for artists cache load (when favorites were empty on load)
     if (_hadEmptyFavoritesOnLoad) {
       final currentCount = provider.artists.length;
       if (_lastArtistCount == 0 && currentCount > 0) {
-        _logger.log('🔄 Home: artists loaded from cache ($currentCount), refreshing rows');
+        _logger.log(
+            '🔄 Home: artists loaded from cache ($currentCount), refreshing rows');
         _hadEmptyFavoritesOnLoad = false;
         _refreshSignal.value++;
       }
@@ -208,7 +222,6 @@ class _NewHomeScreenState extends State<NewHomeScreen> with AutomaticKeepAliveCl
     _lastSyncStatus = newStatus;
   }
 
-
   Future<void> _loadSettings() async {
     final showRecent = await SettingsService.getShowRecentAlbums();
     final showDiscArtists = await SettingsService.getShowDiscoverArtists();
@@ -219,11 +232,14 @@ class _NewHomeScreenState extends State<NewHomeScreen> with AutomaticKeepAliveCl
     final showFavPlaylists = await SettingsService.getShowFavoritePlaylists();
     final showFavRadio = await SettingsService.getShowFavoriteRadioStations();
     final showFavPodcasts = await SettingsService.getShowFavoritePodcasts();
-    final showContAudiobooks = await SettingsService.getShowContinueListeningAudiobooks();
-    final showDiscAudiobooks = await SettingsService.getShowDiscoverAudiobooks();
+    final showContAudiobooks =
+        await SettingsService.getShowContinueListeningAudiobooks();
+    final showDiscAudiobooks =
+        await SettingsService.getShowDiscoverAudiobooks();
     final showDiscSeries = await SettingsService.getShowDiscoverSeries();
     final rowOrder = await SettingsService.getHomeRowOrder();
-    final discoveryRowPrefs = await SettingsService.getDiscoveryRowPreferences();
+    final discoveryRowPrefs =
+        await SettingsService.getDiscoveryRowPreferences();
     if (mounted) {
       setState(() {
         _showRecentAlbums = showRecent;
@@ -264,9 +280,11 @@ class _NewHomeScreenState extends State<NewHomeScreen> with AutomaticKeepAliveCl
       // If cached result is empty, force a refresh to get from API/database
       if (folders.isEmpty && !forceRefresh) {
         _logger.log('🔄 Discovery: Cached folders empty, forcing refresh...');
-        folders = await provider.getDiscoveryFoldersWithCache(forceRefresh: true);
+        folders =
+            await provider.getDiscoveryFoldersWithCache(forceRefresh: true);
       }
-      final discoveryRowPrefs = await SettingsService.getDiscoveryRowPreferences();
+      final discoveryRowPrefs =
+          await SettingsService.getDiscoveryRowPreferences();
       if (mounted) {
         setState(() {
           _discoveryFolders = folders;
@@ -299,18 +317,23 @@ class _NewHomeScreenState extends State<NewHomeScreen> with AutomaticKeepAliveCl
   }
 
   Future<void> _onRefresh() async {
-    // Invalidate cache to force fresh data on pull-to-refresh
-    final provider = context.read<MusicAssistantProvider>();
-    provider.invalidateHomeCache();
+    _isPullRefreshing.value = true;
+    try {
+      // Invalidate cache to force fresh data on pull-to-refresh
+      final provider = context.read<MusicAssistantProvider>();
+      provider.invalidateHomeCache();
 
-    // Force full library sync from MA API
-    await provider.forceLibrarySync();
+      // Force full library sync from MA API
+      await provider.forceLibrarySync();
 
-    // Reload settings in case they changed
-    await _loadSettings();
+      // Reload settings in case they changed
+      await _loadSettings();
 
-    if (mounted) {
-      _refreshSignal.value++;
+      if (mounted) {
+        _refreshSignal.value++;
+      }
+    } finally {
+      _isPullRefreshing.value = false;
     }
   }
 
@@ -364,63 +387,10 @@ class _NewHomeScreenState extends State<NewHomeScreen> with AutomaticKeepAliveCl
         titleSpacing: 0,
         centerTitle: false,
         actions: [
-          // Connection status dot - so a disconnected session (still showing
-          // its last-cached artists/albums/etc.) can't be mistaken for a
-          // live, up-to-date one at a glance.
-          Padding(
-            padding: const EdgeInsets.only(right: 4.0),
-            child: Selector<MusicAssistantProvider, MAConnectionState>(
-              selector: (_, p) => p.connectionState,
-              builder: (context, connectionState, _) {
-                final Color color;
-                switch (connectionState) {
-                  case MAConnectionState.connected:
-                  case MAConnectionState.authenticated:
-                    color = Colors.green;
-                  case MAConnectionState.connecting:
-                  case MAConnectionState.authenticating:
-                    color = Colors.amber;
-                  case MAConnectionState.error:
-                  case MAConnectionState.disconnected:
-                    color = Colors.red;
-                }
-                return Tooltip(
-                  message: _connectionStatusTooltip(connectionState),
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: color,
-                    ),
-                  ),
-                );
-              },
-            ),
+          _HomeStatusCluster(
+            connectionTooltip: _connectionStatusTooltip,
+            suppressSyncSpinner: _isPullRefreshing,
           ),
-          // Sync indicator - shows when library is syncing in background
-          ListenableBuilder(
-            listenable: SyncService.instance,
-            builder: (context, _) {
-              if (!SyncService.instance.isSyncing) {
-                return const SizedBox.shrink();
-              }
-              return Padding(
-                padding: const EdgeInsets.only(right: 8.0),
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Theme.of(context).colorScheme.primary.withOpacity(0.7),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-          const PlayerSelector(),
         ],
       ),
       body: SafeArea(
@@ -437,7 +407,8 @@ class _NewHomeScreenState extends State<NewHomeScreen> with AutomaticKeepAliveCl
                 context: context,
                 onSettings: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                  MaterialPageRoute(
+                      builder: (context) => const SettingsScreen()),
                 ),
               );
             }
@@ -453,13 +424,16 @@ class _NewHomeScreenState extends State<NewHomeScreen> with AutomaticKeepAliveCl
                 ),
                 // Connecting banner overlay (doesn't affect layout)
                 // Hide when we have cached players - UI is functional during background reconnect
-                if (!isConnected && syncService.hasCache && !maProvider.hasCachedPlayers)
+                if (!isConnected &&
+                    syncService.hasCache &&
+                    !maProvider.hasCachedPlayers)
                   Positioned(
                     top: 0,
                     left: 0,
                     right: 0,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 6),
                       color: colorScheme.primaryContainer.withOpacity(0.9),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -475,9 +449,10 @@ class _NewHomeScreenState extends State<NewHomeScreen> with AutomaticKeepAliveCl
                           const SizedBox(width: 8),
                           Text(
                             S.of(context)!.connecting,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onPrimaryContainer,
-                            ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.onPrimaryContainer,
+                                    ),
                           ),
                         ],
                       ),
@@ -513,7 +488,6 @@ class _NewHomeScreenState extends State<NewHomeScreen> with AutomaticKeepAliveCl
     );
   }
 
-
   /// Count how many rows are currently enabled
   int _countEnabledRows() {
     int count = 0;
@@ -532,19 +506,32 @@ class _NewHomeScreenState extends State<NewHomeScreen> with AutomaticKeepAliveCl
       return _discoveryRowEnabled[itemId] ?? false;
     }
     switch (rowId) {
-      case 'recent-albums': return _showRecentAlbums;
-      case 'discover-artists': return _showDiscoverArtists;
-      case 'discover-albums': return _showDiscoverAlbums;
-      case 'continue-listening': return _showContinueListeningAudiobooks;
-      case 'discover-audiobooks': return _showDiscoverAudiobooks;
-      case 'discover-series': return _showDiscoverSeries;
-      case 'favorite-albums': return _showFavoriteAlbums;
-      case 'favorite-artists': return _showFavoriteArtists;
-      case 'favorite-tracks': return _showFavoriteTracks;
-      case 'favorite-playlists': return _showFavoritePlaylists;
-      case 'favorite-radio-stations': return _showFavoriteRadioStations;
-      case 'favorite-podcasts': return _showFavoritePodcasts;
-      default: return false;
+      case 'recent-albums':
+        return _showRecentAlbums;
+      case 'discover-artists':
+        return _showDiscoverArtists;
+      case 'discover-albums':
+        return _showDiscoverAlbums;
+      case 'continue-listening':
+        return _showContinueListeningAudiobooks;
+      case 'discover-audiobooks':
+        return _showDiscoverAudiobooks;
+      case 'discover-series':
+        return _showDiscoverSeries;
+      case 'favorite-albums':
+        return _showFavoriteAlbums;
+      case 'favorite-artists':
+        return _showFavoriteArtists;
+      case 'favorite-tracks':
+        return _showFavoriteTracks;
+      case 'favorite-playlists':
+        return _showFavoritePlaylists;
+      case 'favorite-radio-stations':
+        return _showFavoriteRadioStations;
+      case 'favorite-podcasts':
+        return _showFavoritePodcasts;
+      default:
+        return false;
     }
   }
 
@@ -564,7 +551,8 @@ class _NewHomeScreenState extends State<NewHomeScreen> with AutomaticKeepAliveCl
         // regardless of how many rows are currently enabled (avoids jitter on reload).
         const marginSize = 2.0;
         final enabledRows = _countEnabledRows();
-        const marginsInView = 2 * marginSize; // always 2 margins for 3-row layout
+        const marginsInView =
+            2 * marginSize; // always 2 margins for 3-row layout
         final rowHeight = (availableHeight - marginsInView) / 3 + 2;
 
         // Use Android 12+ stretch overscroll effect
@@ -597,7 +585,8 @@ class _NewHomeScreenState extends State<NewHomeScreen> with AutomaticKeepAliveCl
                 height: enabledRows == 0 ? availableHeight : null,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: _buildOrderedRows(provider, rowHeight, enabledRows == 0),
+                  children:
+                      _buildOrderedRows(provider, rowHeight, enabledRows == 0),
                 ),
               ),
             ),
@@ -608,7 +597,8 @@ class _NewHomeScreenState extends State<NewHomeScreen> with AutomaticKeepAliveCl
   }
 
   /// Build rows in the user's configured order
-  List<Widget> _buildOrderedRows(MusicAssistantProvider provider, double rowHeight, bool isEmpty) {
+  List<Widget> _buildOrderedRows(
+      MusicAssistantProvider provider, double rowHeight, bool isEmpty) {
     final rows = <Widget>[];
 
     // Show empty state with refresh hint when no rows are enabled
@@ -668,7 +658,8 @@ class _NewHomeScreenState extends State<NewHomeScreen> with AutomaticKeepAliveCl
   }
 
   /// Build a single row widget by ID, returns null if row is disabled
-  Widget? _buildRowWidget(String rowId, MusicAssistantProvider provider, double rowHeight) {
+  Widget? _buildRowWidget(
+      String rowId, MusicAssistantProvider provider, double rowHeight) {
     switch (rowId) {
       case 'recent-albums':
         if (!_showRecentAlbums) return null;
@@ -797,7 +788,8 @@ class _NewHomeScreenState extends State<NewHomeScreen> with AutomaticKeepAliveCl
               key: ValueKey(rowId),
               title: folder.name,
               loadItems: () => provider.getDiscoveryFolderItems(folderId),
-              getCachedItems: () => provider.getCachedDiscoveryFolderItems(folderId),
+              getCachedItems: () =>
+                  provider.getCachedDiscoveryFolderItems(folderId),
               heroTagSuffix: 'home',
               rowHeight: rowHeight,
             );
@@ -807,6 +799,133 @@ class _NewHomeScreenState extends State<NewHomeScreen> with AutomaticKeepAliveCl
         }
         return null;
     }
+  }
+}
+
+/// Home AppBar's trailing status cluster: connection dot, sync spinner, and
+/// the compact player badge. Not all three are visible at all times (the
+/// spinner only while syncing, the badge only while another player is
+/// active), so spacing can't be baked into each widget individually -
+/// whichever item ends up last needs the mini-player's own edge margin, and
+/// gaps between whichever items ARE visible need to be consistent. This
+/// widget reads all the relevant state in one place and lays the visible
+/// subset out itself instead.
+class _HomeStatusCluster extends StatelessWidget {
+  final String Function(MAConnectionState) connectionTooltip;
+  // While true, a pull-to-refresh is already showing its own Material
+  // RefreshIndicator spinner for this exact sync - hide ours so the same
+  // sync isn't indicated twice at once.
+  final ValueListenable<bool> suppressSyncSpinner;
+
+  const _HomeStatusCluster(
+      {required this.connectionTooltip, required this.suppressSyncSpinner});
+
+  // Matches the mini-player's own _collapsedMargin in expandable_player.dart
+  // so the cluster's trailing edge lines up with the mini-player below it.
+  static const double _edgeMargin = 12.0;
+  static const double _itemGap = 5.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: suppressSyncSpinner,
+      builder: (context, isPullRefreshing, _) {
+        return Selector<
+            MusicAssistantProvider,
+            ({
+              MAConnectionState connectionState,
+              bool compact,
+              int playingCount
+            })>(
+          selector: (_, p) {
+            final miniPlayerHidden = (!p.isConnected && !p.hasCachedPlayers) ||
+                p.selectedPlayer == null;
+            final selectedPlayerId = p.selectedPlayer?.playerId;
+            final playingCount = p.availablePlayers
+                .where((pl) =>
+                    pl.state == 'playing' &&
+                    pl.playerId != selectedPlayerId &&
+                    !pl.isExternalSource)
+                .length;
+            return (
+              connectionState: p.connectionState,
+              compact: !miniPlayerHidden,
+              playingCount: playingCount
+            );
+          },
+          builder: (context, state, _) {
+            return ListenableBuilder(
+              listenable: SyncService.instance,
+              builder: (context, _) {
+                final colorScheme = Theme.of(context).colorScheme;
+                final isSyncing =
+                    SyncService.instance.isSyncing && !isPullRefreshing;
+
+                final Color dotColor;
+                switch (state.connectionState) {
+                  case MAConnectionState.connected:
+                  case MAConnectionState.authenticated:
+                    dotColor = Colors.green;
+                  case MAConnectionState.connecting:
+                  case MAConnectionState.authenticating:
+                    dotColor = Colors.amber;
+                  case MAConnectionState.error:
+                  case MAConnectionState.disconnected:
+                    dotColor = Colors.red;
+                }
+
+                final dot = Tooltip(
+                  message: connectionTooltip(state.connectionState),
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration:
+                        BoxDecoration(shape: BoxShape.circle, color: dotColor),
+                  ),
+                );
+
+                final spinner = SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                        colorScheme.primary.withOpacity(0.7)),
+                  ),
+                );
+
+                // Build only the items that actually render something, joined
+                // by a fixed gap - so the gap sequence is always correct no
+                // matter which subset is visible this frame.
+                final children = <Widget>[dot];
+                if (isSyncing) {
+                  children.add(const SizedBox(width: _itemGap));
+                  children.add(spinner);
+                }
+                if (state.compact && state.playingCount > 0) {
+                  children.add(const SizedBox(width: _itemGap));
+                  children.add(PlayerSelector(compact: true));
+                }
+
+                // Full pill (no player selected yet) is a distinct, self-
+                // contained widget - not part of the tight icon cluster.
+                if (!state.compact) {
+                  children.add(const SizedBox(width: _itemGap));
+                  children.add(const PlayerSelector(compact: false));
+                }
+
+                return Padding(
+                  padding:
+                      const EdgeInsets.only(left: 10.0, right: _edgeMargin),
+                  child:
+                      Row(mainAxisSize: MainAxisSize.min, children: children),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
   }
 }
 

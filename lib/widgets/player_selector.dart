@@ -10,7 +10,14 @@ import '../services/image_prefetch_service.dart';
 import 'global_player_overlay.dart'; // For isPlayerExpanded and collapsePlayer
 
 class PlayerSelector extends StatelessWidget {
-  const PlayerSelector({super.key});
+  /// When true (mini-player is already visible and offers the same
+  /// swipe-down-to-select gesture), render just an icon + "N playing
+  /// elsewhere" badge instead of the full name pill - avoids showing two
+  /// redundant "open player list" tap targets on screen at once while still
+  /// surfacing the one bit of info the mini-player doesn't show anywhere.
+  final bool compact;
+
+  const PlayerSelector({super.key, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
@@ -28,10 +35,13 @@ class PlayerSelector extends StatelessWidget {
         .where((p) => p.state == 'playing' && p.playerId != selectedPlayerId && !p.isExternalSource)
         .length;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-      child: Badge(
-        isLabelVisible: playingCount > 0,
+    if (compact) {
+      // Nothing to surface and the mini-player already offers player
+      // selection - don't add an extra tap target for no reason.
+      // No outer padding - the enclosing status cluster in
+      // new_home_screen.dart owns all spacing between its items.
+      if (playingCount == 0) return const SizedBox.shrink();
+      return Badge(
         backgroundColor: colorScheme.tertiary,
         textColor: colorScheme.onTertiary,
         label: Text(
@@ -42,39 +52,67 @@ class PlayerSelector extends StatelessWidget {
             color: colorScheme.onTertiary,
           ),
         ),
-        child: Material(
-          color: colorScheme.primaryContainer,
+        child: InkWell(
+          onTap: () => _showPlayerSelector(context),
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(6.0),
+            child: Icon(
+              Icons.cast,
+              color: colorScheme.onSurfaceVariant,
+              size: 20,
+            ),
+          ),
+        ),
+      );
+    }
+
+    // No outer padding - the enclosing status cluster in
+    // new_home_screen.dart owns all spacing between its items.
+    return Badge(
+      isLabelVisible: playingCount > 0,
+      backgroundColor: colorScheme.tertiary,
+      textColor: colorScheme.onTertiary,
+      label: Text(
+        playingCount.toString(),
+        style: TextStyle(
+          fontWeight: FontWeight.w900,
+          fontSize: 11,
+          color: colorScheme.onTertiary,
+        ),
+      ),
+      child: Material(
+        color: colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          onTap: () => _showPlayerSelector(context),
           borderRadius: BorderRadius.circular(8),
-          child: InkWell(
-            onTap: () => _showPlayerSelector(context),
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (selectedPlayer != null) ...[
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 120),
-                      child: Text(
-                        selectedPlayer.name,
-                        style: TextStyle(
-                          color: colorScheme.onPrimaryContainer,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (selectedPlayer != null) ...[
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 120),
+                    child: Text(
+                      selectedPlayer.name,
+                      style: TextStyle(
+                        color: colorScheme.onPrimaryContainer,
+                        fontWeight: FontWeight.w600,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(width: 8),
-                  ],
-                  Icon(
-                    Icons.cast,
-                    color: colorScheme.onPrimaryContainer,
-                    size: 20,
                   ),
+                  const SizedBox(width: 8),
                 ],
-              ),
+                Icon(
+                  Icons.cast,
+                  color: colorScheme.onPrimaryContainer,
+                  size: 20,
+                ),
+              ],
             ),
           ),
         ),

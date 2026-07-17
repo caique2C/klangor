@@ -251,6 +251,11 @@
     "description": "Badge label for discovery rows"
   },
 
+  "discoveryRowSubtitle": "Discovery row from Music Assistant",
+  "@discoveryRowSubtitle": {
+    "description": "Subtitle shown under a server-provided discovery folder's name in the home row toggle list"
+  },
+
   "continueListening": "Continue Listening",
   "@continueListening": {
     "description": "Home screen section title"
@@ -1788,5 +1793,245 @@
   "pullToRefreshHint": "Pull down to refresh or enable rows in settings",
   "@pullToRefreshHint": {
     "description": "Hint when home screen is empty"
+  },
+
+  "clientCertificateImported": "Client certificate imported.",
+  "@clientCertificateImported": {
+    "description": "Snackbar message after importing a client certificate"
+  },
+
+  "reconnect": "Reconnect",
+  "@reconnect": {
+    "description": "Button/action label to reconnect to the server"
+  },
+
+  "reconnected": "Reconnected.",
+  "@reconnected": {
+    "description": "Snackbar message after a successful reconnect"
+  },
+
+  "reconnectFailed": "Reconnect failed — {reason}",
+  "@reconnectFailed": {
+    "description": "Snackbar message after a failed reconnect",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+
+  "certificatePassword": "Certificate Password",
+  "@certificatePassword": {
+    "description": "Dialog title for entering a client certificate password"
+  },
+
+  "pkcs12Password": "PKCS12 password",
+  "@pkcs12Password": {
+    "description": "Hint text for the certificate password field"
+  },
+
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel button label"
+  },
+
+  "import": "Import",
+  "@import": {
+    "description": "Import button label"
+  },
+
+  "replace": "Replace",
+  "@replace": {
+    "description": "Button label to replace an existing client certificate"
+  },
+
+  "removeClientCertificateTitle": "Remove Client Certificate?",
+  "@removeClientCertificateTitle": {
+    "description": "Confirmation dialog title for removing a client certificate"
+  },
+
+  "removeClientCertificateContent": "If your server requires this certificate to connect at all, you will not be able to reconnect until a certificate is imported again.",
+  "@removeClientCertificateContent": {
+    "description": "Confirmation dialog body for removing a client certificate"
+  },
+
+  "remove": "Remove",
+  "@remove": {
+    "description": "Remove button label"
+  },
+
+  "disconnectTitle": "Disconnect?",
+  "@disconnectTitle": {
+    "description": "Confirmation dialog title for disconnecting"
+  },
+
+  "disconnectDialogContent": "Logging back in - with the same or a different account - clears all locally cached artists, albums, and playlists, then re-downloads everything from the server.",
+  "@disconnectDialogContent": {
+    "description": "Confirmation dialog body for disconnecting"
+  },
+
+  "quitKlangorTitle": "Quit Klangor?",
+  "@quitKlangorTitle": {
+    "description": "Confirmation dialog title for quitting the app"
+  },
+
+  "quitKlangorContent": "This closes the app completely, stopping playback.",
+  "@quitKlangorContent": {
+    "description": "Confirmation dialog body for quitting the app"
+  },
+
+  "quit": "Quit",
+  "@quit": {
+    "description": "Quit button label"
+  },
+
+  "quitApp": "Quit App",
+  "@quitApp": {
+    "description": "Button label to quit the app"
+  },
+
+  "resetLibraryCacheTitle": "Reset Library Cache?",
+  "@resetLibraryCacheTitle": {
+    "description": "Confirmation dialog title for resetting the library cache"
+  },
+
+  "resetLibraryCacheContent": "Clears all locally cached artists, albums, and playlists, then re-downloads everything from the server.",
+  "@resetLibraryCacheContent": {
+    "description": "Confirmation dialog body for resetting the library cache"
+  },
+
+  "reset": "Reset",
+  "@reset": {
+    "description": "Reset button label"
+  },
+
+  "resetLibraryCache": "Reset Library Cache",
+  "@resetLibraryCache": {
+    "description": "Button label to reset the library cache"
+  },
+
+  "libraryCacheReset": "Library cache reset",
+  "@libraryCacheReset": {
+    "description": "Snackbar message after resetting the library cache"
+  },
+
+  "nameLookupDns": "Name lookup (DNS)",
+  "@nameLookupDns": {
+    "description": "Connection diagnostics row label"
+  },
+
+  "ipv4Connectivity": "IPv4 connectivity",
+  "@ipv4Connectivity": {
+    "description": "Connection diagnostics row label"
+  },
+
+  "ipv6Connectivity": "IPv6 connectivity",
+  "@ipv6Connectivity": {
+    "description": "Connection diagnostics row label"
+  },
+
+  "clientCertificateDiagnostic": "Client certificate",
+  "@clientCertificateDiagnostic": {
+    "description": "Connection diagnostics row label for client certificate check"
+  },
+
+  "inUse": "in use",
+  "@inUse": {
+    "description": "Diagnostics detail: client certificate is configured and in use"
+  },
+
+  "notNeeded": "not needed",
+  "@notNeeded": {
+    "description": "Diagnostics detail: client certificate is not configured/needed"
+  },
+
+  "connectedToMusicServer": "Connected to music server",
+  "@connectedToMusicServer": {
+    "description": "Connection diagnostics row label"
+  },
+
+  "roundTripTime": "Round-trip time",
+  "@roundTripTime": {
+    "description": "Connection diagnostics label for latency"
+  },
+
+  "checkedAgo": "Checked {age}",
+  "@checkedAgo": {
+    "description": "Shows how long ago diagnostics were last checked",
+    "placeholders": {
+      "age": {
+        "type": "String"
+      }
+    }
+  },
+
+  "refreshDiagnostics": "Refresh diagnostics",
+  "@refreshDiagnostics": {
+    "description": "Tooltip for the diagnostics refresh button"
+  },
+
+  "clientCertificateMtls": "Client Certificate (mTLS)",
+  "@clientCertificateMtls": {
+    "description": "Section title for client certificate settings"
+  },
+
+  "clientCertificateConfiguredWithDate": "Configured — imported {date}. Used automatically only if the server asks for it, so servers that don't require it still connect fine.",
+  "@clientCertificateConfiguredWithDate": {
+    "description": "Client certificate status when configured, with import date",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+
+  "clientCertificateConfiguredNoDate": "Configured. Used automatically only if the server asks for it, so servers that don't require it still connect fine.",
+  "@clientCertificateConfiguredNoDate": {
+    "description": "Client certificate status when configured, without a known import date"
+  },
+
+  "clientCertificateNotConfigured": "Not configured. Only needed if your server requires a client certificate to connect at all.",
+  "@clientCertificateNotConfigured": {
+    "description": "Client certificate status when not configured"
+  },
+
+  "justNow": "just now",
+  "@justNow": {
+    "description": "Relative time: less than 5 seconds ago"
+  },
+
+  "secondsAgo": "{seconds}s ago",
+  "@secondsAgo": {
+    "description": "Relative time in seconds",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+
+  "minutesAgo": "{minutes}m ago",
+  "@minutesAgo": {
+    "description": "Relative time in minutes",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+
+  "hoursAgo": "{hours}h ago",
+  "@hoursAgo": {
+    "description": "Relative time in hours",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+
+  "frenchNative": "Français",
+  "@frenchNative": {
+    "description": "Native name for French, used in the language picker's own-language display"
   }
 }

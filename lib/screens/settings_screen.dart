@@ -192,8 +192,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Client certificate imported.'),
-            action: SnackBarAction(label: 'Reconnect', onPressed: _reconnect),
+            content: Text(S.of(context)!.clientCertificateImported),
+            action: SnackBarAction(label: S.of(context)!.reconnect, onPressed: _reconnect),
           ),
         );
       }
@@ -223,7 +223,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final failureReason = provider.error ?? _getStatusText(provider.connectionState).toLowerCase();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(connected ? 'Reconnected.' : 'Reconnect failed — $failureReason'),
+        content: Text(connected ? S.of(context)!.reconnected : S.of(context)!.reconnectFailed(failureReason)),
       ),
     );
   }
@@ -235,25 +235,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          title: const Text('Certificate Password'),
+          title: Text(S.of(context)!.certificatePassword),
           content: TextField(
             controller: controller,
             obscureText: true,
             autofocus: true,
-            decoration: const InputDecoration(hintText: 'PKCS12 password'),
+            decoration: InputDecoration(hintText: S.of(context)!.pkcs12Password),
             onSubmitted: (value) => Navigator.pop(dialogContext, value),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
+              child: Text(S.of(context)!.cancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(dialogContext, controller.text),
               style: FilledButton.styleFrom(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Import'),
+              child: Text(S.of(context)!.import),
             ),
           ],
         );
@@ -267,16 +267,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          title: const Text('Remove Client Certificate?'),
-          content: const Text(
-            'If your server requires this certificate to connect at all, '
-            'you will not be able to reconnect until a certificate is '
-            'imported again.',
-          ),
+          title: Text(S.of(context)!.removeClientCertificateTitle),
+          content: Text(S.of(context)!.removeClientCertificateContent),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Cancel'),
+              child: Text(S.of(context)!.cancel),
             ),
             FilledButton(
               style: FilledButton.styleFrom(
@@ -284,7 +280,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Remove'),
+              child: Text(S.of(context)!.remove),
             ),
           ],
         );
@@ -472,7 +468,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           items: [],
         ),
       );
-      return {'title': folder.name, 'subtitle': 'Discovery row from Music Assistant'};
+      return {'title': folder.name, 'subtitle': s.discoveryRowSubtitle};
     }
     switch (rowId) {
       case 'recent-albums':
@@ -631,19 +627,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          title: const Text('Disconnect?'),
-          content: const Text('Logging back in - with the same or a different account - clears all locally cached artists, albums, and playlists, then re-downloads everything from the server.'),
+          title: Text(S.of(context)!.disconnectTitle),
+          content: Text(S.of(context)!.disconnectDialogContent),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Cancel'),
+              child: Text(S.of(context)!.cancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(dialogContext, true),
               style: FilledButton.styleFrom(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Disconnect'),
+              child: Text(S.of(context)!.disconnect),
             ),
           ],
         );
@@ -687,19 +683,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          title: const Text('Quit Klangor?'),
-          content: const Text('This closes the app completely, stopping playback.'),
+          title: Text(S.of(context)!.quitKlangorTitle),
+          content: Text(S.of(context)!.quitKlangorContent),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Cancel'),
+              child: Text(S.of(context)!.cancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(dialogContext, true),
               style: FilledButton.styleFrom(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Quit'),
+              child: Text(S.of(context)!.quit),
             ),
           ],
         );
@@ -724,19 +720,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          title: const Text('Reset Library Cache?'),
-          content: const Text('Clears all locally cached artists, albums, and playlists, then re-downloads everything from the server.'),
+          title: Text(S.of(context)!.resetLibraryCacheTitle),
+          content: Text(S.of(context)!.resetLibraryCacheContent),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Cancel'),
+              child: Text(S.of(context)!.cancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(dialogContext, true),
               style: FilledButton.styleFrom(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Reset'),
+              child: Text(S.of(context)!.reset),
             ),
           ],
         );
@@ -752,7 +748,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _isResettingCache = false);
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Library cache reset')),
+      SnackBar(content: Text(S.of(context)!.libraryCacheReset)),
     );
   }
 
@@ -839,10 +835,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // Use color filter to make logo dark in light theme
             Padding(
               padding: const EdgeInsets.only(top: 8.0, bottom: 48.0),
-              child: Image.asset(
-                'assets/images/klangor_icon_transparent.png',
-                width: MediaQuery.of(context).size.width * 0.5,
-                fit: BoxFit.contain,
+              child: Column(
+                children: [
+                  Image.asset(
+                    'assets/images/klangor_icon_transparent.png',
+                    width: MediaQuery.of(context).size.width * 0.25,
+                    fit: BoxFit.contain,
+                  ),
+                  const SizedBox(height: 12),
+                  // Same size as the wordmark on the Home screen AppBar.
+                  Image.asset(
+                    'assets/images/klangor_logo.png',
+                    height: 40,
+                    fit: BoxFit.contain,
+                  ),
+                ],
               ),
             ),
 
@@ -916,35 +923,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       // this can't keep showing "not working" after the
                       // underlying issue actually cleared.
                       _buildDiagnosticRow(
-                        'Name lookup (DNS)',
+                        S.of(context)!.nameLookupDns,
                         _diagnostics?.dnsStatus,
                         colorScheme,
                         textTheme,
                         detail: _formatDuration(_diagnostics?.dnsTime),
                       ),
                       _buildDiagnosticRow(
-                        'IPv4 connectivity',
+                        S.of(context)!.ipv4Connectivity,
                         _diagnostics?.ipv4Status,
                         colorScheme,
                         textTheme,
                       ),
                       _buildDiagnosticRow(
-                        'IPv6 connectivity',
+                        S.of(context)!.ipv6Connectivity,
                         _diagnostics?.ipv6Status,
                         colorScheme,
                         textTheme,
                       ),
                       _buildDiagnosticRow(
-                        'Client certificate',
+                        S.of(context)!.clientCertificateDiagnostic,
                         _diagnostics?.certificateStatus,
                         colorScheme,
                         textTheme,
                         detail: _diagnostics == null
                             ? null
-                            : (_diagnostics!.certificateConfigured ? 'in use' : 'not needed'),
+                            : (_diagnostics!.certificateConfigured ? S.of(context)!.inUse : S.of(context)!.notNeeded),
                       ),
                       _buildDiagnosticRow(
-                        'Connected to music server',
+                        S.of(context)!.connectedToMusicServer,
                         _diagnostics == null
                             ? null
                             : (_diagnostics!.serverConnected ? DiagnosticStatus.ok : DiagnosticStatus.failed),
@@ -960,7 +967,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  'Round-trip time',
+                                  S.of(context)!.roundTripTime,
                                   style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
                                 ),
                               ),
@@ -977,7 +984,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       if (_diagnostics != null) ...[
                         const SizedBox(height: 6),
                         Text(
-                          'Checked ${_formatAge(_diagnostics!.checkedAt)}',
+                          S.of(context)!.checkedAgo(_formatAge(context, _diagnostics!.checkedAt)),
                           style: textTheme.bodySmall?.copyWith(
                             color: colorScheme.onSurfaceVariant.withOpacity(0.6),
                             fontSize: 11,
@@ -1000,7 +1007,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ),
                             )
                           : Icon(Icons.refresh_rounded, color: colorScheme.onSurfaceVariant, size: 20),
-                      tooltip: 'Refresh diagnostics',
+                      tooltip: S.of(context)!.refreshDiagnostics,
                       onPressed: _isRunningDiagnostics ? null : _runDiagnostics,
                     ),
                   ),
@@ -1032,7 +1039,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Client Certificate (mTLS)',
+                        S.of(context)!.clientCertificateMtls,
                         style: textTheme.titleSmall?.copyWith(
                           color: colorScheme.onSurface,
                           fontWeight: FontWeight.bold,
@@ -1043,8 +1050,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 8),
                   Text(
                     _hasClientCertificate
-                        ? 'Configured${_clientCertificateImportedAt != null ? ' — imported ${DateFormat.yMMMd().format(_clientCertificateImportedAt!)}' : ''}. Used automatically only if the server asks for it, so servers that don\'t require it still connect fine.'
-                        : 'Not configured. Only needed if your server requires a client certificate to connect at all.',
+                        ? (_clientCertificateImportedAt != null
+                            ? S.of(context)!.clientCertificateConfiguredWithDate(
+                                DateFormat.yMMMd().format(_clientCertificateImportedAt!))
+                            : S.of(context)!.clientCertificateConfiguredNoDate)
+                        : S.of(context)!.clientCertificateNotConfigured,
                     style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
                   ),
                   const SizedBox(height: 12),
@@ -1060,7 +1070,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   child: CircularProgressIndicator(strokeWidth: 2),
                                 )
                               : const Icon(Icons.upload_file_rounded),
-                          label: Text(_hasClientCertificate ? 'Replace' : 'Import'),
+                          label: Text(_hasClientCertificate ? S.of(context)!.replace : S.of(context)!.import),
                           style: FilledButton.styleFrom(
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -1074,7 +1084,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           child: FilledButton.tonalIcon(
                             onPressed: _removeClientCertificate,
                             icon: const Icon(Icons.delete_outline_rounded),
-                            label: const Text('Remove'),
+                            label: Text(S.of(context)!.remove),
                             style: FilledButton.styleFrom(
                               backgroundColor: colorScheme.errorContainer.withOpacity(0.4),
                               foregroundColor: colorScheme.error,
@@ -1110,7 +1120,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       )
                     : const Icon(Icons.refresh_rounded),
                 label: Text(
-                  'Reconnect',
+                  S.of(context)!.reconnect,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -1160,9 +1170,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: FilledButton.tonalIcon(
                 onPressed: _quitApp,
                 icon: const Icon(Icons.exit_to_app_rounded),
-                label: const Text(
-                  'Quit App',
-                  style: TextStyle(
+                label: Text(
+                  S.of(context)!.quitApp,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
@@ -1192,9 +1202,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.cleaning_services_rounded),
-                label: const Text(
-                  'Reset Library Cache',
-                  style: TextStyle(
+                label: Text(
+                  S.of(context)!.resetLibraryCache,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
@@ -1434,6 +1444,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       return 'Deutsch';
                     case 'es':
                       return 'Español';
+                    case 'fr':
+                      return S.of(context)!.frenchNative;
                     default:
                       return S.of(context)!.system;
                   }
@@ -1953,8 +1965,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
             ),
-
-            SizedBox(height: BottomSpacing.navBarOnly), // Space for bottom nav bar
           ],
         ),
       ),
@@ -2056,12 +2066,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return '${duration.inMilliseconds} ms';
   }
 
-  String _formatAge(DateTime checkedAt) {
+  String _formatAge(BuildContext context, DateTime checkedAt) {
     final elapsed = DateTime.now().difference(checkedAt);
-    if (elapsed.inSeconds < 5) return 'just now';
-    if (elapsed.inMinutes < 1) return '${elapsed.inSeconds}s ago';
-    if (elapsed.inHours < 1) return '${elapsed.inMinutes}m ago';
-    return '${elapsed.inHours}h ago';
+    if (elapsed.inSeconds < 5) return S.of(context)!.justNow;
+    if (elapsed.inMinutes < 1) return S.of(context)!.secondsAgo(elapsed.inSeconds);
+    if (elapsed.inHours < 1) return S.of(context)!.minutesAgo(elapsed.inMinutes);
+    return S.of(context)!.hoursAgo(elapsed.inHours);
   }
 
   Future<void> _launchUrl(String url) async {
