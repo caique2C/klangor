@@ -3,11 +3,14 @@ package com.klangor.app
 import android.content.ContentProvider
 import android.content.ContentValues
 import android.database.Cursor
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.util.Base64
 import android.util.Log
 import java.io.File
+import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
@@ -36,6 +39,16 @@ import java.util.concurrent.ConcurrentHashMap
  * absolute path on Android. Whichever side fetches a given URL first leaves it
  * here for the other to reuse, without any IPC between them. Do not rename this
  * directory without updating `ImageService.cacheDirName` to match.
+ *
+ * Android Auto renders every browse tile (artist, album, ...) into the same
+ * fixed square-ish slot. Album art is already square so this is invisible,
+ * but artist photos from metadata providers are frequently landscape or
+ * portrait, and get visibly stretched to fill that slot. This provider
+ * center-crops non-square source images to a square before serving them to
+ * Android Auto specifically - the shared original file is left untouched so
+ * the phone UI (which reads the same cache) keeps seeing the unmodified
+ * source image. The cropped copy is cached alongside the original under a
+ * `.square` suffix.
  */
 class ArtworkContentProvider : ContentProvider() {
 
@@ -73,7 +86,7 @@ class ArtworkContentProvider : ContentProvider() {
 
         if (cacheFile.exists()) {
             Log.d(TAG, "cache hit: $hash")
-            return ParcelFileDescriptor.open(cacheFile, ParcelFileDescriptor.MODE_READ_ONLY)
+            return ParcelFileDescriptor.open(servableFile(cacheFile), ParcelFileDescriptor.MODE_READ_ONLY)
         }
 
         val lastFailure = recentFailures[hash]
@@ -94,7 +107,7 @@ class ArtworkContentProvider : ContentProvider() {
                 // was waiting for the lock.
                 if (cacheFile.exists()) {
                     Log.d(TAG, "cache hit after waiting for coalesced fetch: $hash")
-                    return ParcelFileDescriptor.open(cacheFile, ParcelFileDescriptor.MODE_READ_ONLY)
+                    return ParcelFileDescriptor.open(servableFile(cacheFile), ParcelFileDescriptor.MODE_READ_ONLY)
                 }
 
                 Log.d(TAG, "fetching $hash from network")
@@ -121,7 +134,7 @@ class ArtworkContentProvider : ContentProvider() {
                     return null
                 }
 
-                return ParcelFileDescriptor.open(cacheFile, ParcelFileDescriptor.MODE_READ_ONLY)
+                return ParcelFileDescriptor.open(servableFile(cacheFile), ParcelFileDescriptor.MODE_READ_ONLY)
             } finally {
                 inFlight.remove(hash, lock)
             }
@@ -140,5 +153,57 @@ class ArtworkContentProvider : ContentProvider() {
         val digest = MessageDigest.getInstance("MD5")
         val bytes = digest.digest(input.toByteArray())
         return bytes.joinToString("") { "%02x".format(it) }
+    }
+
+    /**
+     * Returns the file that should actually be served for Android Auto:
+     * a center-cropped square version of [original], produced and cached
+     * once per URL. Falls back to [original] itself if it's already square,
+     * or if cropping fails for any reason (corrupt/unsupported image, OOM,
+     * etc.) - a slightly-wrong aspect ratio beats no artwork at all.
+     */
+    private fun servableFile(original: File): File {
+        val squareFile = File(original.parentFile, "${original.name}.square")
+        if (squareFile.exists()) return squareFile
+
+        return try {
+            if (centerCropToSquare(original, squareFile)) squareFile else original
+        } catch (e: Exception) {
+            Log.e(TAG, "center-crop failed for ${original.name}: ${e.message}")
+            squareFile.delete()
+            original
+        }
+    }
+
+    /**
+     * Center-crops [source] to a square and writes it as JPEG to [dest].
+     * Returns false (without writing [dest]) if [source] is already square -
+     * callers should serve [source] directly in that case rather than
+     * duplicating it on disk.
+     */
+    private fun centerCropToSquare(source: File, dest: File): Boolean {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(source.path, bounds)
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0 || bounds.outWidth == bounds.outHeight) {
+            return false
+        }
+
+        val bitmap = BitmapFactory.decodeFile(source.path) ?: return false
+        try {
+            val size = minOf(bitmap.width, bitmap.height)
+            val x = (bitmap.width - size) / 2
+            val y = (bitmap.height - size) / 2
+            val cropped = Bitmap.createBitmap(bitmap, x, y, size, size)
+            try {
+                FileOutputStream(dest).use { out ->
+                    cropped.compress(Bitmap.CompressFormat.JPEG, 90, out)
+                }
+            } finally {
+                if (cropped !== bitmap) cropped.recycle()
+            }
+        } finally {
+            bitmap.recycle()
+        }
+        return true
     }
 }

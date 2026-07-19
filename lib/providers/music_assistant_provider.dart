@@ -4155,18 +4155,14 @@ class MusicAssistantProvider with ChangeNotifier {
   /// instantly (and offline) via [LibraryRepository.getAlbumTracks] instead
   /// of only through [_cacheService]'s in-memory/TTL cache. Isolated in its
   /// own try/catch so a persistence failure never surfaces as a track-load
-  /// failure to the screen.
+  /// failure to the screen. Uses [LibraryRepository.setAlbumTracks] (a single
+  /// transaction) rather than looping [upsertTrack] here directly - a
+  /// concurrent reader (e.g. Android Auto) could otherwise observe a
+  /// half-written album with only the first few tracks committed.
   void _writeAlbumTracksToLibraryRepository(String provider, String itemId, List<Track> tracks) {
     () async {
       try {
-        for (var i = 0; i < tracks.length; i++) {
-          await LibraryRepository.instance.upsertTrack(
-            tracks[i],
-            albumProvider: provider,
-            albumItemId: itemId,
-            position: i,
-          );
-        }
+        await LibraryRepository.instance.setAlbumTracks(provider, itemId, tracks);
       } catch (e) {
         _logger.log('⚠️ Failed to persist album tracks to relational schema: $e');
       }

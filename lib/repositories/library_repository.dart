@@ -157,6 +157,21 @@ class LibraryRepository {
     await _replaceProviderMappings('track', track.provider, track.itemId, track.providerMappings);
   }
 
+  /// Upserts an album's full track listing as a single transaction, so a
+  /// concurrent [getAlbumTracks] read (e.g. Android Auto browsing this album
+  /// while the phone UI is also loading it) always sees either the complete
+  /// old list or the complete new one - never a half-written state with only
+  /// the first few tracks committed. [upsertTrack] called in a loop directly
+  /// (as this used to be, from `MusicAssistantProvider`) doesn't have that
+  /// guarantee, since each call commits independently.
+  Future<void> setAlbumTracks(String provider, String itemId, List<Track> tracks) async {
+    await _db.transaction(() async {
+      for (var i = 0; i < tracks.length; i++) {
+        await upsertTrack(tracks[i], albumProvider: provider, albumItemId: itemId, position: i);
+      }
+    });
+  }
+
   Future<void> upsertPlaylist(Playlist playlist) async {
     await _db.into(_db.playlists).insertOnConflictUpdate(PlaylistsCompanion.insert(
           provider: playlist.provider,

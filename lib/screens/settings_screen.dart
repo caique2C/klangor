@@ -704,6 +704,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (confirmed == true) {
       if (mounted) {
         await context.read<MusicAssistantProvider>().stopAudioService();
+        // stopAudioService() only waits for the Dart-side playbackState to
+        // flip to idle - it does NOT wait for audio_service's own internal
+        // listener (AudioService._observePlaybackState) to react to that and
+        // relay it to the native side via two more platform-channel round
+        // trips, which is what actually calls stopSelf() on the Android
+        // foreground service. MainActivity and that service share a single
+        // Flutter engine (AudioServiceActivity.provideFlutterEngine), so
+        // finishAndRemoveTask() below can tear the engine down before those
+        // in-flight calls land, leaving the service - and the whole process -
+        // stuck running in the background instead of exiting. This grace
+        // period lets the real native stop complete first.
+        await Future.delayed(const Duration(milliseconds: 500));
       }
       await _platformChannel.invokeMethod('quitApp');
     }

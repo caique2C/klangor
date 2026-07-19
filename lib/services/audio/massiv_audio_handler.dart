@@ -1543,6 +1543,13 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       // Fallback to library if API unavailable
       albums = provider.getArtistAlbumsFromLibrary(artistName);
     }
+    // Deliberately NOT applying the Library Albums tab's per-type filter
+    // (getLibraryAlbumTypeFilter) here. It's meant to cut down browse noise
+    // in the general Albums tab, but a filter tuned for that (e.g. only
+    // "album,soundtrack") ends up hiding most of an artist's own discography
+    // when applied to their individual page - a compilation-heavy artist can
+    // lose the majority of their releases. An artist's own page should show
+    // everything by them regardless of type.
     _logger.log('AndroidAuto: Artist "$artistName" albums: ${albums.length}');
     return [
       ...albums.map((a) => MediaItem(
@@ -1565,6 +1572,12 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
         albums = SyncService.instance.cachedAlbums;
       }
     }
+    // Match the phone's Library > Albums tab, which hides types the user has
+    // unticked there (e.g. Compilation) - unlike the per-artist album list
+    // above, there's no reason for AA's top-level Albums category to show
+    // types the user has deliberately chosen to hide on the phone.
+    final selectedTypes = await SettingsService.getLibraryAlbumTypeFilter();
+    albums = albums.where((a) => selectedTypes.contains(a.albumType ?? 'unknown')).toList();
     _logger.log('AndroidAuto: Albums: ${albums.length}');
     return albums.map((a) => MediaItem(
       id: 'album|${a.provider}|${a.itemId}',
@@ -1774,9 +1787,18 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     return _contentUriForArtwork(url);
   }
 
+  // Bump this whenever ArtworkContentProvider's output for a given URL
+  // changes (e.g. the square-crop logic) - Android Auto's host likely
+  // caches decoded bitmaps by this content:// URI on its own side, so an
+  // unchanged URI can keep showing a stale image after the provider starts
+  // returning something different for the same underlying HTTP URL. The
+  // query param doesn't affect Uri.getLastPathSegment() on the Kotlin side,
+  // so the provider's decode logic doesn't need to change.
+  static const _artworkVersion = 2;
+
   static Uri? _contentUriForArtwork(String httpUrl) {
     final encoded = base64Url.encode(utf8.encode(httpUrl));
-    return Uri.parse('content://$_artworkAuthority/$encoded');
+    return Uri.parse('content://$_artworkAuthority/$encoded?v=$_artworkVersion');
   }
 
   // ---------------------------------------------------------------------------

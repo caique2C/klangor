@@ -709,6 +709,13 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> with LibraryS
 
   Future<void> _loadArtistAlbums() async {
     final provider = context.read<MusicAssistantProvider>();
+    // Deliberately NOT applying the Library Albums tab's per-type filter
+    // (getLibraryAlbumTypeFilter) here. It's meant to cut down browse noise
+    // in the general Albums tab, but a filter tuned for that (e.g. only
+    // "album,soundtrack") ends up hiding most of an artist's own discography
+    // when applied to their individual page - a compilation-heavy artist can
+    // lose the majority of their releases. An artist's own page should show
+    // everything by them regardless of type.
 
     // 1. Show persisted library data immediately (works fully offline; this
     // is what used to be two separate, partially-overlapping caches here).
