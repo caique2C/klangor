@@ -657,6 +657,19 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     'android.media.browse.CONTENT_STYLE_PLAYABLE_HINT': 2,
   };
 
+  // Explicitly declares "ordered list, not grid" for a folder's children.
+  // Album/playlist folders never set this, so whatever undocumented
+  // heuristic AA's host uses to choose between a plain track list and a
+  // long alphabetically-indexed list is free to go either way per-album -
+  // reported as some albums randomly showing an A-Z jump strip with tracks
+  // resorted alphabetically instead of by track number. Declaring the style
+  // explicitly is the standard mitigation; unconfirmed whether this is
+  // actually the trigger.
+  static const _listHints = {
+    'android.media.browse.CONTENT_STYLE_BROWSABLE_HINT': 1,
+    'android.media.browse.CONTENT_STYLE_PLAYABLE_HINT': 1,
+  };
+
   // Icon URIs for category items
   static const _iconPkg = 'com.klangor.app';
   static final _iconHome = Uri.parse('android.resource://$_iconPkg/drawable/ic_auto_home');
@@ -1491,14 +1504,17 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       artist: p.owner,
       artUri: _autoArtUri(provider, p),
       playable: false,
+      extras: _listHints,
     )).toList();
   }
 
   Future<List<MediaItem>> _autoBuildPlaylistTracks(
       MusicAssistantProvider provider, String plProvider, String plItemId) async {
-    var tracks = await LibraryRepository.instance.getPlaylistTracks(plProvider, plItemId);
+    // Force a live refresh rather than trusting a possibly-stale/partial
+    // local repo copy - see the matching comment on _autoBuildAlbumTracks.
+    var tracks = await provider.getPlaylistTracksWithCache(plProvider, plItemId, forceRefresh: true);
     if (tracks.isEmpty) {
-      tracks = await provider.getPlaylistTracksWithCache(plProvider, plItemId);
+      tracks = await LibraryRepository.instance.getPlaylistTracks(plProvider, plItemId);
     }
     final ctxKey = 'plist|$plProvider|$plItemId';
     _cacheTrackList(ctxKey, tracks);
@@ -1585,14 +1601,23 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       artist: a.artistsString,
       artUri: _autoArtUri(provider, a),
       playable: false,
+      extras: _listHints,
     )).toList();
   }
 
   Future<List<MediaItem>> _autoBuildAlbumTracks(
       MusicAssistantProvider provider, String alProvider, String alItemId) async {
-    var tracks = await LibraryRepository.instance.getAlbumTracks(alProvider, alItemId);
+    // Unlike the repo-first, empty-check-only approach this used to have,
+    // force a live refresh here - a repo copy that's non-empty but stale or
+    // partial (e.g. from a sync interrupted before writes became a single
+    // transaction, see LibraryRepository.setAlbumTracks) would otherwise be
+    // served as-is forever, since there'd be no trigger to ever replace it.
+    // The phone's album screen self-heals the same staleness by always
+    // doing a live background refresh after showing the cached copy; AA has
+    // no such second pass, so it needs the authoritative fetch up front.
+    var tracks = await provider.getAlbumTracksWithCache(alProvider, alItemId, forceRefresh: true);
     if (tracks.isEmpty) {
-      tracks = await provider.getAlbumTracksWithCache(alProvider, alItemId);
+      tracks = await LibraryRepository.instance.getAlbumTracks(alProvider, alItemId);
     }
     _logger.log('AndroidAuto: Album $alProvider/$alItemId tracks: ${tracks.length}');
     final ctxKey = 'album|$alProvider|$alItemId';
