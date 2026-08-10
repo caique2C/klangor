@@ -1124,6 +1124,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
             playable: false,
             extras: const {
               'android.media.browse.CONTENT_STYLE_GROUP_TITLE_HINT': 'Albums',
+              ..._listHints,
             },
           ));
         }
@@ -1329,6 +1330,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
           id: 'album|${a.provider}|${a.itemId}',
           title: a.name, artist: a.artistsString,
           artUri: _autoArtUri(provider, a), playable: false,
+          extras: _listHints,
         )).toList();
 
       case 'discover-artists':
@@ -1346,6 +1348,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
           id: 'album|${a.provider}|${a.itemId}',
           title: a.name, artist: a.artistsString,
           artUri: _autoArtUri(provider, a), playable: false,
+          extras: _listHints,
         )).toList();
 
       case 'continue-listening':
@@ -1375,6 +1378,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
           id: 'album|${a.provider}|${a.itemId}',
           title: a.name, artist: a.artistsString,
           artUri: _autoArtUri(provider, a), playable: false,
+          extras: _listHints,
         )).toList();
 
       case 'favorite-artists':
@@ -1474,6 +1478,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     return albums.map((a) => MediaItem(
       id: 'album|${a.provider}|${a.itemId}', title: a.name, artist: a.artistsString,
       artUri: _autoArtUri(provider, a), playable: false,
+      extras: _listHints,
     )).toList();
   }
 
@@ -1574,6 +1579,7 @@ class MassivAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler
         artist: a.artistsString,
         artUri: _autoArtUri(provider, a),
         playable: false,
+        extras: _listHints,
       )),
     ];
   }
