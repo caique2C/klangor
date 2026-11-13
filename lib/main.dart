@@ -42,6 +42,12 @@ void main() {
     () async {
       WidgetsFlutterBinding.ensureInitialized();
 
+      // Persist debug logs to disk early so they survive a process restart
+      // (e.g. an Android Auto cold-start / the OS reaping the app). On-disk
+      // size is bounded by rotation inside DebugLogger. Done before other
+      // startup logging so those lines are persisted too.
+      await _logger.initFileLogging();
+
       // Initialize SharedPreferences cache early for performance
       await SettingsService.initialize();
       _logger.log('⚡ SharedPreferences cached');

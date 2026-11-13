@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:path_provider/path_provider.dart';
 
 /// Log levels for filtering and display
 enum LogLevel {
@@ -41,6 +43,139 @@ class DebugLogger {
   final List<LogEntry> _entries = [];
   final _maxLogs = 1000;
 
+  // --- File persistence (survives a process restart) -------------------------
+  //
+  // The in-memory ring buffer above is lost whenever the app process is killed
+  // (exactly what happens when Android / Android Auto cold-starts or reaps the
+  // app). To keep logs across such a restart, every entry is also appended to
+  // an on-disk file.
+  //
+  // Overflow protection: two rotating files. When the active file would exceed
+  // [_maxLogFileBytes], it is rotated to "<name>.1" (replacing any previous
+  // ".1") and a fresh active file is started. On-disk usage therefore never
+  // exceeds ~2 × _maxLogFileBytes, no matter how long the app runs.
+  static const int _maxLogFileBytes = 512 * 1024; // 512 KB per file (~1 MB total)
+  static const int _maxPendingBeforeReady = 500;
+
+  File? _logFile; // active file
+  File? _logFileOld; // rotated ("previous") file
+  int _currentFileBytes = 0;
+  bool _fileLoggingReady = false;
+  // Entries logged before initFileLogging() completes are held here, then
+  // flushed to disk once the file is ready (bounded so a failed init can't
+  // grow this without limit).
+  final List<String> _pendingBeforeReady = [];
+  // Serializes all disk writes so appends/rotation never interleave.
+  Future<void> _writeChain = Future.value();
+
+  /// Initialise on-disk log persistence. Call once, early in main(), before
+  /// other startup logging so those lines are persisted too. Safe to call even
+  /// if it fails — logging never throws into the app.
+  Future<void> initFileLogging() async {
+    try {
+      final dir = await getApplicationSupportDirectory();
+      final logDir = Directory('${dir.path}/logs');
+      if (!await logDir.exists()) {
+        await logDir.create(recursive: true);
+      }
+      _logFile = File('${logDir.path}/klangor.log');
+      _logFileOld = File('${logDir.path}/klangor.log.1');
+      if (await _logFile!.exists()) {
+        _currentFileBytes = await _logFile!.length();
+      }
+      _fileLoggingReady = true;
+
+      // Session marker makes restarts easy to spot when reading the file back.
+      _enqueueWrite('\n===== session start ${DateTime.now().toIso8601String()} =====\n');
+
+      // Flush anything logged before the file was ready.
+      if (_pendingBeforeReady.isNotEmpty) {
+        _enqueueWrite('${_pendingBeforeReady.join('\n')}\n');
+        _pendingBeforeReady.clear();
+      }
+    } catch (e) {
+      // Never let logging break the app.
+      debugPrint('DebugLogger: file logging init failed: $e');
+    }
+  }
+
+  void _persist(String line) {
+    if (!_fileLoggingReady) {
+      if (_pendingBeforeReady.length < _maxPendingBeforeReady) {
+        _pendingBeforeReady.add(line);
+      }
+      return;
+    }
+    _enqueueWrite('$line\n');
+  }
+
+  void _enqueueWrite(String text) {
+    final bytes = utf8.encode(text).length;
+    _writeChain = _writeChain.then((_) async {
+      final file = _logFile;
+      if (file == null) return;
+      try {
+        // Rotate first if this write would push the active file over the cap.
+        if (_currentFileBytes + bytes > _maxLogFileBytes) {
+          await _rotate();
+        }
+        // flush:false → written to the OS page cache, which survives the app
+        // process being killed (only a device power loss would lose it), so
+        // we get restart-durability without an fsync per log line.
+        await file.writeAsString(text, mode: FileMode.append, flush: false);
+        _currentFileBytes += bytes;
+      } catch (e) {
+        debugPrint('DebugLogger: file write failed: $e');
+      }
+    });
+  }
+
+  Future<void> _rotate() async {
+    final active = _logFile;
+    final old = _logFileOld;
+    if (active == null || old == null) return;
+    try {
+      if (await old.exists()) await old.delete();
+      if (await active.exists()) await active.rename(old.path);
+    } catch (e) {
+      debugPrint('DebugLogger: rotate failed: $e');
+    }
+    _currentFileBytes = 0;
+  }
+
+  /// Full persisted log (previous rotated file + active file), oldest first.
+  /// Spans process restarts, unlike the in-memory buffer. May begin
+  /// mid-stream if rotation has discarded older history.
+  Future<String> getPersistedLogs() async {
+    final buffer = StringBuffer();
+    try {
+      await _writeChain; // make sure queued writes have hit disk
+      final old = _logFileOld;
+      final active = _logFile;
+      if (old != null && await old.exists()) {
+        buffer.write(await old.readAsString());
+      }
+      if (active != null && await active.exists()) {
+        buffer.write(await active.readAsString());
+      }
+    } catch (e) {
+      debugPrint('DebugLogger: read persisted logs failed: $e');
+    }
+    return buffer.toString();
+  }
+
+  void _clearFiles() {
+    _writeChain = _writeChain.then((_) async {
+      try {
+        if (_logFile != null && await _logFile!.exists()) await _logFile!.delete();
+        if (_logFileOld != null && await _logFileOld!.exists()) await _logFileOld!.delete();
+      } catch (e) {
+        debugPrint('DebugLogger: clear files failed: $e');
+      }
+      _currentFileBytes = 0;
+    });
+  }
+
   // Minimum level to display in debug console (debug builds show all)
   LogLevel _minConsoleLevel = kDebugMode ? LogLevel.debug : LogLevel.info;
 
@@ -71,6 +206,9 @@ class DebugLogger {
     if (_entries.length > _maxLogs) {
       _entries.removeAt(0);
     }
+
+    // Also persist to disk (survives a process restart; see initFileLogging).
+    _persist(entry.formatted);
 
     // Only print to console if above minimum level
     if (level.index >= _minConsoleLevel.index) {
@@ -160,6 +298,7 @@ class DebugLogger {
 
   void clear() {
     _entries.clear();
+    _clearFiles();
   }
 
   String getAllLogs() {
@@ -229,13 +368,23 @@ class DebugLogger {
     buffer.writeln();
 
     buffer.writeln('═══════════════════════════════════════');
-    buffer.writeln('LOGS (newest first):');
-    buffer.writeln('═══════════════════════════════════════');
-    buffer.writeln();
 
-    // Add logs in reverse order (newest first) for easier reading
-    for (final entry in _entries.reversed) {
-      buffer.writeln(entry.formatted);
+    // Prefer the on-disk log: it spans process restarts (e.g. an Android Auto
+    // cold-start), so it includes sessions the in-memory buffer has already
+    // lost. Falls back to the in-memory buffer if file logging is unavailable.
+    final persisted = await getPersistedLogs();
+    if (persisted.trim().isNotEmpty) {
+      buffer.writeln('LOGS (persisted, oldest first, across sessions):');
+      buffer.writeln('═══════════════════════════════════════');
+      buffer.writeln();
+      buffer.write(persisted);
+    } else {
+      buffer.writeln('LOGS (newest first):');
+      buffer.writeln('═══════════════════════════════════════');
+      buffer.writeln();
+      for (final entry in _entries.reversed) {
+        buffer.writeln(entry.formatted);
+      }
     }
 
     return buffer.toString();

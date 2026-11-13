@@ -2328,6 +2328,11 @@ class MusicAssistantProvider with ChangeNotifier {
         pausePlayer(resolvePlayerId(rawBuiltinPlayerId));
       }
     };
+
+    // Diagnostic marker: confirms the OS/Android Auto transport callbacks are
+    // live. If AA's prev/pause/next ever appear dead again, the presence of
+    // this line (vs. its absence) in the log pinpoints whether wiring ran.
+    _logger.log('🎵 Audio handler transport callbacks wired');
   }
 
   Future<bool> _tryAdoptGhostPlayer() async {
