@@ -918,6 +918,16 @@ class MusicAssistantProvider with ChangeNotifier {
   }
 
   Future<void> _initialize() async {
+    // Wire the OS/Android Auto transport callbacks FIRST, before any network
+    // I/O. These must not depend on connectToServer() succeeding: AA (and the
+    // lockscreen/BT) can hold a live media session the moment the process
+    // starts, and if connectToServer() is slow or throws (e.g. the MA server
+    // is unreachable in the car), the old code left onPlay/onPause/onSkip*
+    // null — so prev/pause/next were dead buttons until the app was killed
+    // and relaunched. The callbacks guard their own state (_selectedPlayer,
+    // connection), so wiring them eagerly is safe.
+    _wireAudioHandlerCallbacks();
+
     _serverUrl = await SettingsService.getServerUrl();
 
     // Load cached players from database for instant display (before connecting)
@@ -2258,6 +2268,17 @@ class MusicAssistantProvider with ChangeNotifier {
     await _localPlayer.initialize();
     _isLocalPlayerPowered = true;
 
+    // Player registration is now handled in _initializeAfterConnection()
+    // which runs after authentication completes (when auth is required).
+    // Transport-control callbacks are wired separately in
+    // _wireAudioHandlerCallbacks(), called early in _initialize() so they're
+    // live even before (or without) a successful server connection.
+  }
+
+  /// Wire the OS/Android Auto media-control callbacks onto the global
+  /// [audioHandler]. Called eagerly from [_initialize] — see the comment
+  /// there for why this must not be gated behind connectToServer().
+  void _wireAudioHandlerCallbacks() {
     // Wire up notification button callbacks
     audioHandler.onSkipToNext = () {
       _logger.log('🎵 Notification: Skip to next pressed');
@@ -2307,9 +2328,6 @@ class MusicAssistantProvider with ChangeNotifier {
         pausePlayer(resolvePlayerId(rawBuiltinPlayerId));
       }
     };
-
-    // Player registration is now handled in _initializeAfterConnection()
-    // which runs after authentication completes (when auth is required)
   }
 
   Future<bool> _tryAdoptGhostPlayer() async {
